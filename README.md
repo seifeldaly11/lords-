@@ -8,7 +8,7 @@
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
-# افتح .env وحط DISCORD_TOKEN بتاعك (وCOHERE_API_KEY لو عايز تفعّل /ai و/hunt_log بوضع الصورة)
+# حط DISCORD_BOT_TOKEN بتاعك (وCOHERE_API_KEY لو عايز تفعّل /ai و/hunt_log بوضع الصورة)
 python bot.py
 ```
 
@@ -137,7 +137,7 @@ python bot.py
 - كل أمر بيأثر على بيانات **عضو تاني** (`/log_activity`, `/gf task`, `/gf done`) مقفول على صلاحية `Manage Server` فقط.
 - `/reset_stats` يحتاج صلاحية `Administrator` + رسالة تأكيد بزرار قبل التنفيذ الفعلي (مفيش تنفيذ مباشر بضغطة واحدة).
 - كل مدخلات الأرقام (Modals) بتتفحّص (`try/except`) قبل الحساب، فمفيش Crash من إدخال نص عشوائي.
-- التوكنات (`DISCORD_TOKEN`, `COHERE_API_KEY`) بتتقرأ من `.env` فقط ومفيش أي مكان بالكود بيطبعها أو يرجعها في رسالة.
+- التوكنات (`DISCORD_BOT_TOKEN`, `COHERE_API_KEY`) بتتقرأ من Secrets أو `.env` فقط ومفيش أي مكان بالكود بيطبعها أو يرجعها في رسالة.
 - أمر `/ai` عليه Cooldown (مرة كل 15 ثانية لكل يوزر) لمنع الإسبام/استهلاك الرصيد بسرعة، ومدخلات المستخدم بتتقص لحد معين (1200 حرف) قبل ما تتبعت لـ Cohere.
 - الـ System Prompt الخاص بالـ AI منفصل تماماً عن رسالة المستخدم (مش بيتحقن جوه نفس الحقل)، وده بيقلل احتمالية Prompt Injection يغيّر شخصية البوت.
 - مفيش استخدام لـ `eval`/`exec`/أوامر نظام (`os.system`) في أي مكان في الكود.
