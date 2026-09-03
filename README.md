@@ -12,8 +12,9 @@ cp .env.example .env
 python bot.py
 ```
 
-لازم تفعّل **Server Members Intent** من Discord Developer Portal (Bot > Privileged Gateway Intents)
-عشان أوامر زي `/stats_event` و`/log_activity` تشتغل صح.
+لازم تفعّل **Server Members Intent** و**Message Content Intent** من Discord Developer Portal
+(Bot > Privileged Gateway Intents). الأول مطلوب لأوامر زي `/stats_event` و`/log_activity`،
+والثاني مطلوب عشان البوت يرد لما تعمل له `@mention` برسالة أو صورة.
 
 لو حطيت `GUILD_ID` في `.env`، الأوامر هتظهر فوراً في السيرفر ده بس. من غيرها، المزامنة عالمية وبتاخد لحد ساعة.
 
@@ -85,6 +86,7 @@ python bot.py
   - **وضع الصورة**: ارفق `image` (سكرين شوت عتاد أو تقرير معركة) مع `might` (قوة حسابك، اختياري) ونص اختياري، وهيحلل الصورة فعلياً باستخدام موديل رؤية من Cohere (`command-a-vision-07-2025`) بدل ما يكتفي بالتوثيق اليدوي.
   - محتاج `COHERE_API_KEY` في `.env` علشان يشتغل أصلاً - من غيره هيرد برسالة توضيحية بدل ما يعطل. تحليل الصور تحديداً بيعتمد على إن مفتاحك عنده صلاحية الوصول لموديلات الرؤية عند Cohere.
 - `/gf optimize` — تكتب المهمة والموارد المتاحة (تسريحات/جواهر...)، والـ AI يقترح أفضل طريقة تنفيذ.
+- `@LordsMobile [سؤالك]` — يرد عليك مباشرة بنفس مستشار AI، ويدعم إرفاق صورة عتاد أو تقرير مع المنشن.
 - بيحترم تفضيل اللغة المضبوط بـ `/language` (عربي/إنجليزي).
 
 ### 📯 نداء الحشود الذكي
