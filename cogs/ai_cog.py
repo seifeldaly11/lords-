@@ -11,7 +11,7 @@ from utils.ui import styled_embed, loading_embed, ROYAL_BLUE
 from cogs.guild_cog import gf_group
 
 MAX_INPUT_CHARS = 1200  # حماية بسيطة ضد الإدخال الطويل جداً/إساءة الاستخدام
-TEXT_MODEL = "command-r-plus"
+TEXT_MODEL = "command-a-03-2025"
 VISION_MODEL = "command-a-vision-07-2025"  # موديل Cohere اللي بيقدر يفهم صور (عتاد/تقارير)
 
 
@@ -80,7 +80,7 @@ class AICog(commands.Cog):
 
     @app_commands.command(
         name="ai",
-        description="🤖 اسأل مستشار لوردس أي سؤال، أو ارفق صورة عتاد/تقرير عشان يحللها | Ask a question, or attach a gear/report image",
+        description="🤖 اسأل مستشار لوردس أو أرفق صورة عتاد/تقرير لتحليلها",
     )
     @app_commands.describe(
         question="اكتب سؤالك (اختياري لو مرفق صورة) | Your question (optional if attaching an image)",

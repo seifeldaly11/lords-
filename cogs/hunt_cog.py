@@ -23,8 +23,6 @@ from discord.ext import commands
 
 from utils.storage import load, save
 from utils.ui import progress_bar, GOLD
-from cogs.ai_cog import ask_ai
-
 HUNT_FILE = "hunt_log"
 DEFAULT_DAILY_TARGET = 100
 
@@ -82,6 +80,9 @@ def parse_bulk_list(text: str) -> list[tuple[str, int]]:
 
 async def extract_from_image(image_url: str, lang: str) -> list[tuple[str, int]]:
     """يستخدم موديل الرؤية (نفس بنية /ai) عشان يقرأ جدول/تقرير صيد من صورة ويرجعه كقائمة (اسم، عدد)."""
+    # استيراد كسول لتفادي تسجيل أمر /gf optimize مرتين أثناء تحميل الـ cogs.
+    from cogs.ai_cog import ask_ai
+
     prompt = (
         "دي صورة لجدول أو تقرير صيد وحوش داخل تحالف في لعبة Lords Mobile. "
         "استخرج منها قائمة بكل اسم لاعب وعدد الوحوش (أو النقاط) اللي صادها، حتى لو الأرقام مش واضحة تماماً حاول تقدّرها. "
