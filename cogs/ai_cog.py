@@ -11,7 +11,9 @@ from utils.ui import styled_embed, loading_embed, ROYAL_BLUE
 from cogs.guild_cog import gf_group
 
 MAX_INPUT_CHARS = 1200  # حماية بسيطة ضد الإدخال الطويل جداً/إساءة الاستخدام
-TEXT_MODEL = "command-r-plus"
+# command-r-plus was removed by Cohere on 2025-09-15.
+# command-a-03-2025 is an active chat model.
+TEXT_MODEL = "command-a-03-2025"
 VISION_MODEL = "command-a-vision-07-2025"  # موديل Cohere اللي بيقدر يفهم صور (عتاد/تقارير)
 
 
