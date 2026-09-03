@@ -80,7 +80,8 @@ def parse_bulk_list(text: str) -> list[tuple[str, int]]:
 
 async def extract_from_image(image_url: str, lang: str) -> list[tuple[str, int]]:
     """يستخدم موديل الرؤية (نفس بنية /ai) عشان يقرأ جدول/تقرير صيد من صورة ويرجعه كقائمة (اسم، عدد)."""
-    # استيراد كسول لتفادي تسجيل أمر /gf optimize مرتين أثناء تحميل الـ cogs.
+    # استيراد كسول يمنع تسجيل أمر /gf optimize مرتين أثناء تحميل الـ cogs:
+    # hunt_cog يحتاج الدالة فقط وقت تنفيذ تحليل الصورة.
     from cogs.ai_cog import ask_ai
 
     prompt = (
