@@ -10,6 +10,7 @@ Lords Mobile Companion Bot
 import asyncio
 import logging
 import os
+import re
 
 import discord
 from discord.ext import commands
@@ -27,7 +28,7 @@ log = logging.getLogger("lordsbot")
 
 intents = discord.Intents.default()
 intents.members = True  # مطلوب عشان نقدر نعمل mention/DM لأعضاء التحالف
-intents.message_content = False  # البوت بيعتمد بالكامل على Slash Commands
+intents.message_content = True  # مطلوب عشان البوت يرد على @mention برسائل وصور
 
 bot = commands.Bot(command_prefix="!lm-unused!", intents=intents, help_command=None)
 
@@ -49,6 +50,63 @@ INITIAL_EXTENSIONS = [
     "cogs.market_cog",
     "cogs.ai_cog",
 ]
+
+
+@bot.event
+async def on_message(message: discord.Message):
+    """يرد على منشن البوت بنفس مستشار Cohere، مع دعم الصور المرفقة."""
+    if message.author.bot:
+        return
+
+    if bot.user is None or bot.user not in message.mentions:
+        await bot.process_commands(message)
+        return
+
+    # الاستيراد وقت الطلب يمنع تسجيل أوامر /gf مرتين أثناء تحميل الـ cogs.
+    from cogs.ai_cog import ask_ai
+    from utils.i18n import get_lang, t
+
+    mention_pattern = rf"<@!?{bot.user.id}>"
+    prompt = re.sub(mention_pattern, "", message.content).strip()
+
+    image = next(
+        (
+            attachment
+            for attachment in message.attachments
+            if (attachment.content_type or "").lower().startswith("image/")
+            or attachment.filename.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))
+        ),
+        None,
+    )
+    lang = get_lang(message.guild.id if message.guild else None)
+
+    if not prompt and image is None:
+        await message.reply(
+            t("ai_need_input", lang),
+            mention_author=False,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+        return
+
+    try:
+        async with message.channel.typing():
+            answer = await ask_ai(
+                prompt,
+                image_url=image.url if image else None,
+                lang=lang,
+            )
+        await message.reply(
+            answer[:1900],
+            mention_author=False,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+    except Exception:
+        log.exception("فشل رد AI على منشن من %s", message.author)
+        await message.reply(
+            "⚠️ حصل خطأ أثناء معالجة السؤال. جرّب تاني بعد شوية.",
+            mention_author=False,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
 
 
 @bot.event
