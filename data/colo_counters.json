@@ -1,0 +1,30 @@
+{
+  "_note": "قاعدة بيانات صغيرة قابلة للتوسعة - أضف أبطال ومقابلاتهم حسب تحديثات اللعبة. البحث غير حساس لحالة الأحرف ويشتغل بالعربي والإنجليزي.",
+  "general_rule": {
+    "ar": "القاعدة العامة: أبطال الهجوم السحري يقابلهم دفاع سحري قوي، وأبطال الهجوم الفيزيائي يقابلهم دفاع فيزيائي قوي، مع بطل تحكم (Control) واحد على الأقل في أي تشكيلة كولوسيوم.",
+    "en": "General rule: magic-attack heroes are countered by strong magic defense, and physical-attack heroes are countered by strong physical defense, with at least one Control hero in any Colosseum formation."
+  },
+  "heroes": [
+    {
+      "names": {"ar": "طالوس", "en": "Talus"},
+      "counter": {
+        "ar": "قابله ببطل تحكم يمنع مهاراته الاستهلالية + دفاع فيزيائي مرتفع.",
+        "en": "Counter him with a Control hero that blocks his opening skills, plus high physical defense."
+      }
+    },
+    {
+      "names": {"ar": "ناتاليا", "en": "Natalya"},
+      "counter": {
+        "ar": "استخدم بطل تعافي/شفاء قوي لامتصاص ضررها المستمر، مع بطل هجوم سريع لإنهاء المعركة قبل تراكم ضررها.",
+        "en": "Use a strong recovery/healing hero to absorb her sustained damage, plus a fast attack hero to end the fight before her damage stacks up."
+      }
+    },
+    {
+      "names": {"ar": "روزاليند", "en": "Rosalind"},
+      "counter": {
+        "ar": "بطل تحكم أو تعطيل مهارات لتقليل تأثير قدراتها الداعمة على فريقها.",
+        "en": "A Control or skill-disruption hero to reduce the effect of her support abilities on her team."
+      }
+    }
+  ]
+}

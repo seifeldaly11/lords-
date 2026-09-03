@@ -1,0 +1,57 @@
+{
+  "infantry": {
+    "emoji": "🛡️",
+    "f2p": {
+      "ar": "تركيز على عتاد الدفاع/الصحة القابل للصنع مجاناً (Blacksmith) بمواد أساسية، مع أولوية لقطع تزيد الـHP والدفاع البري.",
+      "en": "Focus on defense/HP gear you can craft for free at the Blacksmith with basic materials, prioritizing pieces that boost HP and ground defense."
+    },
+    "p2p": {
+      "ar": "عتاد أسطوري (Legendary) مخصص للمشاة من الحدث أو المتجر، مع أحجار تعزيز (Gemming) تزيد الهجوم/الدفاع البري والصحة.",
+      "en": "Legendary infantry-specific gear from events or the store, gemmed with jewels that boost ground attack/defense and HP."
+    }
+  },
+  "ranged": {
+    "emoji": "🏹",
+    "f2p": {
+      "ar": "عتاد يرفع من الهجوم البري والقدرة على اختراق الدفاعات باستخدام موارد الصنع الأساسية، مع تركيز على قطع تزيد نسبة الهجوم الحرج.",
+      "en": "Gear that boosts ground attack and defense-piercing power using basic crafting materials, focusing on pieces that raise crit rate."
+    },
+    "p2p": {
+      "ar": "عتاد أسطوري مخصص للرماة (خاص بأحداث Gear القوية)، معزز بأحجار هجوم/نسبة ضرر حرج.",
+      "en": "Legendary ranged-specific gear (from major Gear events), gemmed with attack/crit-damage jewels."
+    }
+  },
+  "cavalry": {
+    "emoji": "🐎",
+    "f2p": {
+      "ar": "عتاد سرعة وحمل (Load) يساعد الفرسان في التجميع والانتقال السريع، أساسي لمن يعتمد على استراتيجية rally سريعة.",
+      "en": "Speed and Load gear that helps cavalry rally and move quickly - essential if your strategy relies on fast rallies."
+    },
+    "p2p": {
+      "ar": "عتاد أسطوري يرفع سعة الحمل والسرعة والهجوم البري معاً، مع أحجار تعزز معدل الحركة والضرر.",
+      "en": "Legendary gear that raises Load, speed, and ground attack together, gemmed with jewels that boost movement rate and damage."
+    }
+  },
+  "siege": {
+    "emoji": "🏰",
+    "f2p": {
+      "ar": "عتاد يركز على رفع الحمل (Load) لوحدات الحصار عشان تقدر تنهب موارد أكتر، مصنوع من مواد الصنع الأساسية.",
+      "en": "Gear focused on raising Load for siege units so they can carry more looted resources, made from basic crafting materials."
+    },
+    "p2p": {
+      "ar": "عتاد أسطوري مخصص للحصار يرفع الهجوم ضد المباني/القلاع والسعة الحملية بشكل كبير.",
+      "en": "Legendary siege-specific gear that significantly raises attack against buildings/castles and carry capacity."
+    }
+  },
+  "hybrid": {
+    "emoji": "🔀",
+    "f2p": {
+      "ar": "مجموعة عتاد متوازنة (Set) بين الدفاع والهجوم، مفيدة للاعب اللي لسه بيحدد نمط لعبه (هجومي أو دفاعي).",
+      "en": "A balanced gear set between defense and attack, useful for a player who hasn't settled on an offensive or defensive playstyle yet."
+    },
+    "p2p": {
+      "ar": "مجموعة عتاد أسطوري متوازنة (زي Dragon Set أو ما شابه) بتفيد أكتر من نوع وحدة في نفس الوقت، مثالية لمن يبدّل بين الأدوار.",
+      "en": "A balanced Legendary gear set (like the Dragon Set or similar) that benefits more than one troop type at once - ideal if you switch between roles."
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "economy": [
+    {"name": "Trickster", "emoji": "🧪", "role": "للبحث والطاقة"},
+    {"name": "Scarlet Bolt", "emoji": "🏹", "role": "للبناء والطاقة"}
+  ],
+  "free_war": [
+    {"name": "Rose Knight", "emoji": "🌹", "role": "أفضل بطل شامل للجيش (مجاني)"},
+    {"name": "Demon Slayer", "emoji": "😈", "role": "مشاة"},
+    {"name": "Snow Queen", "emoji": "❄️", "role": "رماة"},
+    {"name": "Child of Light", "emoji": "✨", "role": "فرسان"}
+  ],
+  "paid_war": [
+    {"name": "Lore Weaver", "emoji": "📖", "role": "بوفات هجوم قوية (شحن)"},
+    {"name": "Songstress of the Sea", "emoji": "🌊", "role": "بوفات هجوم قوية (شحن)"},
+    {"name": "Berserker", "emoji": "🪓", "role": "أقوى بوفات هجوم شاملة لقادة الحشود (شحن)"}
+  ]
+}

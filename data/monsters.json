@@ -1,0 +1,62 @@
+{
+  "_note": "بيانات إرشادية عامة قابلة للتعديل - حدّثها حسب آخر meta معروفة في تحالفك.",
+  "orc": {
+    "emoji": "👹",
+    "damage_type": "فيزيائي",
+    "heroes": ["أبطال فيزيائيين أصحاب هجوم بري مرتفع", "يفضل بطل معالجة/شفاء مساند لتقليل الخسائر"]
+  },
+  "golem": {
+    "emoji": "🗿",
+    "damage_type": "فيزيائي",
+    "heroes": ["أبطال دفاع بري عالي لتحمل الضربات", "دعم بطل هجوم فيزيائي لتسريع القتل"]
+  },
+  "hydra": {
+    "emoji": "🐍",
+    "damage_type": "سحري",
+    "heroes": ["أبطال سحريين (Magic) أصحاب هجوم سحري مرتفع", "يفضل تفادي أبطال الدفاع الفيزيائي البحت"]
+  },
+  "treant": {
+    "emoji": "🌳",
+    "damage_type": "سحري",
+    "heroes": ["أبطال سحريين بدعم قدرات مساحية (AoE)"]
+  },
+  "cyclops": {
+    "emoji": "👁️",
+    "damage_type": "فيزيائي",
+    "heroes": ["أبطال هجوم فيزيائي عالي مع صحة جيدة لتحمل ضربته القوية"]
+  },
+  "ghost": {
+    "emoji": "👻",
+    "damage_type": "سحري",
+    "heroes": ["أبطال سحريين متخصصين + دعم من أبطال زيادة سرعة/هجوم الجيش"]
+  },
+  "tycoon": {
+    "emoji": "🎩",
+    "damage_type": "مختلط",
+    "heroes": ["فريق متوازن فيزيائي وسحري لأن الوحش يغيّر نمط دفاعه", "تحقق من مستوى الوحش قبل الهجوم"]
+  },
+  "frostwing": {
+    "emoji": "🐺",
+    "damage_type": "فيزيائي",
+    "defense_note": "دفاعه السحري قوي - لازم تضربه بضرر جسدي",
+    "heroes": ["Demon Slayer", "Scarlet Bolt", "Tracker", "Trickster", "Black Crow"]
+  },
+  "hell_drider": {
+    "emoji": "🕷️",
+    "damage_type": "فيزيائي",
+    "defense_note": "دفاعه السحري قوي - لازم تضربه بضرر جسدي",
+    "heroes": ["Demon Slayer", "Scarlet Bolt", "Tracker", "Trickster", "Black Crow"]
+  },
+  "noceros": {
+    "emoji": "🦏",
+    "damage_type": "سحري",
+    "defense_note": "دفاعه الجسدي قوي - لازم تضربه بضرر سحري",
+    "heroes": ["Incinerator", "Elementalist", "Snow Queen", "Prima Donna", "Sage of Storms"]
+  },
+  "saberfang": {
+    "emoji": "🐯",
+    "damage_type": "سحري",
+    "defense_note": "دفاعه الجسدي قوي - لازم تضربه بضرر سحري",
+    "heroes": ["Incinerator", "Elementalist", "Snow Queen", "Prima Donna", "Sage of Storms"]
+  }
+}

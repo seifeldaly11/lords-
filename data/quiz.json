@@ -1,0 +1,37 @@
+[
+  {
+    "question": "إيه اختصار Resources في مصطلحات لوردس موبايل؟",
+    "options": ["RSS", "RES", "GLD", "MAT"],
+    "answer": 0
+  },
+  {
+    "question": "إيه اسم الحدث اللي بتحارب فيه تحالفين ضد بعض في ساحة مشتركة؟",
+    "options": ["Colosseum", "Dragon Arena", "KvK", "Guild Fest"],
+    "answer": 1
+  },
+  {
+    "question": "إيه أعلى مستوى (Tier) للوحدات العسكرية حالياً؟",
+    "options": ["T3", "T4", "T5", "T6"],
+    "answer": 2
+  },
+  {
+    "question": "إيه اسم القلعة اللي بتفتح دورياً وبيهاجمها التحالف جماعياً للحصول على غنائم؟",
+    "options": ["Darknest", "Beast Lair", "Ghost Ship", "Tycoon Hideout"],
+    "answer": 0
+  },
+  {
+    "question": "إيه معنى مصطلح Rally؟",
+    "options": ["تعزيز حليف", "تجميع جماعي لهجوم واحد", "تسريع البناء", "استكشاف الخريطة"],
+    "answer": 1
+  },
+  {
+    "question": "أي تشكيلة تُعتبر هجومية غالباً؟",
+    "options": ["Phalanx", "Wedge", "Turtle", "Line"],
+    "answer": 1
+  },
+  {
+    "question": "إيه العملة المدفوعة الأساسية في اللعبة؟",
+    "options": ["Gold", "Gems", "Tokens", "Crystals"],
+    "answer": 1
+  }
+]

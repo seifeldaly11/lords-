@@ -1,0 +1,33 @@
+{
+  "_note": "بيانات إرشادية عامة قابلة للتعديل حسب آخر meta معروفة - تأكد من تحديثها دورياً.",
+  "1": {
+    "heroes": {"ar": "أبطال دفاع أساسيين + تشكيلة مشاة/رماة متوازنة", "en": "Basic defense heroes + a balanced infantry/ranged formation"},
+    "formation": {"ar": "Phalanx (دفاعي)", "en": "Phalanx (defensive)"},
+    "notes": {"ar": "مستوى مبتدئ، مناسب لجيوش صغيرة/متوسطة.", "en": "Beginner level, suitable for small/medium armies."}
+  },
+  "2": {
+    "heroes": {"ar": "أبطال دفاع + بطل هجوم واحد على الأقل", "en": "Defense heroes + at least one attack hero"},
+    "formation": {"ar": "Phalanx", "en": "Phalanx"},
+    "notes": {"ar": "زيادة طفيفة في قوة الحراس، جهّز شفاء إضافي.", "en": "Guards are slightly stronger here, bring extra healing."}
+  },
+  "3": {
+    "heroes": {"ar": "مزيج متوازن من أبطال الهجوم والدفاع", "en": "A balanced mix of attack and defense heroes"},
+    "formation": {"ar": "Wedge/Phalanx حسب تركيبة الحراس", "en": "Wedge/Phalanx depending on the guard composition"},
+    "notes": {"ar": "يفضل التنسيق مع 2-3 لاعبين لضرب متزامن.", "en": "Coordinating with 2-3 players for a simultaneous hit is recommended."}
+  },
+  "4": {
+    "heroes": {"ar": "أبطال هجوم أقوياء + بطل دعم لزيادة سرعة القتل", "en": "Strong attack heroes + a support hero to speed up the kill"},
+    "formation": {"ar": "Wedge (هجومي)", "en": "Wedge (offensive)"},
+    "notes": {"ar": "يحتاج جيوش T4/T5 بكثافة أعلى.", "en": "Needs denser T4/T5 troop armies."}
+  },
+  "5": {
+    "heroes": {"ar": "فريق هجوم متقدم + بطل تقليل ضرر وارد", "en": "An advanced attack team + a hero that reduces incoming damage"},
+    "formation": {"ar": "Wedge", "en": "Wedge"},
+    "notes": {"ar": "ينصح بالتنسيق الجماعي (Rally) لضمان الإسقاط.", "en": "A group Rally is recommended to guarantee the takedown."}
+  },
+  "6": {
+    "heroes": {"ar": "أقوى الأبطال المتاحة لديك بعتاد أسطوري مطوّر", "en": "Your strongest available heroes with upgraded legendary gear"},
+    "formation": {"ar": "Wedge بتشكيلة هجومية كاملة", "en": "Wedge in a full offensive formation"},
+    "notes": {"ar": "أعلى مستوى - يتطلب تنسيق تحالف كامل وضربات متزامنة من عدة جيوش.", "en": "The highest level - requires full alliance coordination and simultaneous hits from multiple armies."}
+  }
+}
