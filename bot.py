@@ -17,7 +17,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+# Replit Secret name is DISCORD_BOT_TOKEN. Keep DISCORD_TOKEN as a
+# backwards-compatible fallback for older .env files.
+TOKEN = os.getenv("DISCORD_BOT_TOKEN") or os.getenv("DISCORD_TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -71,7 +73,7 @@ async def on_ready():
 async def main():
     if not TOKEN:
         raise SystemExit(
-            "❌ لم يتم العثور على DISCORD_TOKEN. تأكد من إنشاء ملف .env بناءً على .env.example"
+            "❌ لم يتم العثور على DISCORD_BOT_TOKEN. أضف Discord Bot Token إلى Secrets."
         )
 
     async with bot:
