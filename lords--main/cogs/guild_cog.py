@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.storage import load, save, load_json_data
+from utils.i18n import get_lang, t, ACTIVITY_TYPE_LABELS_I18N
 from cogs.rally_cog import RALLY_LOG_FILE, RALLY_TYPE_LABELS, RALLY_RESULT_LABELS
 from cogs.war_cog import REPORTS_FILE
 
@@ -15,27 +16,22 @@ ACTIVITY_FILE = "activity"
 QUIZ_FILE = "quiz_scores"
 GF_FILE = "guild_fest"
 
-ACTIVITY_TYPES = [
-    ("👥 حشود (Rally)", "rally"),
-    ("🎉 مهرجان التحالف", "guild_fest"),
-    ("🐉 ساحة التنين", "dragon_arena"),
-    ("⚔️ KvK", "kvk"),
-]
+ACTIVITY_TYPE_KEYS = ["rally", "guild_fest", "dragon_arena", "kvk"]
 
 RANKS = [
-    (0, "🥉 مبتدئ"),
-    (20, "🥈 مساهم نشط"),
-    (50, "🥇 قائد ميداني"),
-    (100, "🧠 خبير لوردس"),
+    (0, "rank_beginner"),
+    (20, "rank_active_contributor"),
+    (50, "rank_field_leader"),
+    (100, "rank_lords_expert"),
 ]
 
 
-def get_rank(points: int) -> str:
-    rank = RANKS[0][1]
-    for threshold, label in RANKS:
+def get_rank(points: int, lang: str = "ar") -> str:
+    rank_key = RANKS[0][1]
+    for threshold, key in RANKS:
         if points >= threshold:
-            rank = label
-    return rank
+            rank_key = key
+    return t(rank_key, lang)
 
 
 def compute_member_stats(gid: str, uid: int) -> dict:
@@ -81,17 +77,21 @@ def compute_all_members_scores(gid: str) -> dict:
 # /log_activity
 # ---------------------------------------------------------------------------
 
-class LogActivityModal(discord.ui.Modal, title="📋 تسجيل مشاركة"):
+class LogActivityModal(discord.ui.Modal):
     details = discord.ui.TextInput(label="📝 التفاصيل", style=discord.TextStyle.paragraph)
     reason = discord.ui.TextInput(label="❓ السبب/الملاحظة", required=False)
 
-    def __init__(self, activity_key: str, activity_label: str, member: discord.Member):
-        super().__init__()
+    def __init__(self, activity_key: str, activity_label: str, member: discord.Member, lang: str):
+        super().__init__(title=t("log_activity_modal_title", lang))
         self.activity_key = activity_key
         self.activity_label = activity_label
         self.member = member
+        self.lang = lang
+        self.details.label = t("log_activity_details_label", lang)
+        self.reason.label = t("log_activity_reason_label", lang)
 
     async def on_submit(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id)
         data = load(ACTIVITY_FILE)
         gid = str(interaction.guild_id)
         data.setdefault(gid, {})
@@ -109,28 +109,34 @@ class LogActivityModal(discord.ui.Modal, title="📋 تسجيل مشاركة"):
         )
         save(ACTIVITY_FILE, data)
 
-        embed = discord.Embed(title="✅ تم تسجيل المشاركة", color=discord.Color.green())
-        embed.add_field(name="👤 العضو", value=self.member.mention, inline=True)
-        embed.add_field(name="🏷️ النشاط", value=self.activity_label, inline=True)
-        embed.add_field(name="📝 التفاصيل", value=self.details.value, inline=False)
+        embed = discord.Embed(title=t("log_activity_success_title", lang), color=discord.Color.green())
+        embed.add_field(name=t("log_activity_member_field", lang), value=self.member.mention, inline=True)
+        embed.add_field(name=t("log_activity_type_field", lang), value=self.activity_label, inline=True)
+        embed.add_field(name=t("log_activity_details_field", lang), value=self.details.value, inline=False)
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 class ActivityTypeSelect(discord.ui.Select):
-    def __init__(self, member: discord.Member):
+    def __init__(self, member: discord.Member, lang: str):
         self.member = member
-        options = [discord.SelectOption(label=label, value=key) for label, key in ACTIVITY_TYPES]
-        super().__init__(placeholder="اختر نوع النشاط...", options=options)
+        self.lang = lang
+        options = [
+            discord.SelectOption(label=ACTIVITY_TYPE_LABELS_I18N[key][lang], value=key)
+            for key in ACTIVITY_TYPE_KEYS
+        ]
+        super().__init__(placeholder=t("activity_select_placeholder", lang), options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        label = next(lbl for lbl, key in ACTIVITY_TYPES if key == self.values[0])
-        await interaction.response.send_modal(LogActivityModal(self.values[0], label, self.member))
+        label = ACTIVITY_TYPE_LABELS_I18N[self.values[0]][self.lang]
+        await interaction.response.send_modal(
+            LogActivityModal(self.values[0], label, self.member, self.lang)
+        )
 
 
 class ActivityTypeView(discord.ui.View):
-    def __init__(self, member: discord.Member):
+    def __init__(self, member: discord.Member, lang: str):
         super().__init__(timeout=60)
-        self.add_item(ActivityTypeSelect(member))
+        self.add_item(ActivityTypeSelect(member, lang))
 
 
 # ---------------------------------------------------------------------------
@@ -138,9 +144,13 @@ class ActivityTypeView(discord.ui.View):
 # ---------------------------------------------------------------------------
 
 class StatsEventView(discord.ui.View):
-    def __init__(self, guild: discord.Guild):
+    def __init__(self, guild: discord.Guild, lang: str):
         super().__init__(timeout=90)
         self.guild = guild
+        self.lang = lang
+        self.top.label = t("stats_top_button", lang)
+        self.active.label = t("stats_active_button", lang)
+        self.inactive.label = t("stats_inactive_button", lang)
 
     def _get_bucket(self):
         data = load(ACTIVITY_FILE)
@@ -148,46 +158,50 @@ class StatsEventView(discord.ui.View):
 
     @discord.ui.button(label="🏆 الأوائل", style=discord.ButtonStyle.success)
     async def top(self, interaction: discord.Interaction, button: discord.ui.Button):
+        lang = get_lang(interaction.guild_id)
         bucket = self._get_bucket()
         ranked = sorted(bucket.items(), key=lambda kv: len(kv[1]["logs"]), reverse=True)[:10]
         if not ranked:
-            await interaction.response.send_message("لا توجد بيانات مسجلة بعد.", ephemeral=True)
+            await interaction.response.send_message(t("stats_no_data", lang), ephemeral=True)
             return
         desc = "\n".join(
-            f"{i+1}. **{v['name']}** — {len(v['logs'])} مشاركة 🏅" for i, (uid, v) in enumerate(ranked)
+            t("stats_top_line", lang, rank=i + 1, name=v["name"], count=len(v["logs"]))
+            for i, (uid, v) in enumerate(ranked)
         )
-        embed = discord.Embed(title="🏆 الأوائل - تكريم أفضل المساهمين", description=desc, color=discord.Color.gold())
+        embed = discord.Embed(title=t("stats_top_title", lang), description=desc, color=discord.Color.gold())
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(label="✅ المشاركون النشطون", style=discord.ButtonStyle.primary)
     async def active(self, interaction: discord.Interaction, button: discord.ui.Button):
+        lang = get_lang(interaction.guild_id)
         bucket = self._get_bucket()
         active_members = [v["name"] for v in bucket.values() if len(v["logs"]) >= 1]
         if not active_members:
-            await interaction.response.send_message("لا يوجد أعضاء نشطون مسجلين بعد.", ephemeral=True)
+            await interaction.response.send_message(t("stats_no_active", lang), ephemeral=True)
             return
         desc = "\n".join(f"• {name}" for name in active_members[:40])
-        embed = discord.Embed(title="✅ الأعضاء النشطون", description=desc, color=discord.Color.blue())
+        embed = discord.Embed(title=t("stats_active_title", lang), description=desc, color=discord.Color.blue())
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @discord.ui.button(label="😴 غير المشاركين", style=discord.ButtonStyle.danger)
     async def inactive(self, interaction: discord.Interaction, button: discord.ui.Button):
+        lang = get_lang(interaction.guild_id)
         bucket = self._get_bucket()
         active_ids = set(bucket.keys())
         inactive_members = [
             m for m in self.guild.members if not m.bot and str(m.id) not in active_ids
         ]
         if not inactive_members:
-            await interaction.response.send_message("🎉 كل الأعضاء شاركوا بحاجة على الأقل!", ephemeral=True)
+            await interaction.response.send_message(t("stats_all_participated", lang), ephemeral=True)
             return
         desc = "\n".join(f"• {m.mention}" for m in inactive_members[:40])
         embed = discord.Embed(
-            title="😴 غير المشاركين / المتقاعسون",
+            title=t("stats_inactive_title", lang),
             description=desc,
             color=discord.Color.dark_grey(),
         )
         if len(inactive_members) > 40:
-            embed.set_footer(text=f"+ {len(inactive_members) - 40} عضو إضافي غير معروض")
+            embed.set_footer(text=t("stats_inactive_extra_footer", lang, count=len(inactive_members) - 40))
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
@@ -198,22 +212,28 @@ class StatsEventView(discord.ui.View):
 gf_group = app_commands.Group(name="gf", description="🎉 إدارة مهام مهرجان التحالف")
 
 
-class GfTaskModal(discord.ui.Modal, title="🎉 مهمة مهرجان التحالف"):
+class GfTaskModal(discord.ui.Modal):
     task_name = discord.ui.TextInput(label="📌 اسم المهمة", placeholder="مثال: أنفق 500 جوهرة")
     minutes_until_due = discord.ui.TextInput(label="⏱️ المهمة هتنتهي خلال كام دقيقة؟", placeholder="مثال: 60")
 
-    def __init__(self, member: discord.Member, cog: "GuildCog"):
-        super().__init__()
+    def __init__(self, member: discord.Member, cog: "GuildCog", lang: str):
+        super().__init__(title=t("gf_task_modal_title", lang))
         self.member = member
         self.cog = cog
+        self.lang = lang
+        self.task_name.label = t("gf_task_name_label", lang)
+        self.task_name.placeholder = t("gf_task_name_placeholder", lang)
+        self.minutes_until_due.label = t("gf_minutes_label", lang)
+        self.minutes_until_due.placeholder = t("gf_minutes_placeholder", lang)
 
     async def on_submit(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id)
         try:
             minutes = float(self.minutes_until_due.value)
             if minutes <= 0:
                 raise ValueError
         except ValueError:
-            await interaction.response.send_message("❌ أدخل عدد دقائق صحيح وأكبر من صفر.", ephemeral=True)
+            await interaction.response.send_message(t("gf_invalid_minutes", lang), ephemeral=True)
             return
 
         data = load(GF_FILE)
@@ -234,8 +254,7 @@ class GfTaskModal(discord.ui.Modal, title="🎉 مهمة مهرجان التحا
         save(GF_FILE, data)
 
         await interaction.response.send_message(
-            f"✅ تم تسجيل مهمة **{self.task_name.value}** للعضو {self.member.mention}، "
-            f"هينتهي وقتها خلال {minutes:.0f} دقيقة. هيوصله تنبيه قبل 30 و10 دقايق ⏰",
+            t("gf_task_added", lang, task=self.task_name.value, member=self.member.mention, minutes=minutes),
             ephemeral=True,
         )
 
@@ -251,54 +270,61 @@ class GfTaskModal(discord.ui.Modal, title="🎉 مهمة مهرجان التحا
 @gf_group.command(name="task", description="🎉 [إدارة] أضف مهمة مهرجان تحالف لعضو مع تذكير قبل الانتهاء")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def gf_task(interaction: discord.Interaction, member: discord.Member):
+    lang = get_lang(interaction.guild_id)
     cog = interaction.client.get_cog("GuildCog")
-    await interaction.response.send_modal(GfTaskModal(member, cog))
+    await interaction.response.send_modal(GfTaskModal(member, cog, lang))
 
 
 @gf_task.error
 async def gf_task_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    lang = get_lang(interaction.guild_id)
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message("❌ الأمر ده مخصص لقيادة التحالف فقط.", ephemeral=True)
+        await interaction.response.send_message(t("gf_leadership_only", lang), ephemeral=True)
     else:
-        await interaction.response.send_message("❌ حصل خطأ غير متوقع.", ephemeral=True)
+        await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
 
 
 @gf_group.command(name="done", description="✅ [إدارة] علّم مهمة مهرجان تحالف كمكتملة")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def gf_done(interaction: discord.Interaction, member: discord.Member):
+    lang = get_lang(interaction.guild_id)
     data = load(GF_FILE)
     gid = str(interaction.guild_id)
     tasks = data.get(gid, {}).get("tasks", [])
-    pending = [t for t in tasks if t["member_id"] == member.id and not t["done"]]
+    pending = [task for task in tasks if task["member_id"] == member.id and not task["done"]]
     if not pending:
-        await interaction.response.send_message("لا توجد مهام معلّقة لهذا العضو.", ephemeral=True)
+        await interaction.response.send_message(t("gf_no_pending_task", lang), ephemeral=True)
         return
     pending[-1]["done"] = True
     data.setdefault(gid, {}).setdefault("completed", {})
     uid = str(member.id)
     data[gid]["completed"][uid] = data[gid]["completed"].get(uid, 0) + 1
     save(GF_FILE, data)
-    await interaction.response.send_message(f"✅ تم تسجيل إكمال مهمة {member.mention}!", ephemeral=True)
+    await interaction.response.send_message(t("gf_task_done", lang, member=member.mention), ephemeral=True)
 
 
 @gf_done.error
 async def gf_done_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    lang = get_lang(interaction.guild_id)
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message("❌ الأمر ده مخصص لقيادة التحالف فقط.", ephemeral=True)
+        await interaction.response.send_message(t("gf_leadership_only", lang), ephemeral=True)
     else:
-        await interaction.response.send_message("❌ حصل خطأ غير متوقع.", ephemeral=True)
+        await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
 
 
 @gf_group.command(name="board", description="🏅 لوحة صدارة مهرجان التحالف")
 async def gf_board(interaction: discord.Interaction):
+    lang = get_lang(interaction.guild_id)
     data = load(GF_FILE)
     completed = data.get(str(interaction.guild_id), {}).get("completed", {})
     if not completed:
-        await interaction.response.send_message("لا توجد مهام مكتملة مسجلة بعد.", ephemeral=True)
+        await interaction.response.send_message(t("gf_no_completed_tasks", lang), ephemeral=True)
         return
     ranked = sorted(completed.items(), key=lambda kv: kv[1], reverse=True)[:10]
-    desc = "\n".join(f"{i+1}. <@{uid}> — {count} مهمة مكتملة ✅" for i, (uid, count) in enumerate(ranked))
-    embed = discord.Embed(title="🏅 لوحة صدارة مهرجان التحالف", description=desc, color=discord.Color.gold())
+    desc = "\n".join(
+        t("gf_board_line", lang, rank=i + 1, uid=uid, count=count) for i, (uid, count) in enumerate(ranked)
+    )
+    embed = discord.Embed(title=t("gf_board_title", lang), description=desc, color=discord.Color.gold())
     await interaction.response.send_message(embed=embed)
 
 
@@ -307,10 +333,11 @@ async def gf_board(interaction: discord.Interaction):
 # ---------------------------------------------------------------------------
 
 class QuizView(discord.ui.View):
-    def __init__(self, question: dict, cog: "GuildCog"):
+    def __init__(self, question: dict, cog: "GuildCog", lang: str):
         super().__init__(timeout=30)
         self.question = question
         self.cog = cog
+        self.lang = lang
         self.answered_users = set()
         for i, opt in enumerate(question["options"]):
             self.add_item(self.QuizButton(opt, i, question["answer"], self))
@@ -323,8 +350,9 @@ class QuizView(discord.ui.View):
             self.parent_view = parent_view
 
         async def callback(self, interaction: discord.Interaction):
+            lang = get_lang(interaction.guild_id)
             if interaction.user.id in self.parent_view.answered_users:
-                await interaction.response.send_message("إنت جاوبت على السؤال ده بالفعل!", ephemeral=True)
+                await interaction.response.send_message(t("quiz_already_answered", lang), ephemeral=True)
                 return
             self.parent_view.answered_users.add(interaction.user.id)
 
@@ -339,10 +367,10 @@ class QuizView(discord.ui.View):
             save(QUIZ_FILE, data)
 
             points = data[gid][uid]["points"]
-            rank = get_rank(points)
-            msg = "✅ إجابة صحيحة!" if correct else "❌ إجابة غلط."
+            rank = get_rank(points, lang)
+            msg = t("quiz_correct", lang) if correct else t("quiz_wrong", lang)
             await interaction.response.send_message(
-                f"{msg} رصيدك دلوقتي: **{points}** نقطة | رتبتك: {rank}", ephemeral=True
+                t("quiz_result_footer", lang, msg=msg, points=points, rank=rank), ephemeral=True
             )
 
 
@@ -350,7 +378,7 @@ class QuizView(discord.ui.View):
 # /user_admin_check
 # ---------------------------------------------------------------------------
 
-def build_admin_dashboard_embed(member: discord.Member, stats: dict) -> discord.Embed:
+def build_admin_dashboard_embed(member: discord.Member, stats: dict, lang: str) -> discord.Embed:
     activity_logs = stats["activity_logs"]
     rally_entries = stats["rally_entries"]
     reports = stats["reports"]
@@ -362,35 +390,40 @@ def build_admin_dashboard_embed(member: discord.Member, stats: dict) -> discord.
             counts[l["type"]] += 1
 
     embed = discord.Embed(
-        title=f"🛡️ لوحة المتابعة الإدارية: {member.display_name}",
+        title=t("admin_dashboard_title", lang, name=member.display_name),
         color=discord.Color.dark_teal(),
         timestamp=datetime.utcnow(),
     )
     embed.set_thumbnail(url=member.display_avatar.url)
     embed.add_field(
-        name="📋 سجل الأحداث (/log_activity)",
-        value=(
-            f"👥 حشود: {counts['rally']}\n"
-            f"🎉 مهرجان التحالف: {counts['guild_fest']} ({gf_completed} مهمة مكتملة)\n"
-            f"🐉 ساحة التنين: {counts['dragon_arena']}\n"
-            f"⚔️ KvK: {counts['kvk']}"
+        name=t("admin_dashboard_events_field", lang),
+        value=t(
+            "admin_dashboard_events_value",
+            lang,
+            rally=counts["rally"],
+            guild_fest=counts["guild_fest"],
+            gf_completed=gf_completed,
+            dragon_arena=counts["dragon_arena"],
+            kvk=counts["kvk"],
         ),
         inline=True,
     )
     embed.add_field(
-        name="📯 حضور الحشود (/rally_log)",
-        value=(
-            f"الإجمالي: {len(rally_entries)}\n"
-            f"🏆 فوز: {sum(1 for e in rally_entries if e.get('result') == 'win')}"
+        name=t("admin_dashboard_rally_field", lang),
+        value=t(
+            "admin_dashboard_rally_value",
+            lang,
+            total=len(rally_entries),
+            wins=sum(1 for e in rally_entries if e.get("result") == "win"),
         ),
         inline=True,
     )
-    embed.add_field(name="⚔️ معارك مسجّلة (/report)", value=str(len(reports)), inline=True)
+    embed.add_field(name=t("admin_dashboard_reports_field", lang), value=str(len(reports)), inline=True)
 
     if activity_logs:
         recent = sorted(activity_logs, key=lambda l: l.get("timestamp", ""), reverse=True)[:5]
         lines = [f"• {l.get('label', l.get('type'))} — {l.get('timestamp', '')[:10]}" for l in recent]
-        embed.add_field(name="🕒 آخر 5 أنشطة", value="\n".join(lines), inline=False)
+        embed.add_field(name=t("admin_dashboard_recent_activities_field", lang), value="\n".join(lines), inline=False)
 
     if rally_entries:
         recent_r = sorted(rally_entries, key=lambda e: e.get("timestamp", ""), reverse=True)[:5]
@@ -399,28 +432,30 @@ def build_admin_dashboard_embed(member: discord.Member, stats: dict) -> discord.
             f"{RALLY_RESULT_LABELS.get(e.get('result'), '?')} — {e.get('timestamp', '')[:10]}"
             for e in recent_r
         ]
-        embed.add_field(name="🕒 آخر 5 حشود", value="\n".join(lines), inline=False)
+        embed.add_field(name=t("admin_dashboard_recent_rallies_field", lang), value="\n".join(lines), inline=False)
 
     if not activity_logs and not rally_entries and not reports:
-        embed.description = "⚠️ مفيش أي سجل مشاركة لهذا العضو لسه."
+        embed.description = t("admin_dashboard_no_data", lang)
 
     return embed
 
 
 class AdminCheckView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, lang: str):
         super().__init__(timeout=120)
+        self.lang = lang
         self.select = discord.ui.UserSelect(
-            placeholder="اختر العضو اللي عايز تراجع سجله...", min_values=1, max_values=1
+            placeholder=t("admin_check_select_placeholder", lang), min_values=1, max_values=1
         )
         self.select.callback = self.on_select
         self.add_item(self.select)
 
     async def on_select(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id)
         member = self.select.values[0]
         gid = str(interaction.guild_id)
         stats = compute_member_stats(gid, member.id)
-        embed = build_admin_dashboard_embed(member, stats)
+        embed = build_admin_dashboard_embed(member, stats, lang)
         await interaction.response.edit_message(content=None, embed=embed, view=self)
 
 
@@ -438,24 +473,29 @@ class GuildCog(commands.Cog):
     @app_commands.command(name="log_activity", description="📋 [إدارة] سجّل مشاركة عضو في نشاط (حشود، مهرجان، ساحة تنين، KvK)")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def log_activity(self, interaction: discord.Interaction, member: discord.Member):
+        lang = get_lang(interaction.guild_id)
         await interaction.response.send_message(
-            f"سجّل نشاط للعضو {member.mention} - اختر النوع:", view=ActivityTypeView(member), ephemeral=True
+            t("log_activity_prompt", lang, member=member.mention),
+            view=ActivityTypeView(member, lang),
+            ephemeral=True,
         )
 
     @log_activity.error
     async def log_activity_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
-                "❌ الأمر ده مخصص لقيادة التحالف فقط (يحتاج صلاحية Manage Server) عشان محدش يسجّل بيانات غلط على غيره.",
+                t("log_activity_admin_only", lang),
                 ephemeral=True,
             )
         else:
-            await interaction.response.send_message("❌ حصل خطأ غير متوقع.", ephemeral=True)
+            await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
 
     @app_commands.command(name="stats_event", description="📊 عرض تفاعلي لإحصائيات مشاركة الأعضاء")
     async def stats_event(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id)
         await interaction.response.send_message(
-            "اختر التقرير اللي عايز تشوفه:", view=StatsEventView(interaction.guild), ephemeral=True
+            t("stats_event_prompt", lang), view=StatsEventView(interaction.guild, lang), ephemeral=True
         )
 
     @app_commands.command(
@@ -464,6 +504,7 @@ class GuildCog(commands.Cog):
     )
     @app_commands.describe(member="العضو المطلوب استعلام ملفه (افتراضياً نفسك)")
     async def information(self, interaction: discord.Interaction, member: Optional[discord.Member] = None):
+        lang = get_lang(interaction.guild_id)
         target = member or interaction.user
         gid = str(interaction.guild_id)
         uid = target.id
@@ -483,35 +524,45 @@ class GuildCog(commands.Cog):
         gf_completed = stats["gf_completed"]
 
         total_points = len(activity_logs)
-        rank = get_rank(total_points)
+        rank = get_rank(total_points, lang)
 
         embed = discord.Embed(
-            title=f"🪪 ملف العضو: {target.display_name}",
+            title=t("info_profile_title", lang, name=target.display_name),
             color=discord.Color.blurple(),
             timestamp=datetime.utcnow(),
         )
         embed.set_thumbnail(url=target.display_avatar.url)
         embed.add_field(
-            name="👥 مشاركات الحشود",
-            value=(
-                f"الإجمالي: **{rally_total}**\n"
-                f"{RALLY_TYPE_LABELS['attack']}: {rally_attack} | {RALLY_TYPE_LABELS['defense']}: {rally_defense}\n"
-                f"{RALLY_RESULT_LABELS['win']}: {rally_wins}"
+            name=t("info_rally_field", lang),
+            value=t(
+                "info_rally_value",
+                lang,
+                total=rally_total,
+                attack_label=RALLY_TYPE_LABELS["attack"],
+                attack=rally_attack,
+                defense_label=RALLY_TYPE_LABELS["defense"],
+                defense=rally_defense,
+                win_label=RALLY_RESULT_LABELS["win"],
+                wins=rally_wins,
             ),
             inline=True,
         )
         embed.add_field(
-            name="⚔️ التزام الحروب",
-            value=f"مشاركات KvK: **{kvk_count}**\nمعارك مسجّلة: **{reports_count}**",
+            name=t("info_war_field", lang),
+            value=t("info_war_value", lang, kvk=kvk_count, reports=reports_count),
             inline=True,
         )
         embed.add_field(
-            name="🎉 الفعاليات",
-            value=f"مهرجان التحالف: {fest_count} نشاط ({gf_completed} مهمة مكتملة)\nساحة التنين: {dragon_count}",
+            name=t("info_events_field", lang),
+            value=t("info_events_value", lang, fest=fest_count, gf_completed=gf_completed, dragon=dragon_count),
             inline=True,
         )
-        embed.add_field(name="🏅 الرتبة العامة", value=f"{rank} — {total_points} نقطة مشاركة إجمالية", inline=False)
-        embed.set_footer(text=f"طلب بواسطة {interaction.user.display_name}")
+        embed.add_field(
+            name=t("info_rank_field", lang),
+            value=t("info_rank_value", lang, rank=rank, points=total_points),
+            inline=False,
+        )
+        embed.set_footer(text=t("info_footer", lang, user=interaction.user.display_name))
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(
@@ -520,37 +571,43 @@ class GuildCog(commands.Cog):
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def user_admin_check(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id)
         await interaction.response.send_message(
-            "اختر العضو اللي عايز تراجع سجله من القائمة تحت:", view=AdminCheckView(), ephemeral=True
+            t("admin_check_prompt", lang), view=AdminCheckView(lang), ephemeral=True
         )
 
     @user_admin_check.error
     async def user_admin_check_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
-                "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).", ephemeral=True
+                t("admin_check_permission_denied", lang), ephemeral=True
             )
         else:
-            await interaction.response.send_message("❌ حصل خطأ غير متوقع.", ephemeral=True)
+            await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
 
     @app_commands.command(name="top5", description="🏆 أنشط 5 أعضاء في كل الفعاليات والحشود مجتمعة")
     async def top5(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id)
         gid = str(interaction.guild_id)
         scores = compute_all_members_scores(gid)
         if not scores:
-            await interaction.response.send_message("لا توجد بيانات مشاركة مسجلة بعد.", ephemeral=True)
+            await interaction.response.send_message(t("top5_no_data", lang), ephemeral=True)
             return
 
         ranked = sorted(scores.items(), key=lambda kv: kv[1]["score"], reverse=True)[:5]
         medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"]
-        lines = [f"{medals[i]} **{info['name']}** — {info['score']} مشاركة إجمالية" for i, (uid, info) in enumerate(ranked)]
+        lines = [
+            t("top5_line", lang, medal=medals[i], name=info["name"], score=info["score"])
+            for i, (uid, info) in enumerate(ranked)
+        ]
 
         embed = discord.Embed(
-            title="🏆 أنشط 5 أعضاء - كل الفعاليات والحشود",
+            title=t("top5_title", lang),
             description="\n".join(lines),
             color=discord.Color.gold(),
         )
-        embed.set_footer(text="الاحتساب: أنشطة /log_activity + حضور /rally_log + معارك /report")
+        embed.set_footer(text=t("top5_footer", lang))
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="event_stats", description="📊 تقرير شامل عن نسبة مشاركة أعضاء التحالف في فعالية معينة")
@@ -565,6 +622,7 @@ class GuildCog(commands.Cog):
         ]
     )
     async def event_stats(self, interaction: discord.Interaction, event_type: app_commands.Choice[str]):
+        lang = get_lang(interaction.guild_id)
         gid = str(interaction.guild_id)
         activity_data = load(ACTIVITY_FILE).get(gid, {})
         total_members = [m for m in interaction.guild.members if not m.bot]
@@ -589,22 +647,33 @@ class GuildCog(commands.Cog):
         percentage = (len(participants) / total_count * 100) if total_count else 0.0
 
         embed = discord.Embed(
-            title=f"📊 إحصائية مشاركة التحالف: {event_type.name}",
+            title=t("event_stats_title", lang, name=event_type.name),
             color=discord.Color.blue(),
             timestamp=datetime.utcnow(),
         )
-        embed.add_field(name="✅ شاركوا", value=f"{len(participants)}/{total_count} عضو", inline=True)
-        embed.add_field(name="📈 نسبة المشاركة", value=f"{percentage:.1f}%", inline=True)
+        embed.add_field(
+            name=t("event_stats_participated_field", lang),
+            value=t("event_stats_participated_value", lang, count=len(participants), total=total_count),
+            inline=True,
+        )
+        embed.add_field(
+            name=t("event_stats_percentage_field", lang), value=f"{percentage:.1f}%", inline=True
+        )
         if non_participants:
             preview = "، ".join(m.mention for m in non_participants[:15])
             if len(non_participants) > 15:
-                preview += f" (+{len(non_participants) - 15} إضافي)"
-            embed.add_field(name=f"😴 لم يشاركوا ({len(non_participants)})", value=preview, inline=False)
+                preview += t("event_stats_extra_suffix", lang, count=len(non_participants) - 15)
+            embed.add_field(
+                name=t("event_stats_non_participants_field", lang, count=len(non_participants)),
+                value=preview,
+                inline=False,
+            )
         await interaction.response.send_message(embed=embed)
 
     async def gf_reminder(self, delay, channel, member, task_name, minutes_left):
         await asyncio.sleep(delay)
-        text = f"⏰ تنبيه: مهمة **{task_name}** الخاصة بـ {member.mention} هتنتهي خلال {minutes_left} دقيقة! 🎉"
+        lang = get_lang(channel.guild.id) if channel and getattr(channel, "guild", None) else "ar"
+        text = t("gf_reminder_text", lang, task=task_name, member=member.mention, minutes=minutes_left)
         try:
             if channel:
                 await channel.send(text)
@@ -617,37 +686,48 @@ class GuildCog(commands.Cog):
 
     @app_commands.command(name="quiz", description="🧠 سؤال مسابقة سريع عن لوردس موبايل - اجمع نقاط وارفع رتبتك!")
     async def quiz(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id)
         question = random.choice(self.quiz_questions)
-        view = QuizView(question, self)
-        embed = discord.Embed(title="🧠 سؤال مسابقة لوردس موبايل", description=question["question"], color=discord.Color.blurple())
-        embed.set_footer(text="عندك 30 ثانية للإجابة!")
+        view = QuizView(question, self, lang)
+        embed = discord.Embed(
+            title=t("quiz_embed_title", lang),
+            description=question["question"],
+            color=discord.Color.blurple(),
+        )
+        embed.set_footer(text=t("quiz_embed_footer", lang))
         await interaction.response.send_message(embed=embed, view=view)
 
     @app_commands.command(name="reset_stats", description="🔄 [إدارة فقط] تصفير سجلات النشاط والمسابقة لبدء أسبوع جديد")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_stats(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id)
         await interaction.response.send_message(
-            "⚠️ متأكد إنك عايز تصفّر كل سجلات النشاط والمسابقة لهذا السيرفر؟ الإجراء ده لا يمكن التراجع عنه.",
-            view=ResetConfirmView(),
+            t("reset_confirm_prompt", lang),
+            view=ResetConfirmView(lang),
             ephemeral=True,
         )
 
     @reset_stats.error
     async def reset_stats_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message("❌ الأمر ده للإدارة فقط (Administrator).", ephemeral=True)
+            await interaction.response.send_message(t("reset_admin_only_full", lang), ephemeral=True)
         else:
-            await interaction.response.send_message("❌ حصل خطأ غير متوقع.", ephemeral=True)
+            await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
 
 
 class ResetConfirmView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, lang: str):
         super().__init__(timeout=30)
+        self.lang = lang
+        self.confirm.label = t("reset_confirm_yes_button", lang)
+        self.cancel.label = t("reset_confirm_cancel_button", lang)
 
     @discord.ui.button(label="نعم، صفّر كل شيء", style=discord.ButtonStyle.danger, emoji="🗑️")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        lang = get_lang(interaction.guild_id)
         if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message("❌ الأمر ده للإدارة فقط.", ephemeral=True)
+            await interaction.response.send_message(t("reset_confirm_admin_only", lang), ephemeral=True)
             return
         gid = str(interaction.guild_id)
         for fname in (ACTIVITY_FILE, QUIZ_FILE, GF_FILE):
@@ -655,11 +735,12 @@ class ResetConfirmView(discord.ui.View):
             if gid in data:
                 del data[gid]
                 save(fname, data)
-        await interaction.response.edit_message(content="✅ تم تصفير كل السجلات لهذا السيرفر.", view=None)
+        await interaction.response.edit_message(content=t("reset_confirm_success", lang), view=None)
 
     @discord.ui.button(label="إلغاء", style=discord.ButtonStyle.secondary)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(content="تم الإلغاء.", view=None)
+        lang = get_lang(interaction.guild_id)
+        await interaction.response.edit_message(content=t("reset_confirm_cancelled", lang), view=None)
 
 
 async def setup(bot: commands.Bot):
