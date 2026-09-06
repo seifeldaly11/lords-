@@ -115,6 +115,9 @@ async def on_ready():
     try:
         if GUILD_ID:
             guild_obj = discord.Object(id=int(GUILD_ID))
+            # Commands are defined globally; copy them to the target guild
+            # before syncing so they appear immediately for testing.
+            bot.tree.copy_global_to(guild=guild_obj)
             synced = await bot.tree.sync(guild=guild_obj)
             log.info(f"🔄 تمت مزامنة {len(synced)} أمر على السيرفر المحدد (GUILD_ID).")
         else:
