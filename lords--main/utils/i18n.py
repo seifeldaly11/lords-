@@ -356,6 +356,273 @@ TRANSLATIONS = {
         "ar": "Lords Mobile Companion Bot | 🌐 غيّر اللغة بأمر /language",
         "en": "Lords Mobile Companion Bot | 🌐 Change language with /language",
     },
+
+    # ------------------------------------------------------------------
+    # مشترك بين كذا أمر - رسالة خطأ عامة غير متوقعة
+    # ------------------------------------------------------------------
+    "err_unexpected": {"ar": "❌ حصل خطأ غير متوقع.", "en": "❌ An unexpected error occurred."},
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - جزء 4: /quiz
+    # ------------------------------------------------------------------
+    "rank_beginner": {"ar": "🥉 مبتدئ", "en": "🥉 Beginner"},
+    "rank_active_contributor": {"ar": "🥈 مساهم نشط", "en": "🥈 Active contributor"},
+    "rank_field_leader": {"ar": "🥇 قائد ميداني", "en": "🥇 Field leader"},
+    "rank_lords_expert": {"ar": "🧠 خبير لوردس", "en": "🧠 Lords expert"},
+    "quiz_embed_title": {
+        "ar": "🧠 سؤال مسابقة لوردس موبايل",
+        "en": "🧠 Lords Mobile quiz question",
+    },
+    "quiz_embed_footer": {
+        "ar": "عندك 30 ثانية للإجابة!",
+        "en": "You have 30 seconds to answer!",
+    },
+    "quiz_already_answered": {
+        "ar": "إنت جاوبت على السؤال ده بالفعل!",
+        "en": "You've already answered this question!",
+    },
+    "quiz_correct": {"ar": "✅ إجابة صحيحة!", "en": "✅ Correct answer!"},
+    "quiz_wrong": {"ar": "❌ إجابة غلط.", "en": "❌ Wrong answer."},
+    "quiz_result_footer": {
+        "ar": "{msg} رصيدك دلوقتي: **{points}** نقطة | رتبتك: {rank}",
+        "en": "{msg} Your current score: **{points}** pts | Rank: {rank}",
+    },
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - جزء 5: /user_admin_check
+    # ------------------------------------------------------------------
+    "admin_check_prompt": {
+        "ar": "اختر العضو اللي عايز تراجع سجله من القائمة تحت:",
+        "en": "Choose the member whose record you want to review from the list below:",
+    },
+    "admin_check_select_placeholder": {
+        "ar": "اختر العضو اللي عايز تراجع سجله...",
+        "en": "Choose the member to review...",
+    },
+    "admin_check_permission_denied": {
+        "ar": "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).",
+        "en": "❌ This command is for admins only (requires Manage Server permission).",
+    },
+    "admin_dashboard_title": {
+        "ar": "🛡️ لوحة المتابعة الإدارية: {name}",
+        "en": "🛡️ Admin follow-up dashboard: {name}",
+    },
+    "admin_dashboard_events_field": {
+        "ar": "📋 سجل الأحداث (/log_activity)",
+        "en": "📋 Event log (/log_activity)",
+    },
+    "admin_dashboard_events_value": {
+        "ar": "👥 حشود: {rally}\n🎉 مهرجان التحالف: {guild_fest} ({gf_completed} مهمة مكتملة)\n"
+              "🐉 ساحة التنين: {dragon_arena}\n⚔️ KvK: {kvk}",
+        "en": "👥 Rallies: {rally}\n🎉 Alliance Festival: {guild_fest} ({gf_completed} completed tasks)\n"
+              "🐉 Dragon Arena: {dragon_arena}\n⚔️ KvK: {kvk}",
+    },
+    "admin_dashboard_rally_field": {
+        "ar": "📯 حضور الحشود (/rally_log)",
+        "en": "📯 Rally attendance (/rally_log)",
+    },
+    "admin_dashboard_rally_value": {
+        "ar": "الإجمالي: {total}\n🏆 فوز: {wins}",
+        "en": "Total: {total}\n🏆 Wins: {wins}",
+    },
+    "admin_dashboard_reports_field": {
+        "ar": "⚔️ معارك مسجّلة (/report)",
+        "en": "⚔️ Logged battles (/report)",
+    },
+    "admin_dashboard_recent_activities_field": {"ar": "🕒 آخر 5 أنشطة", "en": "🕒 Last 5 activities"},
+    "admin_dashboard_recent_rallies_field": {"ar": "🕒 آخر 5 حشود", "en": "🕒 Last 5 rallies"},
+    "admin_dashboard_no_data": {
+        "ar": "⚠️ مفيش أي سجل مشاركة لهذا العضو لسه.",
+        "en": "⚠️ No participation record for this member yet.",
+    },
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - جزء 6: /information
+    # ------------------------------------------------------------------
+    "info_profile_title": {"ar": "🪪 ملف العضو: {name}", "en": "🪪 Member profile: {name}"},
+    "info_rally_field": {"ar": "👥 مشاركات الحشود", "en": "👥 Rally participation"},
+    "info_rally_value": {
+        "ar": "الإجمالي: **{total}**\n{attack_label}: {attack} | {defense_label}: {defense}\n{win_label}: {wins}",
+        "en": "Total: **{total}**\n{attack_label}: {attack} | {defense_label}: {defense}\n{win_label}: {wins}",
+    },
+    "info_war_field": {"ar": "⚔️ التزام الحروب", "en": "⚔️ War commitment"},
+    "info_war_value": {
+        "ar": "مشاركات KvK: **{kvk}**\nمعارك مسجّلة: **{reports}**",
+        "en": "KvK participations: **{kvk}**\nLogged battles: **{reports}**",
+    },
+    "info_events_field": {"ar": "🎉 الفعاليات", "en": "🎉 Events"},
+    "info_events_value": {
+        "ar": "مهرجان التحالف: {fest} نشاط ({gf_completed} مهمة مكتملة)\nساحة التنين: {dragon}",
+        "en": "Alliance Festival: {fest} activities ({gf_completed} completed tasks)\nDragon Arena: {dragon}",
+    },
+    "info_rank_field": {"ar": "🏅 الرتبة العامة", "en": "🏅 Overall rank"},
+    "info_rank_value": {
+        "ar": "{rank} — {points} نقطة مشاركة إجمالية",
+        "en": "{rank} — {points} total participation points",
+    },
+    "info_footer": {"ar": "طلب بواسطة {user}", "en": "Requested by {user}"},
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - جزء 7: /top5 + /event_stats + gf_reminder
+    # ------------------------------------------------------------------
+    "top5_no_data": {
+        "ar": "لا توجد بيانات مشاركة مسجلة بعد.",
+        "en": "No participation data recorded yet.",
+    },
+    "top5_title": {
+        "ar": "🏆 أنشط 5 أعضاء - كل الفعاليات والحشود",
+        "en": "🏆 Top 5 most active members - all events & rallies",
+    },
+    "top5_line": {
+        "ar": "{medal} **{name}** — {score} مشاركة إجمالية",
+        "en": "{medal} **{name}** — {score} total participations",
+    },
+    "top5_footer": {
+        "ar": "الاحتساب: أنشطة /log_activity + حضور /rally_log + معارك /report",
+        "en": "Calculated from: /log_activity activities + /rally_log attendance + /report battles",
+    },
+    "event_stats_title": {
+        "ar": "📊 إحصائية مشاركة التحالف: {name}",
+        "en": "📊 Alliance participation report: {name}",
+    },
+    "event_stats_participated_field": {"ar": "✅ شاركوا", "en": "✅ Participated"},
+    "event_stats_participated_value": {
+        "ar": "{count}/{total} عضو",
+        "en": "{count}/{total} members",
+    },
+    "event_stats_percentage_field": {"ar": "📈 نسبة المشاركة", "en": "📈 Participation rate"},
+    "event_stats_non_participants_field": {
+        "ar": "😴 لم يشاركوا ({count})",
+        "en": "😴 Didn't participate ({count})",
+    },
+    "event_stats_extra_suffix": {
+        "ar": " (+{count} إضافي)",
+        "en": " (+{count} more)",
+    },
+    "gf_reminder_text": {
+        "ar": "⏰ تنبيه: مهمة **{task}** الخاصة بـ {member} هتنتهي خلال {minutes} دقيقة! 🎉",
+        "en": "⏰ Reminder: task **{task}** for {member} is due in {minutes} minutes! 🎉",
+    },
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - جزء 8: /reset_stats + ResetConfirmView + setup()
+    # ------------------------------------------------------------------
+    "reset_confirm_prompt": {
+        "ar": "⚠️ متأكد إنك عايز تصفّر كل سجلات النشاط والمسابقة لهذا السيرفر؟ الإجراء ده لا يمكن التراجع عنه.",
+        "en": "⚠️ Are you sure you want to reset all activity and quiz records for this server? "
+              "This action cannot be undone.",
+    },
+    "reset_admin_only_full": {
+        "ar": "❌ الأمر ده للإدارة فقط (Administrator).",
+        "en": "❌ This command is admin-only (Administrator permission).",
+    },
+    "reset_confirm_admin_only": {
+        "ar": "❌ الأمر ده للإدارة فقط.",
+        "en": "❌ This command is admin-only.",
+    },
+    "reset_confirm_yes_button": {"ar": "نعم، صفّر كل شيء", "en": "Yes, reset everything"},
+    "reset_confirm_cancel_button": {"ar": "إلغاء", "en": "Cancel"},
+    "reset_confirm_success": {
+        "ar": "✅ تم تصفير كل السجلات لهذا السيرفر.",
+        "en": "✅ All records for this server have been reset.",
+    },
+    "reset_confirm_cancelled": {"ar": "تم الإلغاء.", "en": "Cancelled."},
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - جزء 1: الرتب + /log_activity
+    # ------------------------------------------------------------------
+    "log_activity_modal_title": {"ar": "📋 تسجيل مشاركة", "en": "📋 Log participation"},
+    "log_activity_details_label": {"ar": "📝 التفاصيل", "en": "📝 Details"},
+    "log_activity_reason_label": {"ar": "❓ السبب/الملاحظة", "en": "❓ Reason/note"},
+    "log_activity_success_title": {"ar": "✅ تم تسجيل المشاركة", "en": "✅ Participation logged"},
+    "log_activity_member_field": {"ar": "👤 العضو", "en": "👤 Member"},
+    "log_activity_type_field": {"ar": "🏷️ النشاط", "en": "🏷️ Activity"},
+    "log_activity_details_field": {"ar": "📝 التفاصيل", "en": "📝 Details"},
+    "activity_select_placeholder": {"ar": "اختر نوع النشاط...", "en": "Choose the activity type..."},
+    "log_activity_prompt": {
+        "ar": "سجّل نشاط للعضو {member} - اختر النوع:",
+        "en": "Logging activity for {member} - choose the type:",
+    },
+    "log_activity_admin_only": {
+        "ar": "❌ الأمر ده مخصص لقيادة التحالف فقط (يحتاج صلاحية Manage Server) عشان محدش يسجّل بيانات غلط على غيره.",
+        "en": "❌ This command is for alliance leadership only (requires Manage Server permission) so nobody "
+              "can log false data about others.",
+    },
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - جزء 2: /stats_event
+    # ------------------------------------------------------------------
+    "stats_top_button": {"ar": "🏆 الأوائل", "en": "🏆 Top contributors"},
+    "stats_active_button": {"ar": "✅ المشاركون النشطون", "en": "✅ Active members"},
+    "stats_inactive_button": {"ar": "😴 غير المشاركين", "en": "😴 Inactive members"},
+    "stats_no_data": {"ar": "لا توجد بيانات مسجلة بعد.", "en": "No data recorded yet."},
+    "stats_top_title": {
+        "ar": "🏆 الأوائل - تكريم أفضل المساهمين",
+        "en": "🏆 Top contributors - honoring the best",
+    },
+    "stats_top_line": {
+        "ar": "{rank}. **{name}** — {count} مشاركة 🏅",
+        "en": "{rank}. **{name}** — {count} contributions 🏅",
+    },
+    "stats_no_active": {"ar": "لا يوجد أعضاء نشطون مسجلين بعد.", "en": "No active members recorded yet."},
+    "stats_active_title": {"ar": "✅ الأعضاء النشطون", "en": "✅ Active members"},
+    "stats_all_participated": {
+        "ar": "🎉 كل الأعضاء شاركوا بحاجة على الأقل!",
+        "en": "🎉 All members have participated in at least one thing!",
+    },
+    "stats_inactive_title": {"ar": "😴 غير المشاركين / المتقاعسون", "en": "😴 Inactive members / slackers"},
+    "stats_inactive_extra_footer": {
+        "ar": "+ {count} عضو إضافي غير معروض",
+        "en": "+ {count} additional members not shown",
+    },
+    "stats_event_prompt": {"ar": "اختر التقرير اللي عايز تشوفه:", "en": "Choose the report you want to see:"},
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - جزء 3: مجموعة /gf (مهرجان التحالف)
+    # ------------------------------------------------------------------
+    "gf_leadership_only": {
+        "ar": "❌ الأمر ده مخصص لقيادة التحالف فقط.",
+        "en": "❌ This command is for alliance leadership only.",
+    },
+    "gf_task_modal_title": {"ar": "🎉 مهمة مهرجان التحالف", "en": "🎉 Alliance Festival task"},
+    "gf_task_name_label": {"ar": "📌 اسم المهمة", "en": "📌 Task name"},
+    "gf_task_name_placeholder": {"ar": "مثال: أنفق 500 جوهرة", "en": "Example: Spend 500 gems"},
+    "gf_minutes_label": {
+        "ar": "⏱️ المهمة هتنتهي خلال كام دقيقة؟",
+        "en": "⏱️ How many minutes until the task is due?",
+    },
+    "gf_minutes_placeholder": {"ar": "مثال: 60", "en": "Example: 60"},
+    "gf_invalid_minutes": {
+        "ar": "❌ أدخل عدد دقائق صحيح وأكبر من صفر.",
+        "en": "❌ Enter a valid number of minutes greater than zero.",
+    },
+    "gf_task_added": {
+        "ar": "✅ تم تسجيل مهمة **{task}** للعضو {member}، هينتهي وقتها خلال {minutes:.0f} دقيقة. "
+              "هيوصله تنبيه قبل 30 و10 دقايق ⏰",
+        "en": "✅ Task **{task}** logged for {member}, due in {minutes:.0f} minutes. They'll get a "
+              "reminder 30 and 10 minutes before ⏰",
+    },
+    "gf_no_pending_task": {
+        "ar": "لا توجد مهام معلّقة لهذا العضو.",
+        "en": "There are no pending tasks for this member.",
+    },
+    "gf_task_done": {"ar": "✅ تم تسجيل إكمال مهمة {member}!", "en": "✅ Task completion logged for {member}!"},
+    "gf_no_completed_tasks": {
+        "ar": "لا توجد مهام مكتملة مسجلة بعد.",
+        "en": "No completed tasks recorded yet.",
+    },
+    "gf_board_line": {
+        "ar": "{rank}. <@{uid}> — {count} مهمة مكتملة ✅",
+        "en": "{rank}. <@{uid}> — {count} completed tasks ✅",
+    },
+    "gf_board_title": {"ar": "🏅 لوحة صدارة مهرجان التحالف", "en": "🏅 Alliance Festival leaderboard"},
+}
+
+ACTIVITY_TYPE_LABELS_I18N = {
+    "rally": {"ar": "👥 حشود (Rally)", "en": "👥 Rallies"},
+    "guild_fest": {"ar": "🎉 مهرجان التحالف", "en": "🎉 Alliance Festival"},
+    "dragon_arena": {"ar": "🐉 ساحة التنين", "en": "🐉 Dragon Arena"},
+    "kvk": {"ar": "⚔️ KvK", "en": "⚔️ KvK"},
 }
 
 TROOP_LABELS_I18N = {
