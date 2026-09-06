@@ -113,6 +113,7 @@ async def on_message(message: discord.Message):
 async def on_ready():
     log.info(f"✅ سجّل الدخول باسم: {bot.user} (ID: {bot.user.id})")
     try:
+        log.info(f"📋 عدد الأوامر قبل المزامنة: {len(bot.tree.get_commands())} | GUILD_ID مضبوط: {bool(GUILD_ID)}")
         if GUILD_ID:
             guild_obj = discord.Object(id=int(GUILD_ID))
             # Commands are defined globally; copy them to the target guild
