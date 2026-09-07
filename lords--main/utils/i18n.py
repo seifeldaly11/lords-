@@ -1,5 +1,5 @@
 """
-طبقة ترجمة خفيفة (ar/en) لتفضيل اللغة على مستوى السيرفر.
+طبقة ترجمة خفيفة (ar/en) لتفضيل اللغة على مستوى السيرفر أو المستخدم.
 مسؤولة عن: تخزين/قراءة تفضيل اللغة، وقاموس ترجمات لعناصر الواجهة
 (أزرار، عناوين، رسائل نظام) للأوامر اللي بتدعم اللغتين.
 
@@ -11,9 +11,9 @@
 العنوان، القوائم المنسدلة، الأزرار، النوافذ (Modals)، والرسائل. وده اللي المستخدم بيشوفه
 ويتفاعل معاه فعلياً في 99% من الوقت.
 
-نطاق التغطية الحالي (بيتحترم فيه `/language` بالكامل في ردود البوت):
-/ai، /play، /rally، /troop، /language، /set_game_link، /game_link، /jewel_calc،
-/darknest، /gear، /help.
+نطاق التغطية الحالي (بيتحترم فيه إعداد اللغة بالكامل في ردود البوت):
+/ai، /play، /rally، /troop، /language، /language me، /languageme، /set_game_link،
+/game_link، /jewel_calc، /darknest، /gear، /help.
 باقي الأوامر (market/games/intel/hunt/shield/guild/rally-remaining/events/wiki/monster/
 dict/info/heroes/geartiers/scout/counter/report/colo/analyze) لسه بواجهة عربية ثابتة
 حالياً - ترجمتها خطوة تالية.
@@ -21,15 +21,26 @@ dict/info/heroes/geartiers/scout/counter/report/colo/analyze) لسه بواجه�
 from utils.storage import load, save
 
 SETTINGS_FILE = "settings"
+USER_SETTINGS_FILE = "user_settings"
 DEFAULT_LANG = "ar"
 SUPPORTED_LANGS = ("ar", "en")
 
 
-def get_lang(guild_id: int | None) -> str:
-    if guild_id is None:
-        return DEFAULT_LANG
-    data = load(SETTINGS_FILE)
-    return data.get(str(guild_id), {}).get("lang", DEFAULT_LANG)
+def get_lang(guild_id: int | None, user_id: int | None = None) -> str:
+    """يرجع لغة المستخدم، ثم لغة السيرفر كخيار احتياطي، ثم العربية."""
+    if user_id is not None:
+        user_data = load(USER_SETTINGS_FILE)
+        user_lang = user_data.get(str(user_id), {}).get("lang")
+        if user_lang in SUPPORTED_LANGS:
+            return user_lang
+
+    if guild_id is not None:
+        guild_data = load(SETTINGS_FILE)
+        guild_lang = guild_data.get(str(guild_id), {}).get("lang")
+        if guild_lang in SUPPORTED_LANGS:
+            return guild_lang
+
+    return DEFAULT_LANG
 
 
 def set_lang(guild_id: int, lang: str) -> None:
@@ -38,6 +49,15 @@ def set_lang(guild_id: int, lang: str) -> None:
     data.setdefault(gid, {})
     data[gid]["lang"] = lang
     save(SETTINGS_FILE, data)
+
+
+def set_user_lang(user_id: int, lang: str) -> None:
+    """يحفظ اختيار اللغة الخاص بعضو واحد، بدون تغيير إعداد السيرفر."""
+    data = load(USER_SETTINGS_FILE)
+    uid = str(user_id)
+    data.setdefault(uid, {})
+    data[uid]["lang"] = lang
+    save(USER_SETTINGS_FILE, data)
 
 
 TRANSLATIONS = {
@@ -77,6 +97,10 @@ TRANSLATIONS = {
     "ai_error": {
         "ar": "⚠️ حصل خطأ أثناء التواصل مع خدمة الـ AI. حاول تاني بعد شوية.\n(تفاصيل تقنية: {err})",
         "en": "⚠️ Something went wrong talking to the AI service. Try again shortly.\n(technical: {err})",
+    },
+    "ai_mention_error": {
+        "ar": "⚠️ حصل خطأ أثناء معالجة السؤال. جرّب تاني بعد شوية.",
+        "en": "⚠️ Something went wrong while processing your question. Please try again shortly.",
     },
     "ai_cooldown": {
         "ar": "⏳ استنى شوية ({s} ثانية) قبل ما تسأل تاني.",
@@ -144,6 +168,174 @@ TRANSLATIONS = {
     "rally_open_app": {"ar": "📲 افتح التطبيق", "en": "📲 Open the app"},
     "rally_pinged": {"ar": "🔔 تم استدعاء", "en": "🔔 Pinged"},
 
+    # ------------------------------------------------------------------
+    # rally_cog.py - /rally_log + RallyLogView (جزء تصليح - كان ناقص بالكامل)
+    # ------------------------------------------------------------------
+    "rally_log_prompt": {
+        "ar": "اختر الأعضاء المشاركين في الحشد من القائمة تحت، وبعدين دوس **تأكيد التسجيل**:",
+        "en": "Choose the members who took part in the rally from the list below, then press "
+              "**Confirm log**:",
+    },
+    "rally_log_admin_only": {
+        "ar": "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).",
+        "en": "❌ This command is for admins only (requires Manage Server permission).",
+    },
+    "rally_select_placeholder": {
+        "ar": "اختر الأعضاء المشاركين في الحشد...",
+        "en": "Choose the members who took part in the rally...",
+    },
+    "rally_select_confirm_hint": {
+        "ar": "✅ اخترت **{count}** عضو. دوس زرار \"تأكيد التسجيل\" تحت عشان تحفظ.",
+        "en": "✅ You selected **{count}** members. Press \"Confirm log\" below to save.",
+    },
+    "rally_confirm_button": {"ar": "✅ تأكيد التسجيل", "en": "✅ Confirm log"},
+    "rally_log_need_member": {
+        "ar": "❌ لازم تختار عضو واحد على الأقل قبل التأكيد.",
+        "en": "❌ You must select at least one member before confirming.",
+    },
+    "rally_log_success_title": {"ar": "✅ تم تسجيل حضور الحشد", "en": "✅ Rally attendance logged"},
+    "rally_log_type_field": {"ar": "🧭 النوع", "en": "🧭 Type"},
+    "rally_log_result_field": {"ar": "🏆 النتيجة", "en": "🏆 Result"},
+    "rally_log_members_field": {"ar": "👥 الأعضاء المشاركون", "en": "👥 Participating members"},
+    "rally_log_footer": {"ar": "سجّله: {by}", "en": "Logged by: {by}"},
+
+    # ------------------------------------------------------------------
+    # war_cog.py - /report add (رسالة الـ cooldown كانت ثنائية اللغة inline)
+    # ------------------------------------------------------------------
+    "report_cooldown": {
+        "ar": "⏳ استنى شوية قبل ما تسجّل تقرير تاني ({seconds:.0f} ثانية).",
+        "en": "⏳ Please wait {seconds:.0f}s before logging another report.",
+    },
+
+    # ------------------------------------------------------------------
+    # events_cog.py - fmt_minutes() helper
+    # ------------------------------------------------------------------
+    "fmt_unit_day": {"ar": "يوم", "en": "day"},
+    "fmt_unit_hour": {"ar": "ساعة", "en": "hour"},
+    "fmt_unit_minute": {"ar": "دقيقة", "en": "minute"},
+    "fmt_joiner": {"ar": " و ", "en": ", "},
+
+    # ------------------------------------------------------------------
+    # events_cog.py - /event
+    # ------------------------------------------------------------------
+    "event_prompt": {
+        "ar": "اختر نوع النشاط اللي عايز تحسبه من القائمة تحت 👇",
+        "en": "Choose the activity type you want to calculate from the list below 👇",
+    },
+    "event_select_placeholder": {"ar": "اختر نوع النشاط داخل الحدث...", "en": "Choose the activity within the event..."},
+    "event_modal_title": {"ar": "🧮 حاسبة الحدث", "en": "🧮 Event calculator"},
+    "event_field_required_points": {"ar": "🎯 النقاط المطلوبة للمرحلة", "en": "🎯 Points required for the stage"},
+    "event_field_points_per_action": {"ar": "✨ النقاط لكل مرّة/فعل", "en": "✨ Points per action"},
+    "event_field_time_per_action": {
+        "ar": "⏱️ الوقت اللازم لكل مرة (بالدقائق)",
+        "en": "⏱️ Time needed per action (in minutes)",
+    },
+    "event_field_speedups": {
+        "ar": "🚀 إجمالي التسريحات المتاحة (بالدقائق)",
+        "en": "🚀 Total speedups available (in minutes)",
+    },
+    "event_invalid_numbers": {
+        "ar": "❌ من فضلك أدخل أرقام صحيحة وأكبر من صفر.",
+        "en": "❌ Please enter valid numbers greater than zero.",
+    },
+    "event_result_title": {"ar": "🧮 نتيجة حاسبة: {label}", "en": "🧮 Calculator result: {label}"},
+    "event_required_points_field": {"ar": "🎯 النقاط المطلوبة", "en": "🎯 Points required"},
+    "event_points_per_action_field": {"ar": "✨ نقاط/فعل", "en": "✨ Points/action"},
+    "event_actions_needed_field": {"ar": "🔁 عدد الأفعال المطلوبة", "en": "🔁 Actions needed"},
+    "event_total_time_field": {"ar": "⏱️ الوقت الكلي المطلوب", "en": "⏱️ Total time needed"},
+    "event_speedups_available_field": {"ar": "🚀 التسريحات المتاحة", "en": "🚀 Speedups available"},
+    "event_can_complete_field": {"ar": "✅ النتيجة", "en": "✅ Result"},
+    "event_can_complete_value": {"ar": "تقدر تكمل الحدث بالكامل!", "en": "You can complete the event fully!"},
+    "event_remaining_speedups_field": {
+        "ar": "🎁 المتبقي من التسريحات بعد الإكمال",
+        "en": "🎁 Speedups remaining after completion",
+    },
+    "event_cannot_complete_field": {"ar": "⚠️ النتيجة", "en": "⚠️ Result"},
+    "event_cannot_complete_value": {
+        "ar": "لن تكمل المرحلة بالتسريحات الحالية وحدها.",
+        "en": "You won't complete the stage with your current speedups alone.",
+    },
+    "event_percentage_field": {"ar": "📊 نسبة الإنجاز الممكنة حالياً", "en": "📊 Currently achievable progress"},
+    "event_achievable_points_field": {"ar": "🏁 النقاط اللي هتوصلها", "en": "🏁 Points you'll reach"},
+    "event_missing_points_field": {"ar": "❗ النقاط اللي هتفضل ناقصة", "en": "❗ Points you'll still be missing"},
+    "event_extra_time_field": {
+        "ar": "⏳ وقت/تسريحات إضافية مطلوبة لإكمالها",
+        "en": "⏳ Extra time/speedups needed to finish",
+    },
+    "event_footer": {"ar": "Lords Mobile Companion Bot", "en": "Lords Mobile Companion Bot"},
+
+    # ------------------------------------------------------------------
+    # events_cog.py - /shelter
+    # ------------------------------------------------------------------
+    "shelter_prompt": {"ar": "اختر مدة حماية المخبأ:", "en": "Choose the shelter duration:"},
+    "shelter_4h_button": {"ar": "4 ساعات", "en": "4 hours"},
+    "shelter_8h_button": {"ar": "8 ساعات", "en": "8 hours"},
+    "shelter_12h_button": {"ar": "12 ساعة", "en": "12 hours"},
+    "shelter_started": {
+        "ar": "🛡️ تم تفعيل حماية المخبأ لمدة **{hours} ساعات**.\n"
+              "⏰ هينتهي تقريباً الساعة `{end_time}`.\n"
+              "🔔 هوصلك تنبيه هنا وبرسالة خاصة قبل الانتهاء بـ 15 دقيقة.",
+        "en": "🛡️ Shelter protection activated for **{hours} hours**.\n"
+              "⏰ It will end around `{end_time}`.\n"
+              "🔔 You'll get a reminder here and by DM 15 minutes before it ends.",
+    },
+    "shelter_reminder_text": {
+        "ar": "⏰ تنبيه: حماية المخبأ ({hours} ساعات) هتنتهي خلال **15 دقيقة**! جهّز جيشك 🛡️",
+        "en": "⏰ Reminder: shelter protection ({hours} hours) ends in **15 minutes**! Get your troops ready 🛡️",
+    },
+
+    # ------------------------------------------------------------------
+    # events_cog.py - /cost
+    # ------------------------------------------------------------------
+    "cost_prompt": {"ar": "اختر نوع التكلفة اللي عايز تحسبها:", "en": "Choose the cost type you want to calculate:"},
+    "cost_tier_select_placeholder": {
+        "ar": "اختر نوع التكلفة المطلوب حسابها...",
+        "en": "Choose the cost type to calculate...",
+    },
+    "cost_tier_t4": {"ar": "⚔️ تدريب T4", "en": "⚔️ Training T4"},
+    "cost_tier_t5": {"ar": "⚔️ تدريب T5", "en": "⚔️ Training T5"},
+    "cost_tier_research": {"ar": "🎓 أبحاث الأكاديمية", "en": "🎓 Academy research"},
+    "cost_modal_title": {"ar": "💰 حاسبة تكلفة التدريب", "en": "💰 Training cost calculator"},
+    "cost_field_quantity": {"ar": "🔢 عدد الوحدات المطلوب تدريبها", "en": "🔢 Number of units to train"},
+    "cost_field_food": {"ar": "🍖 تكلفة الطعام لكل وحدة", "en": "🍖 Food cost per unit"},
+    "cost_field_wood_stone": {"ar": "🪵 تكلفة الخشب/الحجر لكل وحدة", "en": "🪵 Wood/stone cost per unit"},
+    "cost_field_ore_gold": {"ar": "⛏️ تكلفة الخام/الذهب لكل وحدة", "en": "⛏️ Ore/gold cost per unit"},
+    "cost_field_time_per_unit": {
+        "ar": "⏱️ زمن الوحدة (ثانية) وعدد الطوابير",
+        "en": "⏱️ Time per unit (seconds) and number of queues",
+    },
+    "cost_invalid_numbers": {
+        "ar": "❌ تأكد من إدخال أرقام صحيحة، وخانة الزمن بصيغة: الزمن,عدد الطوابير (مثال: 12,2)",
+        "en": "❌ Make sure you enter valid numbers, and the time field as: time,queues (example: 12,2)",
+    },
+    "cost_result_title": {"ar": "💰 تكلفة تدريب: {tier}", "en": "💰 Training cost: {tier}"},
+    "cost_quantity_field": {"ar": "🔢 عدد الوحدات", "en": "🔢 Number of units"},
+    "cost_total_food_field": {"ar": "🍖 إجمالي الطعام", "en": "🍖 Total food"},
+    "cost_total_wood_stone_field": {"ar": "🪵 إجمالي الخشب/الحجر", "en": "🪵 Total wood/stone"},
+    "cost_total_ore_gold_field": {"ar": "⛏️ إجمالي الخام/الذهب", "en": "⛏️ Total ore/gold"},
+    "cost_total_time_field": {"ar": "⏱️ الزمن الكلي التقريبي", "en": "⏱️ Approximate total time"},
+    "cost_footer": {
+        "ar": "القيم المدخلة تقريبية حسب بيانات المستخدم - راجع الأكاديمية للأرقام الدقيقة",
+        "en": "Entered values are approximate based on user input - check the Academy for exact numbers",
+    },
+
+    # ------------------------------------------------------------------
+    # events_cog.py - /speedup
+    # ------------------------------------------------------------------
+    "speedup_modal_title": {"ar": "🚀 حاسبة التسريحات", "en": "🚀 Speedup calculator"},
+    "speedup_field_days": {"ar": "📅 إجمالي الأيام", "en": "📅 Total days"},    "speedup_field_hours": {"ar": "⏰ إجمالي الساعات", "en": "⏰ Total hours"},
+    "speedup_field_minutes": {"ar": "⏱️ إجمالي الدقائق", "en": "⏱️ Total minutes"},
+    "speedup_field_stacks": {
+        "ar": "📦 عدد الحزم المتشابهة (لو عندك أكتر من نسخة)",
+        "en": "📦 Number of identical stacks (if you have more than one)",
+    },
+    "speedup_invalid_numbers": {"ar": "❌ أدخل أرقام صحيحة فقط.", "en": "❌ Enter valid numbers only."},
+    "speedup_result_title": {"ar": "🚀 إجمالي التسريحات المتاحة", "en": "🚀 Total speedups available"},
+    "speedup_in_minutes_field": {"ar": "🔢 بالدقائق", "en": "🔢 In minutes"},
+    "speedup_in_hours_field": {"ar": "🕐 بالساعات", "en": "🕐 In hours"},
+    "speedup_minutes_unit": {"ar": "دقيقة", "en": "minutes"},
+    "speedup_hours_unit": {"ar": "ساعة", "en": "hours"},
+
     # مشترك بين أكتر من أمر
     "err_invalid_numbers": {
         "ar": "❌ أدخل أرقام صحيحة فقط.",
@@ -163,6 +355,10 @@ TRANSLATIONS = {
               "ℹ️ Note: the command names/descriptions Discord shows you when typing `/` are controlled by "
               "your own Discord client language, not by this setting - this controls the bot's actual replies "
               "and menus (buttons, dropdowns, messages) instead.",
+    },
+    "lang_me_set": {
+        "ar": "✅ تم ضبط ردود البوت لك على **العربية**. أي أمر تستخدمه هيرد عليك بالعربي.",
+        "en": "✅ Your bot replies are now set to **English**. Commands you use will reply in English.",
     },
     "gamelink_bad_url": {
         "ar": "❌ الرابط لازم يبدأ بـ http:// أو https://",
@@ -358,10 +554,9 @@ TRANSLATIONS = {
     },
 
     # ------------------------------------------------------------------
-    # مشترك بين كذا أمر - رسالة خطأ عامة غير متوقعة
+    # مشترك بين كذا أمر - نفس رسالة الخطأ العامة المستخدمة في /language و/set_game_link
+    # (راجع "unexpected_error" فوق)
     # ------------------------------------------------------------------
-    "err_unexpected": {"ar": "❌ حصل خطأ غير متوقع.", "en": "❌ An unexpected error occurred."},
-
     # ------------------------------------------------------------------
     # guild_cog.py - جزء 4: /quiz
     # ------------------------------------------------------------------
@@ -616,6 +811,293 @@ TRANSLATIONS = {
         "en": "{rank}. <@{uid}> — {count} completed tasks ✅",
     },
     "gf_board_title": {"ar": "🏅 لوحة صدارة مهرجان التحالف", "en": "🏅 Alliance Festival leaderboard"},
+
+    # ------------------------------------------------------------------
+    # hunt_cog.py - /hunt_log
+    # ------------------------------------------------------------------
+    "hunt_need_one_mode": {
+        "ar": "❌ لازم تستخدم طريقة واحدة على الأقل: `hunted` (يدوي)، أو `image` (صورة)، "
+              "أو `bulk_list` (قائمة مجمّعة).",
+        "en": "❌ You need to use at least one method: `hunted` (manual), `image` (image), "
+              "or `bulk_list` (bulk list).",
+    },
+    "hunt_only_one_mode": {
+        "ar": "❌ استخدم طريقة واحدة بس في المرة الواحدة (يدوي/صورة/قائمة) عشان منلخبطش الأرقام.",
+        "en": "❌ Use only one method at a time (manual/image/list) so the numbers don't get mixed up.",
+    },
+    "hunt_manual_invalid_amount": {"ar": "❌ العدد لازم يكون أكبر من صفر.", "en": "❌ The amount must be greater than zero."},
+    "hunt_manual_status_done": {"ar": "✅ خلّص التارجت اليومي! 🎉", "en": "✅ Finished the daily target! 🎉"},
+    "hunt_manual_status_remaining": {
+        "ar": "باقيله **{remaining}** للتارجت.",
+        "en": "**{remaining}** left to reach the target.",
+    },
+    "hunt_manual_log_title": {"ar": "🐾 تم تسجيل الصيد", "en": "🐾 Hunt logged"},
+    "hunt_manual_log_desc": {
+        "ar": "{member} صاد **{hunted}** دلوقتي.\n📊 إجمالي اليوم: **{total}/{target}**\n{status}",
+        "en": "{member} just hunted **{hunted}**.\n📊 Today's total: **{total}/{target}**\n{status}",
+    },
+    "hunt_bulk_parse_failed": {
+        "ar": "❌ مقدرتش أفهم أي سطر من القائمة. الصيغة المتوقعة: `الاسم رقم` في كل سطر (مثال: `Ahmed 250`).",
+        "en": "❌ I couldn't understand any line in the list. Expected format: `name number` per line "
+              "(example: `Ahmed 250`).",
+    },
+    "hunt_image_not_image": {"ar": "❌ المرفق ده مش صورة.", "en": "❌ That attachment isn't an image."},
+    "hunt_image_extract_failed": {
+        "ar": "❌ مقدرتش أقرأ الجدول من الصورة (أو COHERE_API_KEY مش مضبوط). "
+              "جرّب صورة أوضح، أو استخدم `bulk_list`/`hunted` بدل كده.",
+        "en": "❌ I couldn't read the table from the image (or COHERE_API_KEY isn't set). "
+              "Try a clearer image, or use `bulk_list`/`hunted` instead.",
+    },
+    "hunt_report_title": {"ar": "🐾 تقرير صيد", "en": "🐾 Hunt report"},
+    "hunt_report_title_image_suffix": {"ar": " (من صورة)", "en": " (from image)"},
+    "hunt_report_title_bulk_suffix": {"ar": " (قائمة مجمّعة)", "en": " (bulk list)"},
+    "hunt_report_matched_field": {"ar": "📋 تم تسجيل {count} عضو", "en": "📋 {count} members logged"},
+    "hunt_report_unmatched_field": {"ar": "⚠️ {count} اسم مش متعرف عليه", "en": "⚠️ {count} unrecognized names"},
+    "hunt_report_unmatched_hint": {
+        "ar": "(اتأكد إن الاسم مطابق لليوزرنيم/اسم الشهرة في الديسكورد)",
+        "en": "(make sure the name matches the Discord username/display name)",
+    },
+    "hunt_report_footer": {"ar": "🎯 التارجت اليومي الحالي: {target}", "en": "🎯 Current daily target: {target}"},
+    "hunt_channel_invalid_target": {
+        "ar": "❌ التارجت اليومي لازم يكون رقم أكبر من صفر.",
+        "en": "❌ The daily target must be a number greater than zero.",
+    },
+    "hunt_channel_success": {
+        "ar": "✅ تم تحديد {channel} كقناة تقارير وقوائم الصيد.",
+        "en": "✅ {channel} has been set as the hunt reports and lists channel.",
+    },
+    "hunt_channel_target_set": {
+        "ar": "\n🎯 التارجت اليومي اتضبط على **{target}**.",
+        "en": "\n🎯 The daily target has been set to **{target}**.",
+    },
+    "hunt_channel_admin_only": {
+        "ar": "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).",
+        "en": "❌ This command is for admins only (requires Manage Server permission).",
+    },
+    "hunt_channel_error": {"ar": "❌ حصل خطأ غير متوقع.", "en": "❌ An unexpected error occurred."},
+    "hunt_list_empty": {
+        "ar": "مفيش بيانات صيد مسجلة لسه. استخدم `/hunt_log` عشان تبدأ التسجيل.",
+        "en": "No hunt data logged yet. Use `/hunt_log` to start logging.",
+    },
+    "hunt_list_title": {"ar": "📊 القائمة الشاملة للصيد اليومي", "en": "📊 Daily hunt overview"},
+    "hunt_list_pending_field": {"ar": "🕗 لسه ماوصلوش ({count})", "en": "🕗 Not there yet ({count})"},
+    "hunt_list_done_field": {"ar": "✅ خلّصوا التارجت ({count})", "en": "✅ Reached the target ({count})"},
+    "hunt_list_footer": {
+        "ar": "🎯 التارجت اليومي: {target} | إجمالي الأعضاء المتابَعين: {count}",
+        "en": "🎯 Daily target: {target} | Total tracked members: {count}",
+    },
+    "hunt_pending_line": {
+        "ar": "🕗 **{name}** — {bar} ({hunted}/{target}, باقي {remaining})",
+        "en": "🕗 **{name}** — {bar} ({hunted}/{target}, {remaining} remaining)",
+    },
+    "hunt_done_line": {
+        "ar": "✅ **{name}** — {bar} ({hunted}/{target})",
+        "en": "✅ **{name}** — {bar} ({hunted}/{target})",
+    },
+
+    # ------------------------------------------------------------------
+    # intel_cog.py - /scout
+    # ------------------------------------------------------------------
+    "scout_button_prompt": {
+        "ar": "اضغط الزر وصف عتاد الخصم اللي شايفه 👇",
+        "en": "Press the button and describe the enemy gear you see 👇",
+    },
+    "scout_button_label": {"ar": "صف عتاد الخصم", "en": "Describe enemy gear"},
+    "scout_modal_title": {"ar": "🔍 كشف عتاد الخصم", "en": "🔍 Enemy Gear Scan"},
+    "scout_modal_label": {"ar": "👀 العتاد اللي شايفه على الخصم", "en": "👀 Gear you see on the enemy"},
+    "scout_modal_placeholder": {
+        "ar": "مثال: خوذة نوسيروس، درع رماة فيه جواهر مشاة...",
+        "en": "Example: Noceros helmet, ranged armor with infantry gems...",
+    },
+    "scout_result_title": {"ar": "🔍 نتيجة تحليل عتاد الخصم", "en": "🔍 Enemy gear analysis result"},
+    "scout_input_field": {"ar": "📋 الوصف المدخل", "en": "📋 Entered description"},
+    "scout_footer": {
+        "ar": "تحليل تقريبي مبني على كلمات مفتاحية - استخدمه كمؤشر مش كيقين 100%",
+        "en": "Rough analysis based on keywords - use it as an indicator, not 100% certainty",
+    },
+    "scout_alert_economy": {
+        "ar": "🚨 **الخصم لابس عتاد تطوير/بحث (اقتصادي)!** دفاعه شبه معدوم - احشده حالاً قبل ما يغيّر عتاده!",
+        "en": "🚨 **The enemy is wearing development/research (economy) gear!** Their defense is nearly "
+              "nonexistent - rally them now before they switch gear!",
+    },
+    "scout_alert_mixed": {
+        "ar": "⚠️ **لخبطة واضحة في نوع العتاد/الجواهر** (تشكيلة مختلطة غير متجانسة) - "
+              "على الأغلب حساب مش ممتلك خبرة أو بيلعب بشكل عشوائي، فرصة جيدة للهجوم.",
+        "en": "⚠️ **Clear mismatch in gear/gem types** (an inconsistent mixed build) - likely an "
+              "inexperienced or randomly-played account, a good attack opportunity.",
+    },
+    "scout_alert_normal": {
+        "ar": "✅ العتاد الموصوف يبدو حرب عادي متجانس - قيّم قوة الجيش الظاهرة قبل ما تقرر تهاجم.",
+        "en": "✅ The described gear looks like a normal, consistent war build - assess the visible army "
+              "strength before deciding to attack.",
+    },
+
+    # ------------------------------------------------------------------
+    # intel_cog.py - /heroes و /geartiers
+    # ------------------------------------------------------------------
+    "heroes_prompt": {"ar": "اختر التصنيف اللي عايز تشوفه:", "en": "Choose the category you want to see:"},
+    "heroes_btn_economy": {"ar": "🧪 أبطال التطوير", "en": "🧪 Development heroes"},
+    "heroes_btn_free_war": {"ar": "🆓 أبطال حرب مجانيين", "en": "🆓 Free war heroes"},
+    "heroes_btn_paid_war": {"ar": "💎 أبطال حرب للشحن", "en": "💎 Paid war heroes"},
+    "heroes_title_economy": {
+        "ar": "🧪 أبطال التطوير (بناء/بحث/طاقة)",
+        "en": "🧪 Development heroes (building/research/energy)",
+    },
+    "heroes_title_free_war": {"ar": "🆓 أفضل أبطال حرب مجانيين", "en": "🆓 Best free war heroes"},
+    "heroes_title_paid_war": {"ar": "💎 أفضل أبطال حرب مدفوعين", "en": "💎 Best paid war heroes"},
+    "geartiers_prompt": {"ar": "اختر تصنيف العتاد:", "en": "Choose the gear category:"},
+    "gear_type_war": {"ar": "⚔️ عتاد الحرب", "en": "⚔️ War gear"},
+    "gear_type_hunting": {"ar": "🏹 عتاد الصيد", "en": "🏹 Hunting gear"},
+    "gear_type_economy": {"ar": "🏗️ عتاد الاقتصاد", "en": "🏗️ Economy gear"},
+    "geartiers_war_title": {"ar": "{emoji} تصنيف عتاد الحرب", "en": "{emoji} War gear tiers"},
+    "geartiers_hunting_title": {"ar": "{emoji} تصنيف عتاد الصيد", "en": "{emoji} Hunting gear tiers"},
+    "geartiers_economy_title": {"ar": "{emoji} عتاد الاقتصاد", "en": "{emoji} Economy gear"},
+    "gear_weak_field": {"ar": "⚠️ عتاد ضعيف", "en": "⚠️ Weak gear"},
+    "gear_pieces_field": {"ar": "🧩 القطع", "en": "🧩 Pieces"},
+    "gear_warning_field": {"ar": "⚠️ تحذير", "en": "⚠️ Warning"},
+
+    # ------------------------------------------------------------------
+    # market_cog.py - /market offer/list/cancel
+    # ------------------------------------------------------------------
+    "market_same_resource": {
+        "ar": "❌ ماينفعش نفس نوع المورد في العرض والطلب.",
+        "en": "❌ You can't offer and request the same resource type.",
+    },
+    "market_offer_added_title": {
+        "ar": "💱 تم إضافة عرضك في البورصة",
+        "en": "💱 Your offer was added to the market",
+    },
+    "market_have_field": {"ar": "لديّ", "en": "I have"},
+    "market_want_field": {"ar": "أريد", "en": "I want"},
+    "market_match_notify": {
+        "ar": (
+            "🔔 لقينا تطابق محتمل في بورصة الموارد!\n"
+            "👤 <@{user1}> عنده {amount1} {res1} ويبي {want1} {res2}\n"
+            "👤 <@{user2}> عنده {amount2} {res3} ويبي {want2} {res4}\n"
+            "تواصلوا وأتموا التبادل داخل اللعبة يدوياً 🤝"
+        ),
+        "en": (
+            "🔔 Found a possible match in the resource market!\n"
+            "👤 <@{user1}> has {amount1} {res1} and wants {want1} {res2}\n"
+            "👤 <@{user2}> has {amount2} {res3} and wants {want2} {res4}\n"
+            "Get in touch and complete the trade manually in-game 🤝"
+        ),
+    },
+    "market_list_empty": {"ar": "لا توجد عروض تبادل نشطة حالياً.", "en": "No active trade offers right now."},
+    "market_list_title": {"ar": "💱 عروض بورصة الموارد النشطة", "en": "💱 Active resource market offers"},
+    "market_list_field_value": {
+        "ar": "يعطي: {give_amount} {give_res} ◀ مقابل ▶ يريد: {want_amount} {want_res}",
+        "en": "Gives: {give_amount} {give_res} ◀ for ▶ Wants: {want_amount} {want_res}",
+    },
+    "market_cancel_none": {"ar": "مفيش عروض نشطة ليك عشان تلغيها.", "en": "You have no active offers to cancel."},
+    "market_cancel_success": {"ar": "✅ تم إلغاء آخر عرض ليك.", "en": "✅ Your last offer was cancelled."},
+
+    # ------------------------------------------------------------------
+    # shield_cog.py - /shield، /voice_rescue، /shelter_done
+    # ------------------------------------------------------------------
+    "shield_ack_owner_only": {
+        "ar": "❌ الزرار ده مخصص لصاحب الدرع بس.",
+        "en": "❌ This button is for the shield owner only.",
+    },
+    "shield_no_active_alarm": {"ar": "ℹ️ مفيش منبه شغال دلوقتي.", "en": "ℹ️ There's no active alarm right now."},
+    "shield_ack_stopped": {"ar": "✅ تمام، تم إيقاف المنبه.", "en": "✅ Done, the alarm has been stopped."},
+    "shield_no_active_to_renew": {
+        "ar": "ℹ️ مفيش منبه شغال دلوقتي عشان أجدده.",
+        "en": "ℹ️ There's no active alarm to renew right now.",
+    },
+    "shield_ack_button": {"ar": "✅ استلمت / Done", "en": "✅ Done"},
+    "shield_renew_button": {"ar": "🛡️ تجديد الدرع", "en": "🛡️ Renew shield"},
+    "shield_duration_invalid": {
+        "ar": "❌ المدة لازم تكون رقم أكبر من صفر.",
+        "en": "❌ Duration must be a number greater than zero.",
+    },
+    "shield_repeat_invalid": {
+        "ar": "❌ مدة التكرار لازم تكون رقم أكبر من صفر.",
+        "en": "❌ Repeat interval must be a number greater than zero.",
+    },
+    "shield_already_active": {
+        "ar": "⚠️ عندك منبه درع شغال بالفعل. استخدم `/shelter_done` الأول لو عايز توقفه أو تبدأ واحد جديد.",
+        "en": "⚠️ You already have an active shield alarm. Use `/shelter_done` first if you want to "
+              "stop it or start a new one.",
+    },
+    "shield_open_game_button": {"ar": "📲 افتح اللعبة", "en": "📲 Open the game"},
+    "shield_started_title": {"ar": "🛡️ منبه الدرع الذكي اتفعّل", "en": "🛡️ Smart shield alarm activated"},
+    "shield_duration_desc": {"ar": "مدة الدرع: **{amount} {unit}**", "en": "Shield duration: **{amount} {unit}**"},
+    "shield_end_time_field": {"ar": "⏰ هينتهي تقريباً", "en": "⏰ Ends approximately"},
+    "shield_first_alert_field": {"ar": "🔔 التنبيه الأول", "en": "🔔 First alert"},
+    "shield_first_alert_value": {
+        "ar": "قبل الانتهاء بـ 15 دقيقة (رسالة + DM)",
+        "en": "15 minutes before it ends (message + DM)",
+    },
+    "shield_escalation_field": {"ar": "🚨 لو محدش رد", "en": "🚨 If nobody responds"},
+    "shield_escalation_value": {
+        "ar": "😈 هدخل الروم الصوتية اللي انت فيها وأرن بصوت إنذار لو محدش رد.",
+        "en": "😈 I'll join the voice channel you're in and ring a siren if nobody responds.",
+    },
+    "shield_escalation_role_note": {
+        "ar": "\n📣 هتم منشنة {role} كمان لو محدش استلم.",
+        "en": "\n📣 {role} will also get pinged if nobody acknowledges.",
+    },
+    "shield_repeat_field": {"ar": "🔁 تكرار تلقائي", "en": "🔁 Automatic repeat"},
+    "shield_repeat_value": {
+        "ar": "كل **{hours} ساعة** لحد `/shelter_done stop_repeat:True`",
+        "en": "Every **{hours} hour(s)** until `/shelter_done stop_repeat:True`",
+    },
+    "shield_renewed_title": {"ar": "🛡️ تم تجديد الدرع", "en": "🛡️ Shield renewed"},
+    "shield_renewed_desc": {
+        "ar": "منبه جديد بمدة **{duration}** ابتدى من دلوقتي.",
+        "en": "A new alarm for **{duration}** has started now.",
+    },
+    "shield_done_no_active": {
+        "ar": "ℹ️ مفيش عندك منبه درع شغال دلوقتي.",
+        "en": "ℹ️ You don't have an active shield alarm right now.",
+    },
+    "shield_done_stopped_plain": {"ar": "✅ تم إيقاف المنبه.", "en": "✅ The alarm has been stopped."},
+    "shield_done_stopped_and_repeat": {
+        "ar": "✅ تم إيقاف المنبه وإلغاء التكرار.",
+        "en": "✅ The alarm has been stopped and the repeat has been cancelled.",
+    },
+    "shield_repeat_auto_notice": {
+        "ar": "🔁 هيتعاد منبه الدرع لـ{user} تلقائياً بعد **{time}**.",
+        "en": "🔁 The shield alarm for {user} will automatically repeat after **{time}**.",
+    },
+    "shield_pre_alert_title": {
+        "ar": "⏰ تنبيه: الدرع هينتهي خلال 15 دقيقة!",
+        "en": "⏰ Alert: the shield ends in 15 minutes!",
+    },
+    "shield_pre_alert_desc": {
+        "ar": "جهّز جيشك 🛡️ لو أنت فاكر خلاص، دوس زرار **✅ استلمت** تحت أو اكتب `/shelter_done`.",
+        "en": "Get your army ready 🛡️ If you've already got it, press **✅ Done** below or type "
+              "`/shelter_done`.",
+    },
+    "shield_progress_field": {"ar": "📊 نسبة انقضاء الدرع", "en": "📊 Shield elapsed progress"},
+    "shield_escalated_room_line": {
+        "ar": "دخلت روم **{channel}** هرن لحد ما ترد 😈\n",
+        "en": "I joined **{channel}** and I'll keep ringing until you respond 😈\n",
+    },
+    "shield_escalated_instructions": {
+        "ar": "اكتب `/shelter_done` أو دوس زرار \"✅ استلمت\" فوق عشان أسكت.",
+        "en": "Type `/shelter_done` or press the \"✅ Done\" button above to make me stop.",
+    },
+    "shield_escalated_title": {"ar": "🚨 الدرع خلص ومردتش!", "en": "🚨 The shield ended and you didn't respond!"},
+    "shield_escalation_ping": {
+        "ar": "🔊 {user} لسه مستني رد! `/shelter_done` وهسكت فوراً 🙏",
+        "en": "🔊 {user} still waiting for a response! `/shelter_done` and I'll stop right away 🙏",
+    },
+    "shield_ack_done_title": {"ar": "✅ تم الاستلام", "en": "✅ Acknowledged"},
+    "shield_ack_done_desc": {
+        "ar": "تمام يا {user}! استلمت، خرجت من الروم. 🫡",
+        "en": "Alright {user}! Acknowledged, I've left the room. 🫡",
+    },
+    "shield_renew_same_duration_button": {
+        "ar": "🛡️ تجديد الدرع بنفس المدة",
+        "en": "🛡️ Renew shield with the same duration",
+    },
+    "shield_gave_up_title": {"ar": "⌛ خرجت من الروم", "en": "⌛ Left the room"},
+    "shield_gave_up_desc": {
+        "ar": "بعد محاولات كتير من غير رد من {user}.",
+        "en": "After many attempts with no response from {user}.",
+    },
 }
 
 ACTIVITY_TYPE_LABELS_I18N = {
@@ -625,12 +1107,49 @@ ACTIVITY_TYPE_LABELS_I18N = {
     "kvk": {"ar": "⚔️ KvK", "en": "⚔️ KvK"},
 }
 
+RALLY_TYPE_LABELS_I18N = {
+    "attack": {"ar": "⚔️ هجوم", "en": "⚔️ Attack"},
+    "defense": {"ar": "🛡️ دفاع", "en": "🛡️ Defense"},
+}
+
+RALLY_RESULT_LABELS_I18N = {
+    "win": {"ar": "🏆 فوز", "en": "🏆 Win"},
+    "loss": {"ar": "❌ خسارة", "en": "❌ Loss"},
+    "draw": {"ar": "🤝 تعادل", "en": "🤝 Draw"},
+}
+
+EVENT_TYPE_LABELS_I18N = {
+    "research": {"ar": "🔬 أبحاث", "en": "🔬 Research"},
+    "building": {"ar": "🏗️ بناء", "en": "🏗️ Building"},
+    "t1": {"ar": "⚔️ تدريب T1", "en": "⚔️ Training T1"},
+    "t2": {"ar": "⚔️ تدريب T2", "en": "⚔️ Training T2"},
+    "t3": {"ar": "⚔️ تدريب T3", "en": "⚔️ Training T3"},
+    "t4": {"ar": "⚔️ تدريب T4", "en": "⚔️ Training T4"},
+    "t5": {"ar": "⚔️ تدريب T5", "en": "⚔️ Training T5"},
+    "artifacts": {"ar": "🏺 آثار", "en": "🏺 Artifacts"},
+    "hunting": {"ar": "🐾 صيد وحوش", "en": "🐾 Monster hunting"},
+    "tycoon": {"ar": "🎩 تايكون", "en": "🎩 Tycoon"},
+    "ghosts": {"ar": "👻 أشباح", "en": "👻 Ghosts"},
+    "spending": {"ar": "💎 إنفاق جواهر/تسريحات", "en": "💎 Gem/speedup spending"},
+}
+
 TROOP_LABELS_I18N = {
     "infantry": {"ar": "🛡️ مشاة", "en": "🛡️ Infantry"},
     "ranged": {"ar": "🏹 رماة", "en": "🏹 Ranged"},
     "cavalry": {"ar": "🐎 فرسان", "en": "🐎 Cavalry"},
     "siege": {"ar": "🏰 حصار", "en": "🏰 Siege"},
     "hybrid": {"ar": "🔀 هجين", "en": "🔀 Hybrid"},
+}
+
+# أسماء الموارد لاستخدامها جوه رسائل/Embeds بتتغيّر مع /language (مختلف عن
+# RESOURCE_CHOICES بتاع market_cog.py اللي Metadata ثابتة عند ديسكورد نفسه ومش
+# بتتغيّر ديناميكياً - نفس القيد الموجود على أسماء الأوامر نفسها).
+RESOURCE_LABELS_I18N = {
+    "food": {"ar": "🍖 طعام", "en": "🍖 Food"},
+    "wood": {"ar": "🪵 خشب", "en": "🪵 Wood"},
+    "stone": {"ar": "🪨 حجر", "en": "🪨 Stone"},
+    "ore": {"ar": "⛏️ خام/فولاذ", "en": "⛏️ Ore/Steel"},
+    "gold": {"ar": "💰 ذهب", "en": "💰 Gold"},
 }
 
 

@@ -23,10 +23,12 @@ from discord.ext import commands
 
 from utils.storage import load, save
 from utils.ui import progress_bar, GOLD
+from utils.i18n import get_lang, t
+
 HUNT_FILE = "hunt_log"
 DEFAULT_DAILY_TARGET = 100
 
-LINE_RE = re.compile(r"^(?P<name>.+?)[\s:،,\-–—]+(?P<count>\d+)\s*$")
+LINE_RE = re.compile(r"^(?P<n>.+?)[\s:،,\-–—]+(?P<count>\d+)\s*$")
 
 
 def today_str() -> str:
@@ -173,18 +175,13 @@ class HuntCog(commands.Cog):
         image: Optional[discord.Attachment] = None,
         bulk_list: Optional[str] = None,
     ):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         modes_used = sum(x is not None for x in (hunted, image, bulk_list))
         if modes_used == 0:
-            await interaction.response.send_message(
-                "❌ لازم تستخدم طريقة واحدة على الأقل: `hunted` (يدوي)، أو `image` (صورة)، أو `bulk_list` (قائمة مجمّعة).",
-                ephemeral=True,
-            )
+            await interaction.response.send_message(t("hunt_need_one_mode", lang), ephemeral=True)
             return
         if modes_used > 1:
-            await interaction.response.send_message(
-                "❌ استخدم طريقة واحدة بس في المرة الواحدة (يدوي/صورة/قائمة) عشان منلخبطش الأرقام.",
-                ephemeral=True,
-            )
+            await interaction.response.send_message(t("hunt_only_one_mode", lang), ephemeral=True)
             return
 
         data = load(HUNT_FILE)
@@ -194,15 +191,23 @@ class HuntCog(commands.Cog):
         # -- الوضع اليدوي --------------------------------------------------
         if hunted is not None:
             if hunted <= 0:
-                await interaction.response.send_message("❌ العدد لازم يكون أكبر من صفر.", ephemeral=True)
+                await interaction.response.send_message(t("hunt_manual_invalid_amount", lang), ephemeral=True)
                 return
             target_member = member or interaction.user
             total_today, daily_target = self._apply_manual(interaction.guild_id, target_member, hunted)
             remaining = max(0, daily_target - total_today)
-            status = "✅ خلّص التارجت اليومي! 🎉" if total_today >= daily_target else f"باقيله **{remaining}** للتارجت."
+            status = (
+                t("hunt_manual_status_done", lang)
+                if total_today >= daily_target
+                else t("hunt_manual_status_remaining", lang, remaining=remaining)
+            )
             embed = discord.Embed(
-                title="🐾 تم تسجيل الصيد",
-                description=f"{target_member.mention} صاد **{hunted}** دلوقتي.\n📊 إجمالي اليوم: **{total_today}/{daily_target}**\n{status}",
+                title=t("hunt_manual_log_title", lang),
+                description=t(
+                    "hunt_manual_log_desc", lang,
+                    member=target_member.mention, hunted=hunted, total=total_today,
+                    target=daily_target, status=status,
+                ),
                 color=discord.Color.green(),
             )
             await interaction.response.send_message(embed=embed)
@@ -213,14 +218,11 @@ class HuntCog(commands.Cog):
         if bulk_list is not None:
             entries = parse_bulk_list(bulk_list)
             if not entries:
-                await interaction.response.send_message(
-                    "❌ مقدرتش أفهم أي سطر من القائمة. الصيغة المتوقعة: `الاسم رقم` في كل سطر (مثال: `Ahmed 250`).",
-                    ephemeral=True,
-                )
+                await interaction.response.send_message(t("hunt_bulk_parse_failed", lang), ephemeral=True)
                 return
             await interaction.response.defer(thinking=True)
             matched, unmatched, daily_target, _ = self._apply_bulk(interaction.guild, entries)
-            embed = self._build_bulk_report_embed(matched, unmatched, daily_target)
+            embed = self._build_bulk_report_embed(matched, unmatched, daily_target, lang)
             await interaction.followup.send(embed=embed)
             await self._mirror_to_hunt_channel(interaction, channel_id, embed)
             return
@@ -228,18 +230,15 @@ class HuntCog(commands.Cog):
         # -- وضع الصورة ------------------------------------------------------
         if image is not None:
             if not (image.content_type or "").startswith("image/"):
-                await interaction.response.send_message("❌ المرفق ده مش صورة.", ephemeral=True)
+                await interaction.response.send_message(t("hunt_image_not_image", lang), ephemeral=True)
                 return
             await interaction.response.defer(thinking=True)
-            entries = await extract_from_image(image.url, lang="ar")
+            entries = await extract_from_image(image.url, lang=lang)
             if not entries:
-                await interaction.followup.send(
-                    "❌ مقدرتش أقرأ الجدول من الصورة (أو COHERE_API_KEY مش مضبوط). "
-                    "جرّب صورة أوضح، أو استخدم `bulk_list`/`hunted` بدل كده.",
-                )
+                await interaction.followup.send(t("hunt_image_extract_failed", lang))
                 return
             matched, unmatched, daily_target, _ = self._apply_bulk(interaction.guild, entries)
-            embed = self._build_bulk_report_embed(matched, unmatched, daily_target, from_image=True)
+            embed = self._build_bulk_report_embed(matched, unmatched, daily_target, lang, from_image=True)
             await interaction.followup.send(embed=embed)
             await self._mirror_to_hunt_channel(interaction, channel_id, embed)
             return
@@ -249,10 +248,12 @@ class HuntCog(commands.Cog):
         matched: list[tuple[discord.Member, int]],
         unmatched: list[tuple[str, int]],
         daily_target: int,
+        lang: str,
         from_image: bool = False,
     ) -> discord.Embed:
+        suffix = t("hunt_report_title_image_suffix", lang) if from_image else t("hunt_report_title_bulk_suffix", lang)
         embed = discord.Embed(
-            title="🐾 تقرير صيد" + (" (من صورة)" if from_image else " (قائمة مجمّعة)"),
+            title=t("hunt_report_title", lang) + suffix,
             color=discord.Color.green() if matched else discord.Color.orange(),
         )
         if matched:
@@ -260,15 +261,17 @@ class HuntCog(commands.Cog):
             for m, count in sorted(matched, key=lambda x: x[1], reverse=True)[:30]:
                 emoji = "✅" if count >= daily_target else "🕗"
                 lines.append(f"{emoji} **{m.display_name}** — {count}/{daily_target}")
-            embed.add_field(name=f"📋 تم تسجيل {len(matched)} عضو", value="\n".join(lines), inline=False)
+            embed.add_field(
+                name=t("hunt_report_matched_field", lang, count=len(matched)), value="\n".join(lines), inline=False
+            )
         if unmatched:
             lines = [f"❓ {name} ({count})" for name, count in unmatched[:15]]
             embed.add_field(
-                name=f"⚠️ {len(unmatched)} اسم مش متعرف عليه",
-                value="\n".join(lines) + "\n(اتأكد إن الاسم مطابق لليوزرنيم/اسم الشهرة في الديسكورد)",
+                name=t("hunt_report_unmatched_field", lang, count=len(unmatched)),
+                value="\n".join(lines) + "\n" + t("hunt_report_unmatched_hint", lang),
                 inline=False,
             )
-        embed.set_footer(text=f"🎯 التارجت اليومي الحالي: {daily_target}")
+        embed.set_footer(text=t("hunt_report_footer", lang, target=daily_target))
         return embed
 
     # -- /hunt_channel (إدارة) -------------------------------------------
@@ -288,8 +291,9 @@ class HuntCog(commands.Cog):
         channel: discord.TextChannel,
         daily_target: Optional[int] = None,
     ):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if daily_target is not None and daily_target <= 0:
-            await interaction.response.send_message("❌ التارجت اليومي لازم يكون رقم أكبر من صفر.", ephemeral=True)
+            await interaction.response.send_message(t("hunt_channel_invalid_target", lang), ephemeral=True)
             return
         data = load(HUNT_FILE)
         bucket = get_bucket(data, interaction.guild_id)
@@ -298,24 +302,24 @@ class HuntCog(commands.Cog):
             bucket["daily_target"] = daily_target
         save(HUNT_FILE, data)
 
-        msg = f"✅ تم تحديد {channel.mention} كقناة تقارير وقوائم الصيد."
+        msg = t("hunt_channel_success", lang, channel=channel.mention)
         if daily_target is not None:
-            msg += f"\n🎯 التارجت اليومي اتضبط على **{daily_target}**."
+            msg += t("hunt_channel_target_set", lang, target=daily_target)
         await interaction.response.send_message(msg, ephemeral=True)
 
     @hunt_channel.error
     async def hunt_channel_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(
-                "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).", ephemeral=True
-            )
+            await interaction.response.send_message(t("hunt_channel_admin_only", lang), ephemeral=True)
         else:
-            await interaction.response.send_message("❌ حصل خطأ غير متوقع.", ephemeral=True)
+            await interaction.response.send_message(t("hunt_channel_error", lang), ephemeral=True)
 
     # -- /hunt_list -------------------------------------------------------
 
     @app_commands.command(name="hunt_list", description="📊 عرض شامل: كل عضو صاد كام وباقيله كام على التارجت اليومي")
     async def hunt_list(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         data = load(HUNT_FILE)
         bucket = data.get(str(interaction.guild_id), {})
         daily_target = bucket.get("daily_target", DEFAULT_DAILY_TARGET)
@@ -323,9 +327,7 @@ class HuntCog(commands.Cog):
         today = today_str()
 
         if not members_data:
-            await interaction.response.send_message(
-                "مفيش بيانات صيد مسجلة لسه. استخدم `/hunt_log` عشان تبدأ التسجيل.", ephemeral=True
-            )
+            await interaction.response.send_message(t("hunt_list_empty", lang), ephemeral=True)
             return
 
         done_lines, pending_lines = [], []
@@ -334,32 +336,35 @@ class HuntCog(commands.Cog):
             name = record.get("name", f"<@{uid}>")
             bar = progress_bar(hunted, daily_target, length=8)
             if hunted >= daily_target:
-                done_lines.append((hunted, f"✅ **{name}** — {bar} ({hunted}/{daily_target})"))
+                done_lines.append((hunted, t("hunt_done_line", lang, name=name, bar=bar, hunted=hunted, target=daily_target)))
             else:
                 remaining = daily_target - hunted
-                pending_lines.append((remaining, f"🕗 **{name}** — {bar} ({hunted}/{daily_target}, باقي {remaining})"))
+                pending_lines.append((
+                    remaining,
+                    t("hunt_pending_line", lang, name=name, bar=bar, hunted=hunted, target=daily_target, remaining=remaining),
+                ))
 
         done_lines.sort(key=lambda x: x[0], reverse=True)
         pending_lines.sort(key=lambda x: x[0])  # الأقرب للتارجت الأول
 
         embed = discord.Embed(
-            title="📊 القائمة الشاملة للصيد اليومي",
+            title=t("hunt_list_title", lang),
             color=GOLD,
             timestamp=datetime.now(timezone.utc),
         )
         if pending_lines:
             embed.add_field(
-                name=f"🕗 لسه ماوصلوش ({len(pending_lines)})",
+                name=t("hunt_list_pending_field", lang, count=len(pending_lines)),
                 value="\n".join(l for _, l in pending_lines[:20]) or "-",
                 inline=False,
             )
         if done_lines:
             embed.add_field(
-                name=f"✅ خلّصوا التارجت ({len(done_lines)})",
+                name=t("hunt_list_done_field", lang, count=len(done_lines)),
                 value="\n".join(l for _, l in done_lines[:20]) or "-",
                 inline=False,
             )
-        embed.set_footer(text=f"🎯 التارجت اليومي: {daily_target} | إجمالي الأعضاء المتابَعين: {len(members_data)}")
+        embed.set_footer(text=t("hunt_list_footer", lang, target=daily_target, count=len(members_data)))
         await interaction.response.send_message(embed=embed)
 
 

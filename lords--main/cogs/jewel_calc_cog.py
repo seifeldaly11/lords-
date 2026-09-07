@@ -125,7 +125,7 @@ class JewelCalcCog(commands.Cog):
         description="💎 حاسبة دمج الجواهر - احسب عدد جواهر Common المطلوبة للوصول للخرافي (Mythic)",
     )
     async def jewel_calc(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("jewel_pick_target", lang), view=JewelTierView(lang), ephemeral=True
         )

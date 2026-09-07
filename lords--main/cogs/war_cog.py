@@ -127,13 +127,13 @@ report_group = app_commands.Group(name="report", description="📝 تسجيل و
 @report_group.command(name="add", description="📝 سجّل معركة جديدة في السجل")
 @app_commands.checks.cooldown(1, 60.0, key=lambda i: i.user.id)
 async def report_add(interaction: discord.Interaction):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     await interaction.response.send_modal(ReportModal(lang))
 
 
 @report_add.error
 async def report_add_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     if isinstance(error, app_commands.CommandOnCooldown):
         msg = (
             f"⏳ استنى شوية قبل ما تسجّل تقرير تاني ({error.retry_after:.0f} ثانية)."
@@ -148,7 +148,7 @@ async def report_add_error(interaction: discord.Interaction, error: app_commands
 @report_group.command(name="list", description="📚 استدعاء آخر المعارك المسجلة في السيرفر")
 @app_commands.describe(count="عدد المعارك المطلوب عرضها (افتراضي 10)")
 async def report_list(interaction: discord.Interaction, count: app_commands.Range[int, 1, 25] = 10):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(REPORTS_FILE)
     entries = data.get(str(interaction.guild_id), [])
     if not entries:
@@ -173,7 +173,7 @@ async def report_list(interaction: discord.Interaction, count: app_commands.Rang
 
 @report_group.command(name="user", description="🔍 استدعاء سجل معارك عضو معيّن")
 async def report_user(interaction: discord.Interaction, member: discord.Member):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(REPORTS_FILE)
     entries = [e for e in data.get(str(interaction.guild_id), []) if e["author_id"] == member.id]
     if not entries:
@@ -287,27 +287,27 @@ class WarCog(commands.Cog):
 
     @app_commands.command(name="counter", description="⚔️ احصل على التشكيلة المضادة المثالية لتشكيلة العدو")
     async def counter(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("counter_prompt", lang), view=CounterView(lang), ephemeral=True
         )
 
     @app_commands.command(name="darknest", description="🏯 أفضل أبطال وتشكيلة لإسقاط الحصن المظلم")
     async def darknest(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("darknest_prompt", lang), view=DarknestView(self.darknest_data, lang), ephemeral=True
         )
 
     @app_commands.command(name="colo", description="🏟️ محاكي الكولوسيوم - التشكيلة المضادة لأبطال الخصم")
     async def colo(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_modal(ColoModal(lang))
 
     @app_commands.command(name="analyze", description="🖼️ محلل تقارير المعارك - ارفع صورة التقرير وأدخل الأرقام لتحليلها")
     @app_commands.describe(screenshot="صورة تقرير المعركة (اختياري - للتوثيق فقط)")
     async def analyze(self, interaction: discord.Interaction, screenshot: Optional[discord.Attachment] = None):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         note = ""
         if screenshot:
             if not (screenshot.content_type or "").startswith("image/"):

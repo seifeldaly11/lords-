@@ -586,7 +586,7 @@ class HelpCog(commands.Cog):
 
     @app_commands.command(name="help", description="📖 دليل كل أوامر البوت مع شرح كل أمر - Full command guide")
     async def help_cmd(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             embed=build_intro_embed(lang), view=HelpView(lang), ephemeral=True
         )

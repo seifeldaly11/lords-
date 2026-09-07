@@ -97,7 +97,7 @@ class AICog(commands.Cog):
         image: discord.Attachment = None,
         might: int = None,
     ):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
 
         if not question and not image:
             await interaction.response.send_message(t("ai_need_input", lang), ephemeral=True)
@@ -136,11 +136,11 @@ class AICog(commands.Cog):
 
     @ai.error
     async def ai_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.CommandOnCooldown):
             await interaction.response.send_message(t("ai_cooldown", lang, s=f"{error.retry_after:.0f}"), ephemeral=True)
         else:
-            await interaction.response.send_message("❌ حصل خطأ غير متوقع. / Unexpected error.", ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
 
 # ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ class GfOptimizeModal(discord.ui.Modal, title="🎉 مستشار مهرجان ا
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True, ephemeral=True)
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         loading_text = (
             "جارٍ تحليل مهمة مهرجان النقابة... ⏳" if lang == "ar" else "Analyzing your Guild Festival task... ⏳"
         )

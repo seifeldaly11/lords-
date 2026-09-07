@@ -9,7 +9,7 @@ from discord.ext import commands
 
 from utils.storage import load, save, load_json_data
 from utils.i18n import get_lang, t, ACTIVITY_TYPE_LABELS_I18N
-from cogs.rally_cog import RALLY_LOG_FILE, RALLY_TYPE_LABELS, RALLY_RESULT_LABELS
+from cogs.rally_cog import RALLY_LOG_FILE, rally_type_label, rally_result_label
 from cogs.war_cog import REPORTS_FILE
 
 ACTIVITY_FILE = "activity"
@@ -91,7 +91,7 @@ class LogActivityModal(discord.ui.Modal):
         self.reason.label = t("log_activity_reason_label", lang)
 
     async def on_submit(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         data = load(ACTIVITY_FILE)
         gid = str(interaction.guild_id)
         data.setdefault(gid, {})
@@ -158,7 +158,7 @@ class StatsEventView(discord.ui.View):
 
     @discord.ui.button(label="🏆 الأوائل", style=discord.ButtonStyle.success)
     async def top(self, interaction: discord.Interaction, button: discord.ui.Button):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         bucket = self._get_bucket()
         ranked = sorted(bucket.items(), key=lambda kv: len(kv[1]["logs"]), reverse=True)[:10]
         if not ranked:
@@ -173,7 +173,7 @@ class StatsEventView(discord.ui.View):
 
     @discord.ui.button(label="✅ المشاركون النشطون", style=discord.ButtonStyle.primary)
     async def active(self, interaction: discord.Interaction, button: discord.ui.Button):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         bucket = self._get_bucket()
         active_members = [v["name"] for v in bucket.values() if len(v["logs"]) >= 1]
         if not active_members:
@@ -185,7 +185,7 @@ class StatsEventView(discord.ui.View):
 
     @discord.ui.button(label="😴 غير المشاركين", style=discord.ButtonStyle.danger)
     async def inactive(self, interaction: discord.Interaction, button: discord.ui.Button):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         bucket = self._get_bucket()
         active_ids = set(bucket.keys())
         inactive_members = [
@@ -227,7 +227,7 @@ class GfTaskModal(discord.ui.Modal):
         self.minutes_until_due.placeholder = t("gf_minutes_placeholder", lang)
 
     async def on_submit(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         try:
             minutes = float(self.minutes_until_due.value)
             if minutes <= 0:
@@ -270,24 +270,24 @@ class GfTaskModal(discord.ui.Modal):
 @gf_group.command(name="task", description="🎉 [إدارة] أضف مهمة مهرجان تحالف لعضو مع تذكير قبل الانتهاء")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def gf_task(interaction: discord.Interaction, member: discord.Member):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     cog = interaction.client.get_cog("GuildCog")
     await interaction.response.send_modal(GfTaskModal(member, cog, lang))
 
 
 @gf_task.error
 async def gf_task_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     if isinstance(error, app_commands.MissingPermissions):
         await interaction.response.send_message(t("gf_leadership_only", lang), ephemeral=True)
     else:
-        await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
+        await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
 
 @gf_group.command(name="done", description="✅ [إدارة] علّم مهمة مهرجان تحالف كمكتملة")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def gf_done(interaction: discord.Interaction, member: discord.Member):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(GF_FILE)
     gid = str(interaction.guild_id)
     tasks = data.get(gid, {}).get("tasks", [])
@@ -305,16 +305,16 @@ async def gf_done(interaction: discord.Interaction, member: discord.Member):
 
 @gf_done.error
 async def gf_done_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     if isinstance(error, app_commands.MissingPermissions):
         await interaction.response.send_message(t("gf_leadership_only", lang), ephemeral=True)
     else:
-        await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
+        await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
 
 @gf_group.command(name="board", description="🏅 لوحة صدارة مهرجان التحالف")
 async def gf_board(interaction: discord.Interaction):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(GF_FILE)
     completed = data.get(str(interaction.guild_id), {}).get("completed", {})
     if not completed:
@@ -350,7 +350,7 @@ class QuizView(discord.ui.View):
             self.parent_view = parent_view
 
         async def callback(self, interaction: discord.Interaction):
-            lang = get_lang(interaction.guild_id)
+            lang = get_lang(interaction.guild_id, interaction.user.id)
             if interaction.user.id in self.parent_view.answered_users:
                 await interaction.response.send_message(t("quiz_already_answered", lang), ephemeral=True)
                 return
@@ -428,8 +428,8 @@ def build_admin_dashboard_embed(member: discord.Member, stats: dict, lang: str) 
     if rally_entries:
         recent_r = sorted(rally_entries, key=lambda e: e.get("timestamp", ""), reverse=True)[:5]
         lines = [
-            f"• {RALLY_TYPE_LABELS.get(e.get('rally_type'), '?')} - "
-            f"{RALLY_RESULT_LABELS.get(e.get('result'), '?')} — {e.get('timestamp', '')[:10]}"
+            f"• {rally_type_label(e.get('rally_type'), lang)} - "
+            f"{rally_result_label(e.get('result'), lang)} — {e.get('timestamp', '')[:10]}"
             for e in recent_r
         ]
         embed.add_field(name=t("admin_dashboard_recent_rallies_field", lang), value="\n".join(lines), inline=False)
@@ -451,7 +451,7 @@ class AdminCheckView(discord.ui.View):
         self.add_item(self.select)
 
     async def on_select(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         member = self.select.values[0]
         gid = str(interaction.guild_id)
         stats = compute_member_stats(gid, member.id)
@@ -473,7 +473,7 @@ class GuildCog(commands.Cog):
     @app_commands.command(name="log_activity", description="📋 [إدارة] سجّل مشاركة عضو في نشاط (حشود، مهرجان، ساحة تنين، KvK)")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def log_activity(self, interaction: discord.Interaction, member: discord.Member):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("log_activity_prompt", lang, member=member.mention),
             view=ActivityTypeView(member, lang),
@@ -482,18 +482,18 @@ class GuildCog(commands.Cog):
 
     @log_activity.error
     async def log_activity_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
                 t("log_activity_admin_only", lang),
                 ephemeral=True,
             )
         else:
-            await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
     @app_commands.command(name="stats_event", description="📊 عرض تفاعلي لإحصائيات مشاركة الأعضاء")
     async def stats_event(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("stats_event_prompt", lang), view=StatsEventView(interaction.guild, lang), ephemeral=True
         )
@@ -504,7 +504,7 @@ class GuildCog(commands.Cog):
     )
     @app_commands.describe(member="العضو المطلوب استعلام ملفه (افتراضياً نفسك)")
     async def information(self, interaction: discord.Interaction, member: Optional[discord.Member] = None):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         target = member or interaction.user
         gid = str(interaction.guild_id)
         uid = target.id
@@ -538,11 +538,11 @@ class GuildCog(commands.Cog):
                 "info_rally_value",
                 lang,
                 total=rally_total,
-                attack_label=RALLY_TYPE_LABELS["attack"],
+                attack_label=rally_type_label("attack", lang),
                 attack=rally_attack,
-                defense_label=RALLY_TYPE_LABELS["defense"],
+                defense_label=rally_type_label("defense", lang),
                 defense=rally_defense,
-                win_label=RALLY_RESULT_LABELS["win"],
+                win_label=rally_result_label("win", lang),
                 wins=rally_wins,
             ),
             inline=True,
@@ -571,24 +571,24 @@ class GuildCog(commands.Cog):
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def user_admin_check(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("admin_check_prompt", lang), view=AdminCheckView(lang), ephemeral=True
         )
 
     @user_admin_check.error
     async def user_admin_check_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
                 t("admin_check_permission_denied", lang), ephemeral=True
             )
         else:
-            await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
     @app_commands.command(name="top5", description="🏆 أنشط 5 أعضاء في كل الفعاليات والحشود مجتمعة")
     async def top5(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         gid = str(interaction.guild_id)
         scores = compute_all_members_scores(gid)
         if not scores:
@@ -622,7 +622,7 @@ class GuildCog(commands.Cog):
         ]
     )
     async def event_stats(self, interaction: discord.Interaction, event_type: app_commands.Choice[str]):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         gid = str(interaction.guild_id)
         activity_data = load(ACTIVITY_FILE).get(gid, {})
         total_members = [m for m in interaction.guild.members if not m.bot]
@@ -672,7 +672,11 @@ class GuildCog(commands.Cog):
 
     async def gf_reminder(self, delay, channel, member, task_name, minutes_left):
         await asyncio.sleep(delay)
-        lang = get_lang(channel.guild.id) if channel and getattr(channel, "guild", None) else "ar"
+        lang = (
+            get_lang(channel.guild.id, member.id)
+            if channel and getattr(channel, "guild", None)
+            else "ar"
+        )
         text = t("gf_reminder_text", lang, task=task_name, member=member.mention, minutes=minutes_left)
         try:
             if channel:
@@ -686,7 +690,7 @@ class GuildCog(commands.Cog):
 
     @app_commands.command(name="quiz", description="🧠 سؤال مسابقة سريع عن لوردس موبايل - اجمع نقاط وارفع رتبتك!")
     async def quiz(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         question = random.choice(self.quiz_questions)
         view = QuizView(question, self, lang)
         embed = discord.Embed(
@@ -700,7 +704,7 @@ class GuildCog(commands.Cog):
     @app_commands.command(name="reset_stats", description="🔄 [إدارة فقط] تصفير سجلات النشاط والمسابقة لبدء أسبوع جديد")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_stats(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("reset_confirm_prompt", lang),
             view=ResetConfirmView(lang),
@@ -709,11 +713,11 @@ class GuildCog(commands.Cog):
 
     @reset_stats.error
     async def reset_stats_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(t("reset_admin_only_full", lang), ephemeral=True)
         else:
-            await interaction.response.send_message(t("err_unexpected", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
 
 class ResetConfirmView(discord.ui.View):
@@ -725,7 +729,7 @@ class ResetConfirmView(discord.ui.View):
 
     @discord.ui.button(label="نعم، صفّر كل شيء", style=discord.ButtonStyle.danger, emoji="🗑️")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message(t("reset_confirm_admin_only", lang), ephemeral=True)
             return
@@ -739,7 +743,7 @@ class ResetConfirmView(discord.ui.View):
 
     @discord.ui.button(label="إلغاء", style=discord.ButtonStyle.secondary)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.edit_message(content=t("reset_confirm_cancelled", lang), view=None)
 
 

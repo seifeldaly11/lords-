@@ -33,7 +33,7 @@ intents.message_content = True  # مطلوب عشان البوت يرد على @
 bot = commands.Bot(command_prefix="!lm-unused!", intents=intents, help_command=None)
 
 INITIAL_EXTENSIONS = [
-    "cogs.settings_cog",  # /language - يفضّل يتحمّل بدري عشان الأوامر التانية تلاقي التفضيل جاهز
+    "cogs.settings_cog",  # /language server + /language me - تحميل مبكر لتفضيلات اللغة
     "cogs.setup_cog",  # /setup - دليل التثبيت السريع للجدد (لغة/قناة صيد/رتبة قيادة بضغطة زر)
     "cogs.help_cog",  # /help - دليل الأوامر الكامل
     "cogs.events_cog",
@@ -78,7 +78,10 @@ async def on_message(message: discord.Message):
         ),
         None,
     )
-    lang = get_lang(message.guild.id if message.guild else None)
+    lang = get_lang(
+        message.guild.id if message.guild else None,
+        message.author.id,
+    )
 
     if not prompt and image is None:
         await message.reply(
@@ -103,7 +106,7 @@ async def on_message(message: discord.Message):
     except Exception:
         log.exception("فشل رد AI على منشن من %s", message.author)
         await message.reply(
-            "⚠️ حصل خطأ أثناء معالجة السؤال. جرّب تاني بعد شوية.",
+            t("ai_mention_error", lang),
             mention_author=False,
             allowed_mentions=discord.AllowedMentions.none(),
         )

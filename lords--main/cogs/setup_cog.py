@@ -115,7 +115,7 @@ def build_diagnostics_embed(interaction: discord.Interaction) -> discord.Embed:
     """يبني تقرير حالة حقيقي لكل إعداد - بيتحقق من صلاحيات فعلية مش بس إن القيمة متسجلة."""
     guild = interaction.guild
     me = guild.me if guild else None
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
 
     lines: list[str] = []
 
@@ -223,7 +223,7 @@ class SetupCog(commands.Cog):
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setup_cmd(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         embed = styled_embed(
             title="⚙️ دليل التثبيت السريع",
             description=(
@@ -248,7 +248,7 @@ class SetupCog(commands.Cog):
 
     @setup_cmd.error
     async def setup_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             msg = "❌ الأمر ده يحتاج صلاحية Manage Server." if lang == "ar" else "❌ This command requires Manage Server."
             await interaction.response.send_message(msg, ephemeral=True)
@@ -266,7 +266,7 @@ class SetupCog(commands.Cog):
 
     @setup_check.error
     async def setup_check_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             msg = "❌ الأمر ده يحتاج صلاحية Manage Server." if lang == "ar" else "❌ This command requires Manage Server."
             await interaction.response.send_message(msg, ephemeral=True)

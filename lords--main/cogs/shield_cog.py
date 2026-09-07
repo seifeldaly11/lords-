@@ -24,30 +24,32 @@ from discord.ext import commands
 
 from utils.storage import get_game_link, get_leadership_role_id
 from utils.ui import styled_embed, progress_bar, CRIMSON, GOLD, EMERALD
+from utils.i18n import get_lang, t
 
 log = logging.getLogger("lordsbot.shield")
 
 UNIT_SECONDS = {"minutes": 60, "hours": 3600, "days": 86400}
-UNIT_LABEL_AR = {"minutes": "دقيقة", "hours": "ساعة", "days": "يوم"}
+# مفاتيح i18n لكل وحدة، بيستعيروا نفس مفاتيح fmt_unit_* المستخدمة في events_cog.py
+UNIT_LABEL_KEYS = {"minutes": "fmt_unit_minute", "hours": "fmt_unit_hour", "days": "fmt_unit_day"}
 PRE_ALERT_SECONDS = 15 * 60          # تنبيه قبل الانتهاء بـ15 دقيقة
 ESCALATION_PING_EVERY = 25           # كل قد إيه (بالثواني) يعيد المنشن وقت التصعيد الصوتي
 MAX_ESCALATION_SECONDS = 30 * 60     # أقصى وقت يفضل البوت واقف في الروم يرن من غير رد
 
 
-def fmt_seconds(total_seconds: float) -> str:
-    """يحوّل عدد الثواني لصيغة أيام/ساعات/دقايق مقروءة."""
+def fmt_seconds(total_seconds: float, lang: str) -> str:
+    """يحوّل عدد الثواني لصيغة أيام/ساعات/دقايق مقروءة حسب اللغة."""
     total_seconds = max(0, int(total_seconds))
     days, rem = divmod(total_seconds, 86400)
     hours, rem = divmod(rem, 3600)
     minutes, _ = divmod(rem, 60)
     parts = []
     if days:
-        parts.append(f"{days} يوم")
+        parts.append(f"{days} {t('fmt_unit_day', lang)}")
     if hours:
-        parts.append(f"{hours} ساعة")
+        parts.append(f"{hours} {t('fmt_unit_hour', lang)}")
     if minutes or not parts:
-        parts.append(f"{minutes} دقيقة")
-    return " و ".join(parts)
+        parts.append(f"{minutes} {t('fmt_unit_minute', lang)}")
+    return t("fmt_joiner", lang).join(parts)
 
 
 # ---------------------------------------------------------------------------
@@ -81,8 +83,8 @@ class SirenAudioSource(discord.AudioSource):
         freq = self.low_freq if cycle_pos == 0 else self.high_freq
         buf = array.array("h")
         for i in range(n):
-            t = (self._sample_index + i) / self.SAMPLE_RATE
-            value = int(self.volume * 32767 * math.sin(2 * math.pi * freq * t))
+            t_ = (self._sample_index + i) / self.SAMPLE_RATE
+            value = int(self.volume * 32767 * math.sin(2 * math.pi * freq * t_))
             buf.append(value)  # قناة شمال
             buf.append(value)  # قناة يمين
         self._sample_index += n
@@ -108,6 +110,7 @@ class ShieldTimer:
         channel: discord.abc.Messageable,
         user: discord.abc.User,
         duration_seconds: float,
+        lang: str,
         repeat_interval_seconds: Optional[float] = None,
         fallback_voice_channel: Optional[discord.VoiceChannel] = None,
         leadership_role: Optional[discord.Role] = None,
@@ -117,6 +120,7 @@ class ShieldTimer:
         self.channel = channel
         self.user = user
         self.duration_seconds = duration_seconds
+        self.lang = lang  # لغة السيرفر وقت إنشاء المنبه - تُستخدم في كل الرسائل اللاحقة (Task في الخلفية)
         self.repeat_interval_seconds = repeat_interval_seconds
         self.fallback_voice_channel = fallback_voice_channel
         self.leadership_role = leadership_role  # رتبة R4/R5 تتمنشن لو محدش رد وقت التصعيد
@@ -137,25 +141,27 @@ def timer_key(guild_id: int, user_id: int) -> str:
 # ---------------------------------------------------------------------------
 
 class ShieldAckView(discord.ui.View):
-    def __init__(self, cog: "ShieldCog", key: str, owner_id: int):
+    def __init__(self, cog: "ShieldCog", key: str, owner_id: int, lang: str):
         super().__init__(timeout=None)
         self.cog = cog
         self.key = key
         self.owner_id = owner_id
+        self.lang = lang
+        self.ack.label = t("shield_ack_button", lang)
+        self.renew.label = t("shield_renew_button", lang)
 
     @discord.ui.button(label="✅ استلمت / Done", style=discord.ButtonStyle.success)
     async def ack(self, interaction: discord.Interaction, button: discord.ui.Button):
+        lang = self.lang
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message(
-                "❌ الزرار ده مخصص لصاحب الدرع بس.", ephemeral=True
-            )
+            await interaction.response.send_message(t("shield_ack_owner_only", lang), ephemeral=True)
             return
         timer = self.cog.active.get(self.key)
         if not timer:
-            await interaction.response.send_message("ℹ️ مفيش منبه شغال دلوقتي.", ephemeral=True)
+            await interaction.response.send_message(t("shield_no_active_alarm", lang), ephemeral=True)
             return
         timer.ack_event.set()
-        await interaction.response.send_message("✅ تمام، تم إيقاف المنبه.", ephemeral=True)
+        await interaction.response.send_message(t("shield_ack_stopped", lang), ephemeral=True)
         button.disabled = True
         try:
             await interaction.message.edit(view=self)
@@ -165,14 +171,13 @@ class ShieldAckView(discord.ui.View):
     @discord.ui.button(label="🛡️ تجديد الدرع", style=discord.ButtonStyle.primary)
     async def renew(self, interaction: discord.Interaction, button: discord.ui.Button):
         """زر لمسة واحدة يعيد تشغيل منبه بنفس مدة الدرع الأصلية من غير ما تكتب /shield تاني."""
+        lang = self.lang
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message(
-                "❌ الزرار ده مخصص لصاحب الدرع بس.", ephemeral=True
-            )
+            await interaction.response.send_message(t("shield_ack_owner_only", lang), ephemeral=True)
             return
         timer = self.cog.active.get(self.key)
         if not timer:
-            await interaction.response.send_message("ℹ️ مفيش منبه شغال دلوقتي عشان أجدده.", ephemeral=True)
+            await interaction.response.send_message(t("shield_no_active_to_renew", lang), ephemeral=True)
             return
         timer.ack_event.set()
         await self.cog.renew_timer(interaction, timer)
@@ -200,19 +205,18 @@ class ShieldCog(commands.Cog):
         voice_channel: Optional[discord.VoiceChannel],
         leadership_role: Optional[discord.Role] = None,
     ):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+
         if amount <= 0:
-            await interaction.response.send_message("❌ المدة لازم تكون رقم أكبر من صفر.", ephemeral=True)
+            await interaction.response.send_message(t("shield_duration_invalid", lang), ephemeral=True)
             return
         if repeat_every_hours is not None and repeat_every_hours <= 0:
-            await interaction.response.send_message("❌ مدة التكرار لازم تكون رقم أكبر من صفر.", ephemeral=True)
+            await interaction.response.send_message(t("shield_repeat_invalid", lang), ephemeral=True)
             return
 
         key = timer_key(interaction.guild_id, interaction.user.id)
         if key in self.active:
-            await interaction.response.send_message(
-                "⚠️ عندك منبه درع شغال بالفعل. استخدم `/shelter_done` الأول لو عايز توقفه أو تبدأ واحد جديد.",
-                ephemeral=True,
-            )
+            await interaction.response.send_message(t("shield_already_active", lang), ephemeral=True)
             return
 
         # لو محدش حدد رتبة قيادة يدوياً، استخدم الرتبة الافتراضية اللي اتضبطت بـ /setup (لو موجودة)
@@ -230,6 +234,7 @@ class ShieldCog(commands.Cog):
             channel=interaction.channel,
             user=interaction.user,
             duration_seconds=duration_seconds,
+            lang=lang,
             repeat_interval_seconds=repeat_seconds,
             fallback_voice_channel=voice_channel,
             leadership_role=leadership_role,
@@ -238,15 +243,15 @@ class ShieldCog(commands.Cog):
         timer.task = asyncio.create_task(self._run_cycle(timer))
 
         await interaction.response.send_message(
-            embed=self._build_start_embed(amount, unit, duration_seconds, repeat_every_hours, leadership_role),
-            view=self._build_link_view(interaction.guild_id),
+            embed=self._build_start_embed(amount, unit, duration_seconds, repeat_every_hours, leadership_role, lang),
+            view=self._build_link_view(interaction.guild_id, lang),
             ephemeral=True,
         )
 
-    def _build_link_view(self, guild_id: int) -> discord.ui.View:
+    def _build_link_view(self, guild_id: int, lang: str) -> discord.ui.View:
         link = get_game_link(guild_id)
         view = discord.ui.View()
-        view.add_item(discord.ui.Button(label="📲 افتح اللعبة", url=link, style=discord.ButtonStyle.link))
+        view.add_item(discord.ui.Button(label=t("shield_open_game_button", lang), url=link, style=discord.ButtonStyle.link))
         return view
 
     def _build_start_embed(
@@ -256,29 +261,32 @@ class ShieldCog(commands.Cog):
         duration_seconds: float,
         repeat_every_hours: Optional[int],
         leadership_role: Optional[discord.Role],
+        lang: str,
     ) -> discord.Embed:
         end_time = datetime.now(timezone.utc) + timedelta(seconds=duration_seconds)
+        unit_label = t(UNIT_LABEL_KEYS[unit.value], lang)
         embed = styled_embed(
-            title="🛡️ منبه الدرع الذكي اتفعّل",
-            description=f"مدة الدرع: **{amount} {UNIT_LABEL_AR[unit.value]}**",
+            title=t("shield_started_title", lang),
+            description=t("shield_duration_desc", lang, amount=amount, unit=unit_label),
             color=GOLD,
         )
-        embed.add_field(name="⏰ هينتهي تقريباً", value=f"`{end_time.strftime('%H:%M UTC')}`", inline=True)
-        embed.add_field(name="🔔 التنبيه الأول", value="قبل الانتهاء بـ 15 دقيقة (رسالة + DM)", inline=True)
-        escalation_note = "😈 هدخل الروم الصوتية اللي انت فيها وأرن بصوت إنذار لو محدش رد."
+        embed.add_field(name=t("shield_end_time_field", lang), value=f"`{end_time.strftime('%H:%M UTC')}`", inline=True)
+        embed.add_field(name=t("shield_first_alert_field", lang), value=t("shield_first_alert_value", lang), inline=True)
+        escalation_note = t("shield_escalation_value", lang)
         if leadership_role:
-            escalation_note += f"\n📣 هتم منشنة {leadership_role.mention} كمان لو محدش استلم."
-        embed.add_field(name="🚨 لو محدش رد", value=escalation_note, inline=False)
+            escalation_note += t("shield_escalation_role_note", lang, role=leadership_role.mention)
+        embed.add_field(name=t("shield_escalation_field", lang), value=escalation_note, inline=False)
         if repeat_every_hours:
             embed.add_field(
-                name="🔁 تكرار تلقائي",
-                value=f"كل **{repeat_every_hours} ساعة** لحد `/shelter_done stop_repeat:True`",
+                name=t("shield_repeat_field", lang),
+                value=t("shield_repeat_value", lang, hours=repeat_every_hours),
                 inline=False,
             )
         return embed
 
     async def renew_timer(self, interaction: discord.Interaction, old_timer: "ShieldTimer") -> None:
         """يعيد إنشاء منبه جديد بنفس مدة/إعدادات القديم (زرار 🛡️ تجديد الدرع)."""
+        lang = old_timer.lang
         key = timer_key(old_timer.guild_id, old_timer.user_id)
         self.active.pop(key, None)
 
@@ -288,6 +296,7 @@ class ShieldCog(commands.Cog):
             channel=old_timer.channel,
             user=old_timer.user,
             duration_seconds=old_timer.duration_seconds,
+            lang=lang,
             repeat_interval_seconds=old_timer.repeat_interval_seconds,
             fallback_voice_channel=old_timer.fallback_voice_channel,
             leadership_role=old_timer.leadership_role,
@@ -296,8 +305,8 @@ class ShieldCog(commands.Cog):
         new_timer.task = asyncio.create_task(self._run_cycle(new_timer))
 
         embed = styled_embed(
-            title="🛡️ تم تجديد الدرع",
-            description=f"منبه جديد بمدة **{fmt_seconds(old_timer.duration_seconds)}** ابتدى من دلوقتي.",
+            title=t("shield_renewed_title", lang),
+            description=t("shield_renewed_desc", lang, duration=fmt_seconds(old_timer.duration_seconds, lang)),
             color=EMERALD,
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -368,16 +377,17 @@ class ShieldCog(commands.Cog):
     )
     @app_commands.describe(stop_repeat="ألغِ أي تكرار مجدول لهذا المنبه كمان؟ (افتراضياً: لأ)")
     async def shelter_done(self, interaction: discord.Interaction, stop_repeat: bool = False):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         key = timer_key(interaction.guild_id, interaction.user.id)
         timer = self.active.get(key)
         if not timer:
-            await interaction.response.send_message("ℹ️ مفيش عندك منبه درع شغال دلوقتي.", ephemeral=True)
+            await interaction.response.send_message(t("shield_done_no_active", lang), ephemeral=True)
             return
         timer.ack_event.set()
         if stop_repeat:
             timer.cancelled = True
         await interaction.response.send_message(
-            "✅ تم إيقاف المنبه" + (" وإلغاء التكرار." if stop_repeat else "."),
+            t("shield_done_stopped_and_repeat", lang) if stop_repeat else t("shield_done_stopped_plain", lang),
             ephemeral=True,
         )
 
@@ -385,6 +395,7 @@ class ShieldCog(commands.Cog):
 
     async def _run_cycle(self, timer: ShieldTimer):
         key = timer_key(timer.guild_id, timer.user_id)
+        lang = timer.lang
         try:
             while True:
                 timer.ack_event.clear()
@@ -396,8 +407,11 @@ class ShieldCog(commands.Cog):
 
                 try:
                     await timer.channel.send(
-                        f"🔁 هيتعاد منبه الدرع لـ{timer.user.mention} تلقائياً بعد "
-                        f"**{fmt_seconds(timer.repeat_interval_seconds)}**."
+                        t(
+                            "shield_repeat_auto_notice", lang,
+                            user=timer.user.mention,
+                            time=fmt_seconds(timer.repeat_interval_seconds, lang),
+                        )
                     )
                 except discord.HTTPException:
                     pass
@@ -441,18 +455,19 @@ class ShieldCog(commands.Cog):
         await self._escalate(timer)
 
     async def _send_pre_alert(self, timer: ShieldTimer):
+        lang = timer.lang
         elapsed = max(0.0, timer.duration_seconds - PRE_ALERT_SECONDS)
         embed = styled_embed(
-            title="⏰ تنبيه: الدرع هينتهي خلال 15 دقيقة!",
-            description="جهّز جيشك 🛡️ لو أنت فاكر خلاص، دوس زرار **✅ استلمت** تحت أو اكتب `/shelter_done`.",
+            title=t("shield_pre_alert_title", lang),
+            description=t("shield_pre_alert_desc", lang),
             color=CRIMSON,
         )
         embed.add_field(
-            name="📊 نسبة انقضاء الدرع",
+            name=t("shield_progress_field", lang),
             value=progress_bar(elapsed, timer.duration_seconds),
             inline=False,
         )
-        view = ShieldAckView(self, timer_key(timer.guild_id, timer.user_id), timer.user_id)
+        view = ShieldAckView(self, timer_key(timer.guild_id, timer.user_id), timer.user_id, lang)
         try:
             if timer.channel:
                 await timer.channel.send(content=timer.user.mention, embed=embed, view=view)
@@ -477,6 +492,7 @@ class ShieldCog(commands.Cog):
             pass  # الميزة دي مش متاحة في كل نسخ discord.py أو مفيش أصوات مضبوطة أصلاً
 
     async def _escalate(self, timer: ShieldTimer):
+        lang = timer.lang
         guild = self.bot.get_guild(timer.guild_id)
         if guild is None:
             return
@@ -507,12 +523,12 @@ class ShieldCog(commands.Cog):
                 vc = None
 
         try:
+            desc = (
+                t("shield_escalated_room_line", lang, channel=target_channel.name) if target_channel else ""
+            ) + t("shield_escalated_instructions", lang)
             embed = styled_embed(
-                title="🚨 الدرع خلص ومردتش!",
-                description=(
-                    (f"دخلت روم **{target_channel.name}** هرن لحد ما ترد 😈\n" if target_channel else "")
-                    + "اكتب `/shelter_done` أو دوس زرار \"✅ استلمت\" فوق عشان أسكت."
-                ),
+                title=t("shield_escalated_title", lang),
+                description=desc,
                 color=CRIMSON,
             )
             mentions = timer.user.mention
@@ -534,9 +550,7 @@ class ShieldCog(commands.Cog):
                 if timer.cancelled:
                     break
                 try:
-                    await timer.channel.send(
-                        f"🔊 {timer.user.mention} لسه مستني رد! `/shelter_done` وهسكت فوراً 🙏"
-                    )
+                    await timer.channel.send(t("shield_escalation_ping", lang, user=timer.user.mention))
                 except discord.HTTPException:
                     pass
 
@@ -552,17 +566,19 @@ class ShieldCog(commands.Cog):
         try:
             if acknowledged:
                 embed = styled_embed(
-                    title="✅ تم الاستلام",
-                    description=f"تمام يا {timer.user.mention}! استلمت، خرجت من الروم. 🫡",
+                    title=t("shield_ack_done_title", lang),
+                    description=t("shield_ack_done_desc", lang, user=timer.user.mention),
                     color=EMERALD,
                 )
                 renew_view = discord.ui.View(timeout=300)
-                renew_button = discord.ui.Button(label="🛡️ تجديد الدرع بنفس المدة", style=discord.ButtonStyle.primary)
+                renew_button = discord.ui.Button(
+                    label=t("shield_renew_same_duration_button", lang), style=discord.ButtonStyle.primary
+                )
 
                 async def _renew_callback(interaction: discord.Interaction, _timer=timer):
                     if interaction.user.id != _timer.user_id:
                         await interaction.response.send_message(
-                            "❌ الزرار ده مخصص لصاحب الدرع بس.", ephemeral=True
+                            t("shield_ack_owner_only", _timer.lang), ephemeral=True
                         )
                         return
                     await self.renew_timer(interaction, _timer)
@@ -572,8 +588,8 @@ class ShieldCog(commands.Cog):
                 await timer.channel.send(embed=embed, view=renew_view)
             else:
                 embed = styled_embed(
-                    title="⌛ خرجت من الروم",
-                    description=f"بعد محاولات كتير من غير رد من {timer.user.mention}.",
+                    title=t("shield_gave_up_title", lang),
+                    description=t("shield_gave_up_desc", lang, user=timer.user.mention),
                     color=CRIMSON,
                 )
                 await timer.channel.send(embed=embed)

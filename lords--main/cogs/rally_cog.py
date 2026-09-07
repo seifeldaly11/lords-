@@ -13,14 +13,22 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.storage import load, save, get_game_link
-from utils.i18n import get_lang, t
+from utils.i18n import get_lang, t, RALLY_TYPE_LABELS_I18N, RALLY_RESULT_LABELS_I18N
 
 TROOP_FILE = "member_troops"
 RALLY_LOG_FILE = "rally_log"
 DEFAULT_APP_LINK = os.getenv("GAME_APP_LINK", "https://www.lordsmobile.com/")
 
-RALLY_TYPE_LABELS = {"attack": "⚔️ هجوم", "defense": "🛡️ دفاع"}
-RALLY_RESULT_LABELS = {"win": "🏆 فوز", "loss": "❌ خسارة", "draw": "🤝 تعادل"}
+RALLY_TYPE_LABELS = RALLY_TYPE_LABELS_I18N
+RALLY_RESULT_LABELS = RALLY_RESULT_LABELS_I18N
+
+
+def rally_type_label(value: str, lang: str) -> str:
+    return RALLY_TYPE_LABELS.get(value, {}).get(lang, value)
+
+
+def rally_result_label(value: str, lang: str) -> str:
+    return RALLY_RESULT_LABELS.get(value, {}).get(lang, value)
 
 TROOP_LABELS = {
     "infantry": {"ar": "🛡️ مشاة", "en": "🛡️ Infantry"},
@@ -47,7 +55,7 @@ troop_group = app_commands.Group(name="troop", description="🪖 تسجيل/عر
     troop=[app_commands.Choice(name=TROOP_LABELS[k]["ar"] + " / " + TROOP_LABELS[k]["en"], value=k) for k in TROOP_LABELS]
 )
 async def troop_set(interaction: discord.Interaction, troop: app_commands.Choice[str]):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(TROOP_FILE)
     gid = str(interaction.guild_id)
     data.setdefault(gid, {})
@@ -75,7 +83,7 @@ rally_group = app_commands.Group(name="rally", description="📯 نداء حشو
     troop=[app_commands.Choice(name=TROOP_LABELS[k]["ar"] + " / " + TROOP_LABELS[k]["en"], value=k) for k in TROOP_LABELS if k != "hybrid"]
 )
 async def rally_set(interaction: discord.Interaction, troop: app_commands.Choice[str], minutes: int = 5, note: str = None):
-    lang = get_lang(interaction.guild_id)
+    lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(TROOP_FILE)
     gid = str(interaction.guild_id)
     members = data.get(gid, {})
@@ -148,51 +156,57 @@ class RallyCog(commands.Cog):
         result: app_commands.Choice[str],
         note: Optional[str] = None,
     ):
-        view = RallyLogView(rally_type.value, result.value, note, str(interaction.user))
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        view = RallyLogView(rally_type.value, result.value, note, str(interaction.user), lang)
         await interaction.response.send_message(
-            "اختر الأعضاء المشاركين في الحشد من القائمة تحت، وبعدين دوس **تأكيد التسجيل**:",
+            t("rally_log_prompt", lang),
             view=view,
             ephemeral=True,
         )
 
     @rally_log.error
     async def rally_log_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
-                "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).", ephemeral=True
+                t("rally_log_admin_only", lang), ephemeral=True
             )
         else:
-            await interaction.response.send_message("❌ حصل خطأ غير متوقع.", ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
 
 class RallyLogView(discord.ui.View):
     """نافذة اختيار الأعضاء المشاركين في الحشد (حتى 25 عضو دفعة واحدة) وتأكيد التسجيل."""
 
-    def __init__(self, rally_type: str, result: str, note: Optional[str], logged_by: str):
+    def __init__(self, rally_type: str, result: str, note: Optional[str], logged_by: str, lang: str):
         super().__init__(timeout=180)
         self.rally_type = rally_type
         self.result = result
         self.note = note
         self.logged_by = logged_by
+        self.lang = lang
         self.selected_ids: list[int] = []
 
         self.user_select = discord.ui.UserSelect(
-            placeholder="اختر الأعضاء المشاركين في الحشد...", min_values=1, max_values=25
+            placeholder=t("rally_select_placeholder", lang), min_values=1, max_values=25
         )
         self.user_select.callback = self.on_select
         self.add_item(self.user_select)
+        self.confirm.label = t("rally_confirm_button", lang)
 
     async def on_select(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         self.selected_ids = [u.id for u in self.user_select.values]
         await interaction.response.send_message(
-            f"✅ اخترت **{len(self.selected_ids)}** عضو. دوس زرار \"تأكيد التسجيل\" تحت عشان تحفظ.",
+            t("rally_select_confirm_hint", lang, count=len(self.selected_ids)),
             ephemeral=True,
         )
 
     @discord.ui.button(label="✅ تأكيد التسجيل", style=discord.ButtonStyle.success, row=1)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if not self.selected_ids:
-            await interaction.response.send_message("❌ لازم تختار عضو واحد على الأقل قبل التأكيد.", ephemeral=True)
+            await interaction.response.send_message(t("rally_log_need_member", lang), ephemeral=True)
             return
 
         data = load(RALLY_LOG_FILE)
@@ -210,13 +224,13 @@ class RallyLogView(discord.ui.View):
         save(RALLY_LOG_FILE, data)
 
         mentions = "، ".join(f"<@{uid}>" for uid in self.selected_ids)
-        embed = discord.Embed(title="✅ تم تسجيل حضور الحشد", color=discord.Color.green())
-        embed.add_field(name="🧭 النوع", value=RALLY_TYPE_LABELS[self.rally_type], inline=True)
-        embed.add_field(name="🏆 النتيجة", value=RALLY_RESULT_LABELS[self.result], inline=True)
-        embed.add_field(name="👥 الأعضاء المشاركون", value=mentions, inline=False)
+        embed = discord.Embed(title=t("rally_log_success_title", lang), color=discord.Color.green())
+        embed.add_field(name=t("rally_log_type_field", lang), value=rally_type_label(self.rally_type, lang), inline=True)
+        embed.add_field(name=t("rally_log_result_field", lang), value=rally_result_label(self.result, lang), inline=True)
+        embed.add_field(name=t("rally_log_members_field", lang), value=mentions, inline=False)
         if self.note and self.note != "-":
-            embed.add_field(name="📝 ملاحظة", value=self.note, inline=False)
-        embed.set_footer(text=f"سجّله: {self.logged_by}")
+            embed.add_field(name=t("rally_note_field", lang), value=self.note, inline=False)
+        embed.set_footer(text=t("rally_log_footer", lang, by=self.logged_by))
 
         for child in self.children:
             child.disabled = True

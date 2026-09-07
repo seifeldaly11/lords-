@@ -123,7 +123,7 @@ class GamesCog(commands.Cog):
     @app_commands.command(name="play", description="🎮 خمّن اسم العنصر (عتاد/بطل/وحش/مرافق) خلال 30 ثانية! | Guess the item's name in 30s")
     @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
     async def play(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
 
         if GAME_CHANNEL_ID and str(interaction.channel_id) != str(GAME_CHANNEL_ID):
             await interaction.response.send_message(
@@ -145,7 +145,7 @@ class GamesCog(commands.Cog):
 
     @play.error
     async def play_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.CommandOnCooldown):
             await interaction.response.send_message(
                 t("play_cooldown", lang, s=f"{error.retry_after:.0f}"), ephemeral=True

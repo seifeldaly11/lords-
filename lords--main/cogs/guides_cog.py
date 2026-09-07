@@ -230,7 +230,7 @@ class GuidesCog(commands.Cog):
 
     @app_commands.command(name="gear", description="🛡️ أفضل عتاد لكل نوع قوات (F2P/P2P)")
     async def gear(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("gear_choose_troop", lang),
             view=GearTypeView(self.gear_data, lang, interaction.user.id),
