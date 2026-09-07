@@ -33,6 +33,7 @@ intents.message_content = True  # مطلوب عشان البوت يرد على @
 bot = commands.Bot(command_prefix="!lm-unused!", intents=intents, help_command=None)
 
 INITIAL_EXTENSIONS = [
+    "cogs.components_cog",  # /test و !test - واجهة الأزرار والقائمة من العينة المرفقة
     "cogs.settings_cog",  # /language server + /language me - تحميل مبكر لتفضيلات اللغة
     "cogs.setup_cog",  # /setup - دليل التثبيت السريع للجدد (لغة/قناة صيد/رتبة قيادة بضغطة زر)
     "cogs.help_cog",  # /help - دليل الأوامر الكامل
@@ -56,6 +57,12 @@ INITIAL_EXTENSIONS = [
 async def on_message(message: discord.Message):
     """يرد على منشن البوت بنفس مستشار Cohere، مع دعم الصور المرفقة."""
     if message.author.bot:
+        return
+
+    if message.content.strip() == "!test":
+        components_cog = bot.get_cog("ComponentsCog")
+        if components_cog is not None:
+            await components_cog.send_test_message(message.channel)
         return
 
     if bot.user is None or bot.user not in message.mentions:
