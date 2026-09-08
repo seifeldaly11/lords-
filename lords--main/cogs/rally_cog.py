@@ -155,7 +155,7 @@ class RallyJoinView(discord.ui.View):
             if field.name == t("rally_joiners_field", self.lang):
                 self.embed.set_field_at(index, name=field.name, value=mentions[:1024], inline=False)
                 break
-        button.label = f"✅ {t("rally_join_button_short", self.lang)} ({len(self.participant_ids)})"
+        button.label = f"✅ {t('rally_join_button_short', self.lang)} ({len(self.participant_ids)})"
         await interaction.response.edit_message(embed=self.embed, view=self)
         await interaction.followup.send(t("rally_joined_success", self.lang), ephemeral=True)
 
