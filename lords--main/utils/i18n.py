@@ -1246,6 +1246,10 @@ TRANSLATIONS = {
     "edit_info_modal_title": {"ar": "✏️ تعديل الشرح", "en": "✏️ Edit info entry"},
     "edit_info_title_field": {"ar": "عنوان الشرح", "en": "Info title"},
     "edit_info_desc_field": {"ar": "نص الشرح", "en": "Info description"},
+    "info_title_ar_field": {"ar": "العنوان بالعربي", "en": "Arabic title"},
+    "info_title_en_field": {"ar": "العنوان بالإنجليزي", "en": "English title"},
+    "info_desc_ar_field": {"ar": "الشرح بالعربي", "en": "Arabic description"},
+    "info_desc_en_field": {"ar": "الشرح بالإنجليزي", "en": "English description"},
     "edit_info_success": {"ar": "✅ تم تعديل الشرح **{title}**.", "en": "✅ Updated info entry **{title}**."},
     "edit_info_empty": {"ar": "📭 مفيش شروحات مضافة للسيرفر ده لسه.", "en": "📭 This server has no custom info entries yet."},
 
