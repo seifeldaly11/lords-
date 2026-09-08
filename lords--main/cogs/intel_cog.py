@@ -91,7 +91,7 @@ class IntelCog(commands.Cog):
         name="scout",
         description="🔍 ارفق صورة عتاد/بروفايل الخصم والـ AI يحللها ويقولك هو قوي ولا ضعيف",
     )
-    @app_commands.describe(image="صورة عتاد الخصم أو بروفايله (Might) عشان الـ AI يحللها")
+    @app_commands.describe(image="Enemy gear or profile image for AI analysis")
     @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
     async def scout(self, interaction: discord.Interaction, image: discord.Attachment):
         lang = get_lang(interaction.guild_id, interaction.user.id)
