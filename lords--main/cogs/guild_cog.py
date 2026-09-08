@@ -328,6 +328,47 @@ async def gf_board(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
+@gf_group.command(
+    name="calc",
+    description="🧮 حاسبة مهرجان التحالف: احسب إجمالي تسريعات (4h,6h,1d×3) أو اسأل عن استبدال موارد",
+)
+@app_commands.describe(query="اكتب حساب تسريعات (مثال: 8h×3) أو سؤالك عن استبدال الموارد")
+async def gf_calc(interaction: discord.Interaction, query: str):
+    lang = get_lang(interaction.guild_id, interaction.user.id)
+
+    # نستورد هنا (مش فوق الملف) عشان نتفادى Circular Import: ai_cog.py بيستورد
+    # gf_group من الملف ده، فلو استوردنا ai_cog فوق هيحصل تعارض دائري وقت التحميل.
+    from cogs.events_cog import parse_speedup_text, fmt_minutes
+    from cogs.ai_cog import ask_ai
+
+    total_minutes, breakdown, errors = parse_speedup_text(query, lang)
+    if breakdown and not errors:
+        # اتفهم كحساب تسريعات بالكامل -> نحسبه مباشرة من غير أي استدعاء للذكاء الاصطناعي
+        embed = discord.Embed(
+            title=t("gf_calc_speedup_result_title", lang),
+            description=f"**{fmt_minutes(total_minutes, lang)}**",
+            color=discord.Color.purple(),
+        )
+        embed.add_field(
+            name=t("speedup_breakdown_field", lang),
+            value="\n".join(f"• {line}" for line in breakdown)[:1024],
+            inline=False,
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return
+
+    # مش حساب تسريعات واضح -> سؤال حر (زي استبدال موارد) نحوّله للذكاء الاصطناعي
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    context = (
+        "سؤال من عضو تحالف في لعبة Lords Mobile عن مهرجان التحالف أو استبدال/حساب موارد وتسريعات. "
+        "جاوب بإيجاز ودقة عملية."
+    )
+    answer = await ask_ai(query, extra_context=context, lang=lang)
+    embed = discord.Embed(title=t("gf_calc_ai_result_title", lang), description=answer[:3500], color=discord.Color.purple())
+    embed.set_footer(text=t("gf_calc_ai_footer", lang))
+    await interaction.followup.send(embed=embed, ephemeral=True)
+
+
 # ---------------------------------------------------------------------------
 # /quiz
 # ---------------------------------------------------------------------------
@@ -660,7 +701,7 @@ class GuildCog(commands.Cog):
             name=t("event_stats_percentage_field", lang), value=f"{percentage:.1f}%", inline=True
         )
         if non_participants:
-            preview = "، ".join(m.mention for m in non_participants[:15])
+            preview = t("rally_log_mentions_joiner", lang).join(m.mention for m in non_participants[:15])
             if len(non_participants) > 15:
                 preview += t("event_stats_extra_suffix", lang, count=len(non_participants) - 15)
             embed.add_field(
