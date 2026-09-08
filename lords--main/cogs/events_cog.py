@@ -102,31 +102,13 @@ class EventCalcModal(discord.ui.Modal):
             embed.add_field(name=t("event_achievable_points_field", lang), value=f"{achievable_points:,.0f}", inline=True)
             embed.add_field(name=t("event_missing_points_field", lang), value=f"{remaining_points:,.0f}", inline=True)
             embed.add_field(
-                name=t("event_extra_time_field", lang), value=fmt_minutes(missing, lang), inline=False
+                name=t("event_missing_speedups_field", lang), value=fmt_minutes(missing, lang), inline=False
             )
             embed.color = discord.Color.orange()
 
         embed.set_footer(text=t("event_footer", lang))
 
-        # زرار "اسأل المستشار الذكي" - بيدّي الـ AI كل الأرقام دي عشان يقترح استراتيجية
-        from cogs.ai_cog import AIAdviceView  # استيراد وقت الطلب لتفادي أي تعارض ترتيب تحميل الكوجز
-
-        ai_context = (
-            f"{t('event_result_title', lang, label=self.event_label)}\n"
-            f"{t('event_required_points_field', lang)}: {required:,.0f}\n"
-            f"{t('event_points_per_action_field', lang)}: {per_action:,.0f}\n"
-            f"{t('event_actions_needed_field', lang)}: {actions_needed:,}\n"
-            f"{t('event_total_time_field', lang)}: {fmt_minutes(time_needed, lang)}\n"
-            f"{t('event_speedups_available_field', lang)}: {fmt_minutes(speedups, lang)}\n"
-            + (
-                t("event_can_complete_value", lang)
-                if speedups >= time_needed
-                else t("event_cannot_complete_value", lang)
-            )
-        )
-        await interaction.response.send_message(
-            embed=embed, view=AIAdviceView(context=ai_context, lang=lang), ephemeral=True
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 class EventTypeSelect(discord.ui.Select):
@@ -215,6 +197,11 @@ SPEEDUP_ENTRY_RE = re.compile(
     r"^\s*(\d+(?:\.\d+)?)\s*([a-zA-Zء-ي]*)\s*(?:[×xX*]\s*(\d+(?:\.\d+)?))?\s*$"
 )
 
+SPEEDUP_SEARCH_RE = re.compile(
+    r"(?<![\w])(\d+(?:\.\d+)?)\s*(days?|d|hours?|hrs?|hr|h|minutes?|mins?|min|m|يوم|أيام|ساعة|ساعات|دقيقة|دقايق)\s*(?:[×xX*]\s*(\d+(?:\.\d+)?))?",
+    re.IGNORECASE,
+)
+
 
 def parse_speedup_text(raw: str, lang: str = "ar") -> tuple[float, list[str], list[str]]:
     """
@@ -232,7 +219,20 @@ def parse_speedup_text(raw: str, lang: str = "ar") -> tuple[float, list[str], li
             continue
         match = SPEEDUP_ENTRY_RE.match(chunk)
         if not match:
-            errors.append(chunk)
+            embedded_matches = list(SPEEDUP_SEARCH_RE.finditer(chunk))
+            if not embedded_matches:
+                errors.append(chunk)
+                continue
+            for embedded in embedded_matches:
+                amount_str, unit_str, multiplier_str = embedded.groups()
+                amount = float(amount_str)
+                multiplier = float(multiplier_str) if multiplier_str else 1.0
+                unit_key = SPEEDUP_UNIT_ALIASES.get(unit_str.lower())
+                if unit_key is None:
+                    continue
+                entry_minutes = amount * SPEEDUP_UNIT_MINUTES[unit_key] * multiplier
+                total_minutes += entry_minutes
+                breakdown.append(f"{embedded.group(0).strip()} = {fmt_minutes(entry_minutes, lang)}")
             continue
 
         amount_str, unit_str, multiplier_str = match.groups()
@@ -267,7 +267,7 @@ class SpeedupModal(discord.ui.Modal):
         lang = self.lang
         total_minutes, breakdown, errors = parse_speedup_text(self.entries.value, lang)
 
-        if not breakdown and not errors:
+        if not breakdown:
             await interaction.response.send_message(t("speedup_invalid_numbers", lang), ephemeral=True)
             return
 
@@ -277,22 +277,6 @@ class SpeedupModal(discord.ui.Modal):
             color=discord.Color.purple(),
             timestamp=datetime.utcnow(),
         )
-        if breakdown:
-            embed.add_field(
-                name=t("speedup_breakdown_field", lang),
-                value="\n".join(f"• {line}" for line in breakdown)[:1024],
-                inline=False,
-            )
-        embed.add_field(
-            name=t("speedup_in_minutes_field", lang),
-            value=f"{total_minutes:,.0f} {t('speedup_minutes_unit', lang)}",
-            inline=True,
-        )
-        embed.add_field(
-            name=t("speedup_in_hours_field", lang),
-            value=f"{total_minutes / 60:,.1f} {t('speedup_hours_unit', lang)}",
-            inline=True,
-        )
         if errors:
             embed.add_field(
                 name=t("speedup_errors_field", lang),
@@ -300,15 +284,7 @@ class SpeedupModal(discord.ui.Modal):
                 inline=False,
             )
 
-        from cogs.ai_cog import AIAdviceView  # استيراد وقت الطلب لتفادي أي تعارض ترتيب تحميل الكوجز
-
-        ai_context = (
-            f"{t('speedup_result_title', lang)}: {fmt_minutes(total_minutes, lang)}\n"
-            + ("\n".join(breakdown) if breakdown else "")
-        )
-        await interaction.response.send_message(
-            embed=embed, view=AIAdviceView(context=ai_context, lang=lang), ephemeral=True
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 # ---------------------------------------------------------------------------
