@@ -23,6 +23,31 @@ DEFAULT_WELCOME_TEMPLATE = (
 )
 invites_cache: dict[int, dict[str, int]] = {}
 
+WELCOME_COLORS = {
+    "white": (255, 255, 255),
+    "gold": (255, 215, 0),
+    "blue": (100, 180, 255),
+    "pink": (255, 125, 190),
+    "green": (110, 235, 150),
+    "red": (255, 105, 105),
+}
+WELCOME_COLOR_CHOICES = [
+    app_commands.Choice(name="White", value="white"),
+    app_commands.Choice(name="Gold", value="gold"),
+    app_commands.Choice(name="Blue", value="blue"),
+    app_commands.Choice(name="Pink", value="pink"),
+    app_commands.Choice(name="Green", value="green"),
+    app_commands.Choice(name="Red", value="red"),
+]
+EMBED_COLOR_CHOICES = [
+    app_commands.Choice(name="Blurple", value="blurple"),
+    app_commands.Choice(name="Blue", value="blue"),
+    app_commands.Choice(name="Gold", value="gold"),
+    app_commands.Choice(name="Green", value="green"),
+    app_commands.Choice(name="Red", value="red"),
+    app_commands.Choice(name="Purple", value="purple"),
+]
+
 
 def load_db() -> dict:
     if not os.path.exists(DB_FILE):
@@ -60,8 +85,53 @@ async def cache_guild_invites(guild: discord.Guild) -> None:
         print(f"⚠️ لا توجد صلاحية لجلب دعوات سيرفر: {guild.name}")
 
 
-async def generate_welcome_image(member: discord.Member, background_url: str | None) -> BytesIO:
-    width, height = 1000, 400
+def _font(size: int):
+    path = next(
+        (candidate for candidate in (
+            "arial.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+        ) if os.path.exists(candidate)),
+        None,
+    )
+    return ImageFont.truetype(path, size) if path else ImageFont.load_default()
+
+
+def _fit_text(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> str:
+    original = text.strip()
+    text = original
+    while text and draw.textlength(text, font=font) > max_width:
+        text = text[:-1]
+    return text + ("…" if text != original else "")
+
+
+def _color_value(key: str | None, fallback: str = "gold") -> tuple[int, int, int]:
+    return WELCOME_COLORS.get(key or fallback, WELCOME_COLORS[fallback])
+
+
+def render_name_on_image(raw: bytes, name: str, color_key: str = "gold") -> BytesIO:
+    """Adds a readable name banner to an admin-provided image."""
+    base = Image.open(BytesIO(raw)).convert("RGBA")
+    base.thumbnail((1600, 900))
+    draw = ImageDraw.Draw(base, "RGBA")
+    width, height = base.size
+    banner_h = max(90, int(height * 0.18))
+    draw.rectangle((0, height - banner_h, width, height), fill=(0, 0, 0, 165))
+    font = _font(max(28, min(72, width // 14)))
+    safe_name = _fit_text(draw, name, font, width - 80)
+    name_w = draw.textlength(safe_name, font=font)
+    name_color = _color_value(color_key)
+    draw.text(((width - name_w) / 2, height - banner_h + 18), safe_name, font=font, fill=(*name_color, 255))
+    output = BytesIO()
+    base.convert("RGB").save(output, format="PNG")
+    output.seek(0)
+    return output
+
+
+async def generate_welcome_image(
+    member: discord.Member, background_url: str | None, name_color: str = "gold"
+) -> BytesIO:
+    width, height = 1200, 520
     async with aiohttp.ClientSession() as session:
         base = Image.new("RGBA", (width, height), (43, 45, 49, 255))
         if background_url:
@@ -69,78 +139,58 @@ async def generate_welcome_image(member: discord.Member, background_url: str | N
                 async with session.get(background_url) as response:
                     if response.status == 200:
                         bg_img = Image.open(BytesIO(await response.read())).convert("RGBA")
-                        base.paste(bg_img.resize((width, height)), (0, 0))
+                        bg_img = bg_img.resize((width, height))
+                        base.alpha_composite(bg_img)
             except Exception as error:
                 print(f"تعذر تحميل الخلفية: {error}")
 
-        base = Image.alpha_composite(
-            base,
-            Image.new("RGBA", (width, height), (0, 0, 0, 120)),
-        )
-
+        base.alpha_composite(Image.new("RGBA", (width, height), (0, 0, 0, 105)))
         avatar_url = member.display_avatar.replace(size=256, format="png").url
         async with session.get(str(avatar_url)) as response:
-            avatar_img = Image.open(BytesIO(await response.read())).convert("RGBA").resize((180, 180))
+            avatar_img = Image.open(BytesIO(await response.read())).convert("RGBA").resize((220, 220))
 
-        mask = Image.new("L", (180, 180), 0)
-        ImageDraw.Draw(mask).ellipse((0, 0, 180, 180), fill=255)
+        mask = Image.new("L", (220, 220), 0)
+        ImageDraw.Draw(mask).ellipse((0, 0, 220, 220), fill=255)
         avatar_img.putalpha(mask)
-
-        avatar_x, avatar_y = width // 2 - 90, 50
+        avatar_x, avatar_y = width // 2 - 110, 45
         draw = ImageDraw.Draw(base)
-        draw.ellipse(
-            (avatar_x - 8, avatar_y - 8, avatar_x + 188, avatar_y + 188),
-            fill=(255, 215, 0, 255),
-        )
+        accent = _color_value(name_color)
+        draw.ellipse((avatar_x - 9, avatar_y - 9, avatar_x + 229, avatar_y + 229), fill=(*accent, 255))
         base.paste(avatar_img, (avatar_x, avatar_y), avatar_img)
 
-        font_path = next(
-            (
-                path
-                for path in (
-                    "arial.ttf",
-                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                    "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
-                )
-                if os.path.exists(path)
-            ),
-            None,
-        )
-        if font_path:
-            font_title = ImageFont.truetype(font_path, 40)
-            font_sub = ImageFont.truetype(font_path, 26)
-        else:
-            font_title = ImageFont.load_default()
-            font_sub = ImageFont.load_default()
+        name_font = _font(48)
+        sub_font = _font(28)
+        display_name = _fit_text(draw, member.display_name, name_font, width - 80)
+        name_w = draw.textlength(display_name, font=name_font)
+        draw.text(((width - name_w) / 2, 300), display_name, font=name_font, fill=(*accent, 255))
+        subtitle = "عضو جديد • New member"
+        sub_w = draw.textlength(subtitle, font=sub_font)
+        draw.text(((width - sub_w) / 2, 365), subtitle, font=sub_font, fill="white")
+        count = f"العضو رقم {member.guild.member_count} • Member #{member.guild.member_count}"
+        count_w = draw.textlength(count, font=sub_font)
+        draw.text(((width - count_w) / 2, 415), count, font=sub_font, fill=(235, 235, 235))
 
-        welcome_text = f"أهلاً بك {member.name} • Welcome!"
-        member_count_text = f"العضو رقم {member.guild.member_count} • Member #"
-        title_w = draw.textlength(welcome_text, font=font_title)
-        draw.text(((width - title_w) / 2, 260), welcome_text, font=font_title, fill="white")
-        sub_w = draw.textlength(member_count_text, font=font_sub)
-        draw.text(((width - sub_w) / 2, 315), member_count_text, font=font_sub, fill=(255, 215, 0))
-
-        buffer = BytesIO()
-        base.convert("RGB").save(buffer, format="PNG")
-        buffer.seek(0)
-        return buffer
+        output = BytesIO()
+        base.convert("RGB").save(output, format="PNG")
+        output.seek(0)
+        return output
 
 
 class WelcomeView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="📜 شاهد القوانين", style=discord.ButtonStyle.blurple, custom_id="view_rules_btn")
+    @discord.ui.button(label="📜 View Rules • شاهد القوانين", style=discord.ButtonStyle.blurple, custom_id="view_rules_btn")
     async def view_rules(self, interaction: discord.Interaction, button: discord.ui.Button):
         rules_channel_id = get_setting(interaction.guild.id, "rules_channel_id")
         if rules_channel_id:
             await interaction.response.send_message(
-                f"يمكنك الاطلاع على القوانين هنا: <#{rules_channel_id}> 📖",
+                f"📖 View the rules here: <#{rules_channel_id}> • يمكنك قراءة القوانين هنا.",
                 ephemeral=True,
             )
         else:
             await interaction.response.send_message(
-                "لم يتم تحديد روم القوانين بعد من قبل الإدارة.",
+                "Rules channel is not configured yet • لم يتم تحديد روم القوانين بعد.",
                 ephemeral=True,
             )
 
@@ -149,10 +199,10 @@ class RulesView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="موافق على القوانين ✅", style=discord.ButtonStyle.green, custom_id="accept_rules_btn")
+    @discord.ui.button(label="✅ Agree to Rules • موافق على القوانين", style=discord.ButtonStyle.green, custom_id="accept_rules_btn")
     async def button_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(
-            "شكراً لك! تم تسجيل موافقتك على القوانين بنجاح. 🎉",
+            "Thank you! Your agreement was recorded. 🎉 • شكراً لك! تم تسجيل موافقتك بنجاح.",
             ephemeral=True,
         )
 
@@ -196,60 +246,101 @@ class WelcomeCog(commands.Cog):
         except discord.Forbidden:
             print(f"⚠️ لا توجد صلاحية Manage Server في سيرفر: {guild.name}")
 
-        image_buffer = await generate_welcome_image(member, get_setting(guild.id, "background_url"))
+        name_color = get_setting(guild.id, "welcome_name_color", "gold")
+        image_buffer = await generate_welcome_image(
+            member, get_setting(guild.id, "background_url"), name_color
+        )
         file = discord.File(image_buffer, filename="welcome.png")
-        welcome_template = get_setting(guild.id, "welcome_message") or DEFAULT_WELCOME_TEMPLATE
+
+        inviter_name = inviter_name or "Unknown user"
+        legacy_template = get_setting(guild.id, "welcome_message")
+        arabic_template = get_setting(guild.id, "welcome_message_ar")
+        english_template = get_setting(guild.id, "welcome_message_en")
+        values = {
+            "العضو": member.mention,
+            "الاسم": member.display_name,
+            "العدد": str(guild.member_count),
+            "الداعي": inviter_name,
+            "member": member.mention,
+            "name": member.display_name,
+            "count": str(guild.member_count),
+            "inviter": inviter_name,
+        }
         try:
-            welcome_text = welcome_template.format(
-                العضو=member.mention,
-                الاسم=member.display_name,
-                العدد=str(guild.member_count),
-                الداعي=inviter_name,
-            )
+            if arabic_template or english_template:
+                arabic_text = (arabic_template or "أهلاً وسهلاً بك {العضو}!\nنتمنى لك وقتاً ممتعاً معنا 🦋✨").format(**values)
+                english_text = (english_template or "**Welcome, {name}!**\nWe hope you enjoy your time with us. ✨").format(**values)
+                welcome_text = f"{arabic_text}\n\n{english_text}"
+            elif legacy_template:
+                welcome_text = legacy_template.format(**values)
+            else:
+                welcome_text = DEFAULT_WELCOME_TEMPLATE.format(**values)
         except (KeyError, IndexError):
-            welcome_text = DEFAULT_WELCOME_TEMPLATE.format(
-                العضو=member.mention,
-                الاسم=member.display_name,
-                العدد=str(guild.member_count),
-                الداعي=inviter_name,
-            )
+            welcome_text = DEFAULT_WELCOME_TEMPLATE.format(**values)
 
         embed = discord.Embed(
-            title="🦩 عضو جديد انضم إلينا • A new member joined!",
-            description=welcome_text,
-            color=discord.Color.gold(),
+            title="🎉 عضو جديد انضم إلينا • A new member joined!",
+            description=f"{member.mention}\n\n{welcome_text}",
+            color=discord.Color.from_rgb(*_color_value(name_color)),
         )
         embed.set_image(url="attachment://welcome.png")
         embed.set_footer(text=f"عضو رقم {guild.member_count} في {guild.name} • Member #{guild.member_count}")
         await welcome_channel.send(embed=embed, file=file, view=WelcomeView())
 
-    @app_commands.command(name="تحديد-روم-الترحيب", description="Set the channel used for new-member welcome messages")
-    @app_commands.describe(القناة="روم الترحيب")
+    @app_commands.command(name="تحديد-روم-الترحيب", description="Set the channel for bilingual welcome messages")
+    @app_commands.describe(channel="Welcome message channel")
     @app_commands.checks.has_permissions(administrator=True)
-    async def set_welcome_channel(self, interaction: discord.Interaction, القناة: discord.TextChannel):
-        set_setting(interaction.guild.id, "welcome_channel_id", القناة.id)
-        await interaction.response.send_message(f"✅ تم تحديد روم الترحيب: {القناة.mention}", ephemeral=True)
+    async def set_welcome_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        set_setting(interaction.guild.id, "welcome_channel_id", channel.id)
+        await interaction.response.send_message(
+            f"✅ Welcome channel set to {channel.mention} • تم تحديد روم الترحيب.", ephemeral=True
+        )
 
-    @app_commands.command(name="تحديد-صورة-الترحيب", description="Set a custom background image for the welcome card")
-    @app_commands.describe(الصورة="ملف الصورة اللي هتبقى خلفية لبطاقة الترحيب")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def set_welcome_background(self, interaction: discord.Interaction, الصورة: discord.Attachment):
-        if not الصورة.content_type or not الصورة.content_type.startswith("image/"):
-            await interaction.response.send_message("❌ الملف اللي رفعته مش صورة صالحة.", ephemeral=True)
-            return
-        set_setting(interaction.guild.id, "background_url", الصورة.url)
-        await interaction.response.send_message("✅ تم تحديد خلفية صورة الترحيب.", ephemeral=True)
-
-    @app_commands.command(name="تحديد-رسالة-الترحيب", description="Customize the new-member welcome message")
+    @app_commands.command(name="تحديد-صورة-الترحيب", description="Set the welcome background and name color")
     @app_commands.describe(
-        الرسالة="نص الرسالة. استخدم: {العضو} لمنشن العضو، {الاسم} لاسمه، {العدد} لرقم عضويته، {الداعي} لاسم من دعاه"
+        image="Background image for the welcome card",
+        name_color="Color of the member name inside the image (optional)",
+    )
+    @app_commands.choices(name_color=WELCOME_COLOR_CHOICES)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def set_welcome_background(
+        self, interaction: discord.Interaction, image: discord.Attachment, name_color: app_commands.Choice[str] | None = None
+    ):
+        if not (image.content_type or "").startswith("image/"):
+            await interaction.response.send_message("❌ The uploaded file is not a valid image • الملف المرفوع ليس صورة صالحة.", ephemeral=True)
+            return
+        set_setting(interaction.guild.id, "background_url", image.url)
+        if name_color:
+            set_setting(interaction.guild.id, "welcome_name_color", name_color.value)
+        chosen = name_color.value if name_color else get_setting(interaction.guild.id, "welcome_name_color", "gold")
+        await interaction.response.send_message(
+            f"✅ Welcome background saved. Name color: **{chosen}** • تم حفظ الخلفية ولون الاسم.", ephemeral=True
+        )
+
+    @app_commands.command(name="تحديد-لون-اسم-الترحيب", description="Choose the name color inside the welcome image")
+    @app_commands.describe(name_color="Color of the member name inside the welcome image")
+    @app_commands.choices(name_color=WELCOME_COLOR_CHOICES)
+    @app_commands.checks.has_permissions(administrator=True)
+    async def set_welcome_name_color(self, interaction: discord.Interaction, name_color: app_commands.Choice[str]):
+        set_setting(interaction.guild.id, "welcome_name_color", name_color.value)
+        await interaction.response.send_message(
+            f"✅ Name color set to **{name_color.name}** • تم تحديد لون اسم العضو.", ephemeral=True
+        )
+
+    @app_commands.command(name="تحديد-رسالة-الترحيب", description="Set the Arabic and English welcome messages")
+    @app_commands.describe(
+        message_ar="Arabic welcome message. Use {member}, {name}, {count}, or {inviter}",
+        message_en="English welcome message (optional). Use {member}, {name}, {count}, or {inviter}",
     )
     @app_commands.checks.has_permissions(administrator=True)
-    async def set_welcome_message(self, interaction: discord.Interaction, الرسالة: str):
-        set_setting(interaction.guild.id, "welcome_message", الرسالة)
-        preview = الرسالة.format(العضو="@عضو_تجريبي", الاسم="عضو_تجريبي", العدد="42", الداعي="فلان")
+    async def set_welcome_message(
+        self, interaction: discord.Interaction, message_ar: str, message_en: str | None = None
+    ):
+        set_setting(interaction.guild.id, "welcome_message_ar", message_ar)
+        set_setting(interaction.guild.id, "welcome_message_en", message_en or "**Welcome, {name}!**\nWe hope you enjoy your time with us. ✨")
+        preview = f"{message_ar}\n\n{message_en or '**Welcome, {name}!**'}"
         await interaction.response.send_message(
-            f"✅ تم تحديد رسالة الترحيب المخصصة.\nمعاينة بعد تعويض المتغيرات:\n{preview}",
+            f"✅ Bilingual welcome message saved • تم حفظ رسالة الترحيب الثنائية اللغة.\n\n{preview}",
             ephemeral=True,
         )
 
@@ -257,74 +348,99 @@ class WelcomeCog(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_welcome_message(self, interaction: discord.Interaction):
         set_setting(interaction.guild.id, "welcome_message", None)
-        await interaction.response.send_message("✅ تم الرجوع لرسالة الترحيب الافتراضية.", ephemeral=True)
+        set_setting(interaction.guild.id, "welcome_message_ar", None)
+        set_setting(interaction.guild.id, "welcome_message_en", None)
+        await interaction.response.send_message(
+            "✅ Default bilingual welcome message restored • تم استعادة الرسالة الافتراضية الثنائية اللغة.",
+            ephemeral=True,
+        )
 
     @app_commands.command(name="تحديد-روم-القوانين", description="Set the channel used by the View Rules button")
-    @app_commands.describe(القناة="روم القوانين")
+    @app_commands.describe(channel="Rules channel")
     @app_commands.checks.has_permissions(administrator=True)
-    async def set_rules_channel(self, interaction: discord.Interaction, القناة: discord.TextChannel):
-        set_setting(interaction.guild.id, "rules_channel_id", القناة.id)
-        await interaction.response.send_message(f"✅ تم تحديد روم القوانين: {القناة.mention}", ephemeral=True)
+    async def set_rules_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        set_setting(interaction.guild.id, "rules_channel_id", channel.id)
+        await interaction.response.send_message(
+            f"✅ Rules channel set to {channel.mention} • تم تحديد روم القوانين.", ephemeral=True
+        )
 
-    @app_commands.command(name="ارسال-القوانين", description="Send the server rules panel with an interactive acceptance button")
+    @app_commands.command(name="ارسال-القوانين", description="Send the bilingual server rules panel")
     @app_commands.checks.has_permissions(administrator=True)
     async def send_rules(self, interaction: discord.Interaction):
         embed = discord.Embed(
-            title="📜 قوانين السيرفر الرسمية",
+            title="📜 قوانين السيرفر • Server Rules",
             description=(
-                "أهلاً بك في السيرفر! يرجى قراءة القوانين والالتزام بها لتجنب العقوبات:\n"
-                "─────────────────────────\n"
-                "1️⃣ **الاحترام المتبادل:** يمنع السب أو الإهانة بجميع أشكالها.\n"
-                "2️⃣ **منع الإعلانات:** يمنع نشر روابط سيرفرات أخرى أو إعلانات دون إذن.\n"
-                "3️⃣ **الالتزام بالقنوات:** يرجى الكتابة في القناة المخصصة لكل موضوع.\n"
-                "4️⃣ **احترام الخصوصية:** يمنع مشاركة معلومات شخصية للأعضاء.\n"
-                "─────────────────────────"
-            ),
+                "**العربية:**\nأهلاً بك! يرجى احترام الأعضاء، منع الإعلانات، الالتزام بالقنوات، واحترام الخصوصية.\n\n"
+                "**English:**\nWelcome! Respect members, do not advertise, use the correct channels, and respect privacy.\n\n"
+                "اضغط الزر بالأسفل للموافقة • Press the button below to agree.") ,
             color=discord.Color.blue(),
         )
         if interaction.guild.icon:
             embed.set_thumbnail(url=interaction.guild.icon.url)
-        embed.set_footer(text="اضغط على الزر بالأسفل لتأكيد قراءة القوانين والموافقة عليها")
         await interaction.response.send_message(embed=embed, view=RulesView())
 
-    @app_commands.command(name="ارسال-امبيد", description="Send a custom embed to a selected channel")
+    @app_commands.command(name="ارسال-امبيد", description="Send a bilingual custom embed with an optional named image")
     @app_commands.describe(
-        الرسالة="نص الرسالة اللي هتظهر داخل الـ Embed",
-        القناة="الروم اللي هتتبعت فيه الرسالة",
-        الصورة="صورة اختيارية تظهر داخل الـ Embed",
+        message_ar="Arabic message",
+        channel="Target channel",
+        title="Optional embed title",
+        message_en="Optional English message",
+        image="Optional image",
+        color="Embed accent color",
+        member="Optional member to mention and write inside the image",
     )
+    @app_commands.choices(color=EMBED_COLOR_CHOICES)
     @app_commands.checks.has_permissions(administrator=True)
     async def send_custom_embed(
         self,
         interaction: discord.Interaction,
-        الرسالة: str,
-        القناة: discord.TextChannel,
-        الصورة: discord.Attachment | None = None,
+        message_ar: str,
+        channel: discord.TextChannel,
+        title: str | None = None,
+        message_en: str | None = None,
+        image: discord.Attachment | None = None,
+        color: app_commands.Choice[str] | None = None,
+        member: discord.Member | None = None,
     ):
-        embed = discord.Embed(description=الرسالة, color=discord.Color.blurple())
-        embed.set_footer(text=f"بواسطة {interaction.user}", icon_url=interaction.user.display_avatar.url)
+        colors = {
+            "blurple": discord.Color.blurple(),
+            "blue": discord.Color.blue(),
+            "gold": discord.Color.gold(),
+            "green": discord.Color.green(),
+            "red": discord.Color.red(),
+            "purple": discord.Color.purple(),
+        }
+        embed = discord.Embed(
+            title=title or "📢 Announcement • إعلان",
+            description=(f"{member.mention}\n\n" if member else "") + message_ar + (f"\n\n{message_en}" if message_en else ""),
+            color=colors.get(color.value if color else "blurple", discord.Color.blurple()),
+        )
+        embed.set_footer(text=f"Posted by {interaction.user} • بواسطة {interaction.user}", icon_url=interaction.user.display_avatar.url)
 
         file = None
-        if الصورة is not None:
-            if not الصورة.content_type or not الصورة.content_type.startswith("image/"):
-                await interaction.response.send_message("❌ الملف اللي رفعته مش صورة صالحة.", ephemeral=True)
+        if image is not None:
+            if not (image.content_type or "").startswith("image/"):
+                await interaction.response.send_message("❌ The uploaded file is not a valid image • الملف المرفوع ليس صورة صالحة.", ephemeral=True)
                 return
-            file = await الصورة.to_file()
+            if member:
+                file = discord.File(
+                    render_name_on_image(await image.read(), member.display_name, (color.value if color else "gold")),
+                    filename="named-card.png",
+                )
+            else:
+                file = await image.to_file()
             embed.set_image(url=f"attachment://{file.filename}")
 
         try:
-            if file:
-                await القناة.send(embed=embed, file=file)
-            else:
-                await القناة.send(embed=embed)
+            await channel.send(embed=embed, file=file) if file else await channel.send(embed=embed)
         except discord.Forbidden:
             await interaction.response.send_message(
-                f"❌ ماعنديش صلاحية إرسال رسائل في {القناة.mention}.",
-                ephemeral=True,
+                f"❌ I cannot send messages in {channel.mention} • لا أملك صلاحية الإرسال.", ephemeral=True
             )
             return
-        await interaction.response.send_message(f"✅ تم إرسال الرسالة بنجاح في {القناة.mention}", ephemeral=True)
-
+        await interaction.response.send_message(
+            f"✅ Bilingual embed sent to {channel.mention} • تم إرسال الـEmbed بنجاح.", ephemeral=True
+        )
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(WelcomeCog(bot))
