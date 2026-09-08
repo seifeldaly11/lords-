@@ -76,7 +76,7 @@ async def languageme(interaction: discord.Interaction, lang: app_commands.Choice
     name="bot_channel",
     description="📍 حدد القناة أو الثريد اللي البوت يتواصل فيه (إدارة فقط) | Set the channel/thread the bot talks in",
 )
-@app_commands.describe(channel="القناة أو الثريد المطلوب | The channel or thread you want")
+@app_commands.describe(channel="Channel or thread")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def bot_channel(
     interaction: discord.Interaction,
