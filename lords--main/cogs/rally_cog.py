@@ -70,11 +70,8 @@ async def troop_set(interaction: discord.Interaction, troop: app_commands.Choice
 # /rally set
 # ---------------------------------------------------------------------------
 
-rally_group = app_commands.Group(name="rally", description="📯 نداء حشود يستهدف الأعضاء بالنوع المطلوب | Smart rally calls")
-
-
-@rally_group.command(
-    name="set",
+@app_commands.command(
+    name="rallyset",
     description="📯 افتح نداء حشد وينبّه كل أعضاء السيرفر (@everyone) | Open a rally call and ping everyone",
 )
 @app_commands.describe(
@@ -117,9 +114,14 @@ async def rally_set(
         embed.add_field(name=t("rally_note_field", lang), value=note, inline=True)
     if image is not None and (image.content_type or "").lower().startswith("image/"):
         embed.set_image(url=image.url)
+    embed.add_field(
+        name=t("rally_joiners_field", lang),
+        value=t("rally_no_joiners", lang),
+        inline=False,
+    )
     embed.set_footer(text=t("rally_footer_v2", lang, leader=str(interaction.user)))
 
-    view = discord.ui.View()
+    view = RallyJoinView(embed, lang)
     app_link = get_game_link(interaction.guild_id, default=DEFAULT_APP_LINK)
     view.add_item(discord.ui.Button(label=t("rally_open_app", lang), style=discord.ButtonStyle.link, url=app_link, emoji="📲"))
 
@@ -129,6 +131,33 @@ async def rally_set(
         view=view,
         allowed_mentions=discord.AllowedMentions(everyone=True),
     )
+
+
+class RallyJoinView(discord.ui.View):
+    """زر تسجيل ذاتي في الحشد؛ كل عضو يقدر يسجل نفسه مرة واحدة."""
+
+    def __init__(self, embed: discord.Embed, lang: str):
+        super().__init__(timeout=None)
+        self.embed = embed
+        self.lang = lang
+        self.participant_ids: list[int] = []
+        self.join_button.label = t("rally_join_button", lang)
+
+    @discord.ui.button(label="✅ سجّل في الحشد", style=discord.ButtonStyle.success)
+    async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id in self.participant_ids:
+            await interaction.response.send_message(t("rally_already_joined", self.lang), ephemeral=True)
+            return
+
+        self.participant_ids.append(interaction.user.id)
+        mentions = "، ".join(f"<@{uid}>" for uid in self.participant_ids)
+        for index, field in enumerate(self.embed.fields):
+            if field.name == t("rally_joiners_field", self.lang):
+                self.embed.set_field_at(index, name=field.name, value=mentions[:1024], inline=False)
+                break
+        button.label = f"✅ {t("rally_join_button_short", self.lang)} ({len(self.participant_ids)})"
+        await interaction.response.edit_message(embed=self.embed, view=self)
+        await interaction.followup.send(t("rally_joined_success", self.lang), ephemeral=True)
 
 
 class RallyCog(commands.Cog):
@@ -249,4 +278,4 @@ class RallyLogView(discord.ui.View):
 async def setup(bot: commands.Bot):
     await bot.add_cog(RallyCog(bot))
     bot.tree.add_command(troop_group)
-    bot.tree.add_command(rally_group)
+    bot.tree.add_command(rally_set)
