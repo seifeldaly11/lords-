@@ -69,6 +69,8 @@ class EventCalcModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         lang = self.lang
         question = self.ai_question.value.strip()
+        if question:
+            await interaction.response.defer(thinking=True, ephemeral=True)
         try:
             required = float(self.required_points.value)
             per_action = float(self.points_per_action.value)
@@ -82,9 +84,9 @@ class EventCalcModal(discord.ui.Modal):
                     extra_context=f"الحدث المختار: {self.event_label}. البيانات التي أدخلها المستخدم غير مكتملة أو غير صحيحة.",
                     lang=lang,
                 )
-                await interaction.response.send_message(embed=discord.Embed(title="🤖 مساعدة الحدث", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
+                await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة الحدث", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
             else:
-                await interaction.response.send_message(t("event_invalid_numbers", lang), ephemeral=True)
+                await (interaction.followup.send if question else interaction.response.send_message)(t("event_invalid_numbers", lang), ephemeral=True)
             return
 
         time_raw = self.time_per_action.value.strip()
@@ -93,7 +95,7 @@ class EventCalcModal(discord.ui.Modal):
             if per_time is not None and per_time <= 0:
                 raise ValueError
         except ValueError:
-            await interaction.response.send_message(t("event_invalid_numbers", lang), ephemeral=True)
+            await (interaction.followup.send if question else interaction.response.send_message)(t("event_invalid_numbers", lang), ephemeral=True)
             return
 
         speedup_raw = self.available_speedups.value.strip()
@@ -153,7 +155,7 @@ class EventCalcModal(discord.ui.Modal):
             embed.add_field(name="🤖 مساعدة الـAI", value=answer[:1024], inline=False)
 
         embed.set_footer(text=t("event_footer", lang))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await (interaction.followup.send if question else interaction.response.send_message)(embed=embed, ephemeral=True)
 
 class EventTypeSelect(discord.ui.Select):
     def __init__(self, lang: str, category_label: str):
@@ -317,14 +319,16 @@ class SpeedupModal(discord.ui.Modal):
         lang = self.lang
         total_minutes, breakdown, errors = parse_speedup_text(self.entries.value, lang)
         question = self.ai_question.value.strip()
+        if question:
+            await interaction.response.defer(thinking=True, ephemeral=True)
 
         if not breakdown:
             if question:
                 from cogs.ai_cog import ask_ai
                 answer = await ask_ai(question, extra_context=f"المدخلات التي كتبها المستخدم للتسريعات: {self.entries.value}", lang=lang)
-                await interaction.response.send_message(embed=discord.Embed(title="🤖 مساعدة التسريعات", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
+                await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة التسريعات", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
             else:
-                await interaction.response.send_message(t("speedup_invalid_numbers", lang), ephemeral=True)
+                await (interaction.followup.send if question else interaction.response.send_message)(t("speedup_invalid_numbers", lang), ephemeral=True)
             return
 
         embed = discord.Embed(
@@ -342,7 +346,7 @@ class SpeedupModal(discord.ui.Modal):
             answer = await ask_ai(question, extra_context=f"إجمالي التسريعات المحسوب: {fmt_minutes(total_minutes, lang)}. التفاصيل: {', '.join(breakdown)}", lang=lang)
             embed.add_field(name="🤖 مساعدة الـAI", value=answer[:1024], inline=False)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await (interaction.followup.send if question else interaction.response.send_message)(embed=embed, ephemeral=True)
 
 # ---------------------------------------------------------------------------
 # الـ Cog الرئيسي
