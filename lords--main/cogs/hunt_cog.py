@@ -162,10 +162,10 @@ class HuntCog(commands.Cog):
         description="🐾 سجّل صيد: يدوي لعضو، أو صورة جدول/تقرير صيد، أو قائمة مجمّعة (اسم + رقم بكل سطر)",
     )
     @app_commands.describe(
-        member="سجّل الصيد لهذا العضو (وضع يدوي - لو مسيبتهوش هيتسجل لحسابك انت)",
-        hunted="عدد الوحوش المصيدة (وضع يدوي - بيتضاف على رصيد اليوم)",
-        image="صورة لجدول/تقرير صيد عشان تتحلل تلقائياً (محتاج COHERE_API_KEY)",
-        bulk_list="قائمة مجمّعة: سطر لكل عضو بصيغة 'الاسم رقم' - هتستبدل رصيد اليوم بالرقم المكتوب",
+        member="Member to log for (defaults to yourself)",
+        hunted="Number of monsters hunted",
+        image="Hunt table or report image for automatic analysis",
+        bulk_list="Bulk list: one member and count per line",
     )
     async def hunt_log(
         self,
@@ -281,8 +281,8 @@ class HuntCog(commands.Cog):
         description="📍 (إدارة) حدد قناة إرسال تقارير وقوائم الصيد، وحدّث التارجت اليومي لو حبيت",
     )
     @app_commands.describe(
-        channel="القناة اللي هتتوجّه لها تقارير وملخصات الصيد",
-        daily_target="(اختياري) التارجت اليومي المطلوب من كل عضو",
+        channel="Channel for hunt reports and summaries",
+        daily_target="Optional daily target per member",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def hunt_channel(
