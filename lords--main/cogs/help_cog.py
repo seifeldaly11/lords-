@@ -106,6 +106,21 @@ CATEGORY_ORDER = [
     "general",
 ]
 
+CATEGORY_BLURBS = {
+    "ai": {"ar": "استشارات ذكية وتحليل سريع لأحداث اللعبة.", "en": "Smart advice and fast game analysis."},
+    "calculators": {"ar": "حاسبات وأدلة تساعدك تاخد القرار الصح بسرعة.", "en": "Calculators and quick guides for better decisions."},
+    "war": {"ar": "خطط الحرب، الكاونترات، وتحليل المعارك.", "en": "War planning, counters, and battle analysis."},
+    "alliance": {"ar": "أدوات قيادة ومتابعة نشاط أعضاء التحالف.", "en": "Leadership tools and alliance activity tracking."},
+    "market": {"ar": "تابع الموارد والأسعار واتخذ قرارات أذكى.", "en": "Track resources and prices with confidence."},
+    "hunt": {"ar": "نظّم الصيد وسجّل النتائج بدون فوضى.", "en": "Organize hunts and track results effortlessly."},
+    "shield": {"ar": "تنبيهات الدرع والحماية في الوقت المناسب.", "en": "Shield and protection alerts at the right time."},
+    "settings": {"ar": "اضبط اللغة، الإعدادات، وروابط اللعبة.", "en": "Configure language, settings, and game links."},
+    "welcome": {"ar": "خلّي دخول الأعضاء الجدد احترافي ومنظم.", "en": "Make every new member feel welcome."},
+    "games": {"ar": "ألعاب خفيفة وتفاعل يخلّي التحالف حي.", "en": "Light games and interaction for an active alliance."},
+    "general": {"ar": "أدوات يومية مفيدة لكل أعضاء التحالف.", "en": "Everyday utilities for every alliance member."},
+}
+
+
 WELCOME_COMMANDS = {
     "ارسال-امبيد",
     "ارسال-القوانين",
@@ -325,50 +340,60 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
     for path, _ in commands_list:
         counts[command_category(path)] += 1
 
+    section_count = sum(1 for key in CATEGORY_ORDER if counts.get(key))
     if lang == "en":
-        title = "📖 Lords Mobile Command Center"
+        title = "🏰 Lords Mobile Command Center"
         description = (
-            f"Everything currently loaded in this bot, organized by function.\n"
-            f"**{len(commands_list)} commands** across **{len([c for c in counts if counts[c]])} sections**.\n"
-            "Use the menu below to open a focused section."
+            f"Your alliance tools, organized and ready.\n"
+            f"**{len(commands_list)} commands** across **{section_count} sections**.\n\n"
+            "Choose a section below to explore what the bot can do."
         )
         count_label = "commands"
+        quick_title = "✨ Quick start"
+        quick_text = (
+            "Start with **/setup** to configure the bot, then use **/language** "
+            "to choose Arabic or English replies. Commands marked 🔒 need admin permissions."
+        )
+        footer = "Lords Mobile Alliance Suite • Live command catalog"
+        author = "Lords Mobile • Command Center"
     else:
-        title = "📖 مركز أوامر Lords Mobile"
+        title = "🏰 مركز أوامر Lords Mobile"
         description = (
-            f"دي قائمة الأوامر المحمّلة فعلياً في البوت، متقسمة حسب الوظيفة.\n"
-            f"**{len(commands_list)} أمر** في **{len([c for c in counts if counts[c]])} أقسام**.\n"
-            "اختار قسم من القائمة عشان تشوف التفاصيل."
+            f"كل أدوات تحالفك في مكان واحد، بشكل منظم وسهل.\n"
+            f"**{len(commands_list)} أمر** في **{section_count} أقسام**.\n\n"
+            "اختار قسم من القائمة تحت عشان تستكشف إمكانيات البوت."
         )
         count_label = "أمر"
-
-    embed = discord.Embed(title=title, description=description, color=discord.Color.blurple())
-    overview = []
-    for key in CATEGORY_ORDER:
-        if counts.get(key):
-            meta = CATEGORY_META[key]
-            overview.append(f"{meta['emoji']} **{meta[lang]}** — {counts[key]} {count_label}")
-    embed.add_field(
-        name="الأقسام" if lang == "ar" else "Sections",
-        value="\n".join(overview) or ("لا توجد أوامر." if lang == "ar" else "No commands loaded."),
-        inline=False,
-    )
-    embed.add_field(
-        name="مهم للإدارة" if lang == "ar" else "For alliance admins",
-        value=(
-            "ابدأ بـ `/setup`، وبعدها اضبط الترحيب والقوانين من قسم 👋. "
+        quick_title = "✨ بداية سريعة"
+        quick_text = (
+            "ابدأ بـ **/setup** لضبط البوت، وبعدها استخدم **/language** لاختيار العربي أو الإنجليزي. "
             "الأوامر التي عليها 🔒 تحتاج صلاحية إدارية."
-            if lang == "ar"
-            else "Start with `/setup`, then configure welcome, rules, and embeds from the 👋 section. "
-            "Commands marked 🔒 require admin permissions."
-        ),
-        inline=False,
+        )
+        footer = "Lords Mobile Alliance Suite • كتالوج الأوامر الحي"
+        author = "Lords Mobile • مركز الأوامر"
+
+    embed = discord.Embed(
+        title=title,
+        description=description,
+        color=discord.Color.from_rgb(88, 101, 242),
     )
-    embed.set_footer(
-        text="القائمة تتحدث تلقائياً مع الأوامر الفعلية • Lords Mobile Alliance Suite"
-        if lang == "ar"
-        else "This list is generated from the live command tree • Lords Mobile Alliance Suite"
-    )
+    if bot.user:
+        embed.set_author(name=author, icon_url=bot.user.display_avatar.url)
+        embed.set_thumbnail(url=bot.user.display_avatar.url)
+
+    for key in CATEGORY_ORDER:
+        if not counts.get(key):
+            continue
+        meta = CATEGORY_META[key]
+        blurb = CATEGORY_BLURBS.get(key, {}).get(lang, "")
+        embed.add_field(
+            name=f"{meta['emoji']}  {meta[lang]}",
+            value=f"{blurb}\n\n**{counts[key]} {count_label}**",
+            inline=True,
+        )
+
+    embed.add_field(name=quick_title, value=quick_text, inline=False)
+    embed.set_footer(text=footer)
     return embed
 
 
@@ -379,19 +404,24 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str) -> discord
         for path, command in loaded_commands(bot)
         if command_category(path) == category
     ]
+    blurb = CATEGORY_BLURBS.get(category, {}).get(lang, "")
+    count_text = (
+        f"{len(commands_in_category)} أمر متاح في هذا القسم."
+        if lang == "ar"
+        else f"{len(commands_in_category)} commands available in this section."
+    )
     embed = discord.Embed(
-        title=f"{meta['emoji']} {meta[lang]}",
-        description=(
-            f"{len(commands_in_category)} أمر في هذا القسم."
-            if lang == "ar"
-            else f"{len(commands_in_category)} commands in this section."
-        ),
+        title=f"{meta['emoji']}  {meta[lang]}",
+        description=f"{blurb}\n\n**{count_text}**",
         color=meta["color"],
     )
+    if bot.user:
+        author = "Lords Mobile • مركز الأوامر" if lang == "ar" else "Lords Mobile • Command Center"
+        embed.set_author(name=author, icon_url=bot.user.display_avatar.url)
+        embed.set_thumbnail(url=bot.user.display_avatar.url)
 
     # Discord limits embeds to 25 fields and 6000 total characters. Grouping
-    # commands into short blocks prevents /help from silently failing as the
-    # command list grows.
+    # commands into short blocks keeps every section readable as the bot grows.
     chunks: list[str] = []
     current: list[str] = []
     current_size = 0
@@ -408,9 +438,9 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str) -> discord
 
     visible_chunks = chunks[:5]
     for index, chunk in enumerate(visible_chunks, start=1):
-        field_name = f"{meta['emoji']} {meta[lang]}"
+        field_name = f"{meta['emoji']}  {meta[lang]}"
         if len(chunks) > 1:
-            field_name += f" • {index}/{len(chunks)}"
+            field_name += f"  •  {index}/{len(chunks)}"
         embed.add_field(name=field_name, value=chunk[:1024], inline=False)
 
     if len(chunks) > len(visible_chunks):
@@ -425,9 +455,9 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str) -> discord
             inline=False,
         )
     embed.set_footer(
-        text="الأوصاف تتبع الأوامر المحمّلة حالياً • استخدم القائمة للانتقال بين الأقسام"
+        text="استخدم القائمة أو زر 🏠 للرجوع للأقسام"
         if lang == "ar"
-        else "Descriptions reflect the commands currently loaded • Use the menu to switch sections"
+        else "Use the menu or the 🏠 button to browse sections"
     )
     return embed
 
@@ -442,7 +472,7 @@ class HelpCategorySelect(discord.ui.Select):
             if key not in available:
                 continue
             meta = CATEGORY_META[key]
-            options.append(discord.SelectOption(label=meta[lang][:100], value=key, emoji=meta["emoji"]))
+            options.append(discord.SelectOption(label=meta[lang][:100], value=key, emoji=meta["emoji"], description=CATEGORY_BLURBS.get(key, {}).get(lang, "")[:100]))
         super().__init__(
             placeholder="اختار قسم الأوامر" if lang == "ar" else "Choose a command section",
             options=options[:25],
@@ -455,10 +485,29 @@ class HelpCategorySelect(discord.ui.Select):
         )
 
 
+class HelpHomeButton(discord.ui.Button):
+    def __init__(self, bot: commands.Bot, lang: str):
+        self.bot = bot
+        self.lang = lang
+        super().__init__(
+            label="الرئيسية" if lang == "ar" else "Home",
+            emoji="🏠",
+            style=discord.ButtonStyle.secondary,
+            row=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(
+            embed=build_intro_embed(self.bot, self.lang),
+            view=self.view,
+        )
+
+
 class HelpView(discord.ui.View):
     def __init__(self, bot: commands.Bot, lang: str):
-        super().__init__(timeout=300)
+        super().__init__(timeout=600)
         self.add_item(HelpCategorySelect(bot, lang))
+        self.add_item(HelpHomeButton(bot, lang))
 
 
 class HelpCog(commands.Cog):
