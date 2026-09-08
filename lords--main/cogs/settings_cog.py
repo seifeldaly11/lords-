@@ -1,13 +1,16 @@
 """
 /language server - يضبط لغة واجهة البوت على مستوى السيرفر.
 /language me - يضبط لغة ردود البوت لعضو واحد فقط.
+/bot_channel - يحدد القناة أو الثريد اللي البوت هيتواصل فيه (حسب اختيار الإدارة).
 """
+from typing import Union
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from utils.i18n import get_lang, set_lang, set_user_lang, t
-from utils.storage import get_game_link, set_game_link
+from utils.storage import set_bot_channel_id
 
 
 language_group = app_commands.Group(
@@ -69,44 +72,41 @@ async def languageme(interaction: discord.Interaction, lang: app_commands.Choice
     await _set_personal_language(interaction, lang)
 
 
+@app_commands.command(
+    name="bot_channel",
+    description="📍 حدد القناة أو الثريد اللي البوت يتواصل فيه (إدارة فقط) | Set the channel/thread the bot talks in",
+)
+@app_commands.describe(channel="القناة أو الثريد المطلوب | The channel or thread you want")
+@app_commands.checks.has_permissions(manage_guild=True)
+async def bot_channel(
+    interaction: discord.Interaction,
+    channel: Union[discord.TextChannel, discord.Thread],
+):
+    lang = get_lang(interaction.guild_id, interaction.user.id)
+    set_bot_channel_id(interaction.guild_id, channel.id)
+    await interaction.response.send_message(
+        t("bot_channel_success", lang, channel=channel.mention), ephemeral=True
+    )
+
+
+@bot_channel.error
+async def bot_channel_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    lang = get_lang(interaction.guild_id, interaction.user.id)
+    if isinstance(error, app_commands.MissingPermissions):
+        await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=True)
+    else:
+        await interaction.response.send_message(t("bot_channel_error", lang), ephemeral=True)
+
+
 class SettingsCog(commands.Cog):
-    """إعدادات السيرفر وروابط اللعبة."""
+    """إعدادات السيرفر."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    @app_commands.command(
-        name="set_game_link",
-        description="📲 (إدارة) اضبط رابط فتح اللعبة (Deep Link) المستخدم في أزرار التنبيهات السريعة",
-    )
-    @app_commands.describe(link="الرابط الكامل (https://...) اللي هيفتح اللعبة أو صفحتها")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def set_game_link(self, interaction: discord.Interaction, link: str):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        if not (link.startswith("http://") or link.startswith("https://")):
-            await interaction.response.send_message(t("gamelink_bad_url", lang), ephemeral=True)
-            return
-        set_game_link(interaction.guild_id, link)
-        await interaction.response.send_message(
-            t("gamelink_set_confirm", lang, link=link), ephemeral=True
-        )
-
-    @set_game_link.error
-    async def set_game_link_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("gamelink_admin_only", lang), ephemeral=True)
-        else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
-
-    @app_commands.command(name="game_link", description="📲 اعرض رابط فتح اللعبة المضبوط حالياً لهذا السيرفر")
-    async def game_link(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        link = get_game_link(interaction.guild_id)
-        await interaction.response.send_message(t("gamelink_current", lang, link=link), ephemeral=True)
 
 
 async def setup(bot: commands.Bot):
     bot.tree.add_command(language_group)
     bot.tree.add_command(languageme)
+    bot.tree.add_command(bot_channel)
     await bot.add_cog(SettingsCog(bot))
