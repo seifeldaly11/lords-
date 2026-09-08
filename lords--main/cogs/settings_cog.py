@@ -29,7 +29,7 @@ LANGUAGE_CHOICES = [
     name="server",
     description="🌐 اختر لغة البوت لكل السيرفر (للمشرفين) | Set the server bot language",
 )
-@app_commands.describe(lang="اختر اللغة | Choose language")
+@app_commands.describe(lang="Language")
 @app_commands.choices(lang=LANGUAGE_CHOICES)
 @app_commands.checks.has_permissions(manage_guild=True)
 async def language_server(interaction: discord.Interaction, lang: app_commands.Choice[str]):
@@ -56,7 +56,7 @@ async def _set_personal_language(interaction: discord.Interaction, lang: app_com
     name="me",
     description="🌐 اختر لغة ردود البوت لك أنت | Choose your personal bot reply language",
 )
-@app_commands.describe(lang="اختر اللغة | Choose language")
+@app_commands.describe(lang="Language")
 @app_commands.choices(lang=LANGUAGE_CHOICES)
 async def language_me(interaction: discord.Interaction, lang: app_commands.Choice[str]):
     await _set_personal_language(interaction, lang)
@@ -66,7 +66,7 @@ async def language_me(interaction: discord.Interaction, lang: app_commands.Choic
     name="languageme",
     description="🌐 اختصار لاختيار لغة ردود البوت لك | Shortcut for your personal bot language",
 )
-@app_commands.describe(lang="اختر اللغة | Choose language")
+@app_commands.describe(lang="Language")
 @app_commands.choices(lang=LANGUAGE_CHOICES)
 async def languageme(interaction: discord.Interaction, lang: app_commands.Choice[str]):
     await _set_personal_language(interaction, lang)
