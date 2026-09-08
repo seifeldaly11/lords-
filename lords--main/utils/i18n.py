@@ -1231,7 +1231,7 @@ TRANSLATIONS = {
     "delete_info_select_placeholder": {"ar": "اختار الشرح للحذف...", "en": "Choose an info entry to delete..."},
     "delete_info_selected": {"ar": "اخترت **{title}**. لو متأكد اضغط زر الحذف.", "en": "Selected **{title}**. Press delete if you are sure."},
     "delete_info_selection_needed": {"ar": "⚠️ اختار شرحًا من القائمة الأول.", "en": "⚠️ Choose an info entry first."},
-    "edit_info_prompt": {"ar": "✏️ اختار الشرح اللي عايز تعدله. لو أرفقت صورة مع الأمر هتتحط بدل الصورة الحالية.", "en": "✏️ Choose the info entry to edit. Any image attached to the command will replace the current image."},
+    "edit_info_prompt": {"ar": "✏️ اختار الشرح اللي عايز تعدله. لإضافة أو تغيير صورة، ارفعها مع أمر /edit_info في خانة image قبل الإرسال؛ Discord لا يسمح برفع ملف داخل نافذة التعديل.", "en": "✏️ Choose the info entry to edit. To add or replace an image, attach it to /edit_info in the image field before submitting; Discord does not allow file uploads inside the edit window."},
     "edit_info_select_placeholder": {"ar": "اختار الشرح للتعديل...", "en": "Choose an info entry to edit..."},
     "edit_info_modal_title": {"ar": "✏️ تعديل الشرح", "en": "✏️ Edit info entry"},
     "edit_info_title_field": {"ar": "عنوان الشرح", "en": "Info title"},
