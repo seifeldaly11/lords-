@@ -1221,8 +1221,8 @@ TRANSLATIONS = {
         "ar": "اختار الموضوع اللي عايز تعرف عنه...",
         "en": "Choose the topic you want to learn about...",
     },
-    "info_custom_category": {"ar": "شروحات الإدارة", "en": "Admin guides"},
-    "info_custom_prompt": {"ar": "اختار شرحًا من شروحات الإدارة:", "en": "Choose an admin guide:"},
+    "info_custom_category": {"ar": "شروحات لوردس", "en": "Lords Guides"},
+    "info_custom_prompt": {"ar": "اختار شرحًا من شروحات لوردس:", "en": "Choose a Lords guide:"},
     "info_empty": {
         "ar": "📭 لسه مفيش معلومات مضافة. اطلب من الإدارة تستخدم `/add_info` عشان تضيف أول شرح.",
         "en": "📭 No info entries added yet. Ask an admin to use `/add_info` to add the first one.",
