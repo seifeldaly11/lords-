@@ -17,7 +17,7 @@ CRIMSON = discord.Color.from_str("#DC143C")   # تنبيهات / دروع
 ROYAL_BLUE = discord.Color.from_str("#4169E1")  # معلومات / مساعدة
 EMERALD = discord.Color.from_str("#2ECC71")   # نجاح / تأكيد
 
-BOT_NAME = "المعلم صابر"
+BOT_NAME = "SeifEldaly"
 BOT_CREST_URL: str | None = None  # حط لينك صورة شارة التحالف هنا لو حابب يظهر كـ Thumbnail بكل Embed
 
 
