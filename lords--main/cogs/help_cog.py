@@ -268,10 +268,20 @@ def _walk_commands(command_list, prefix: str = ""):
 
 
 def loaded_commands(bot: commands.Bot) -> list[tuple[str, app_commands.Command]]:
-    """Return the actual current tree, deduplicated by full command path."""
+    """Return loaded commands from global and guild-scoped trees.
+
+    Discord can sync commands to a specific guild while the global tree is
+    intentionally cleared. The help center must inspect both trees or it will
+    incorrectly show 0 commands even though slash commands work normally.
+    """
     unique = {}
-    for path, command in _walk_commands(bot.tree.get_commands()):
-        unique[path] = command
+    command_lists = [bot.tree.get_commands()]
+    for guild in getattr(bot, "guilds", []):
+        command_lists.append(bot.tree.get_commands(guild=guild))
+
+    for command_list in command_lists:
+        for path, command in _walk_commands(command_list):
+            unique[path] = command
     return sorted(unique.items(), key=lambda item: item[0].casefold())
 
 
