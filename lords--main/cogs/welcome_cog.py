@@ -14,9 +14,12 @@ from PIL import Image, ImageDraw, ImageFont
 
 DB_FILE = "guild_settings.json"
 DEFAULT_WELCOME_TEMPLATE = (
-    "أهلاً وسهلاً بك {العضو} !\n"
+    "أهلاً وسهلاً بك {العضو}!\n"
     "أتمنى أن تقضي وقتاً ممتعاً معنا 🦋✨\n"
-    "تم دعوتك من قبل **{الداعي}** ✨"
+    "تم دعوتك من قبل **{الداعي}** ✨\n\n"
+    "**Welcome, {الاسم}!**\n"
+    "We hope you enjoy your time with us.\n"
+    "Invited by **{الداعي}** ✨"
 )
 invites_cache: dict[int, dict[str, int]] = {}
 
@@ -91,15 +94,27 @@ async def generate_welcome_image(member: discord.Member, background_url: str | N
         )
         base.paste(avatar_img, (avatar_x, avatar_y), avatar_img)
 
-        try:
-            font_title = ImageFont.truetype("arial.ttf", 40)
-            font_sub = ImageFont.truetype("arial.ttf", 26)
-        except OSError:
+        font_path = next(
+            (
+                path
+                for path in (
+                    "arial.ttf",
+                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                    "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+                )
+                if os.path.exists(path)
+            ),
+            None,
+        )
+        if font_path:
+            font_title = ImageFont.truetype(font_path, 40)
+            font_sub = ImageFont.truetype(font_path, 26)
+        else:
             font_title = ImageFont.load_default()
             font_sub = ImageFont.load_default()
 
-        welcome_text = f"أهلاً بك {member.name} 🦩"
-        member_count_text = f"العضو رقم {member.guild.member_count}"
+        welcome_text = f"أهلاً بك {member.name} • Welcome!"
+        member_count_text = f"العضو رقم {member.guild.member_count} • Member #"
         title_w = draw.textlength(welcome_text, font=font_title)
         draw.text(((width - title_w) / 2, 260), welcome_text, font=font_title, fill="white")
         sub_w = draw.textlength(member_count_text, font=font_sub)
@@ -159,10 +174,11 @@ class WelcomeCog(commands.Cog):
     async def on_member_join(self, member: discord.Member):
         guild = member.guild
         welcome_channel_id = get_setting(guild.id, "welcome_channel_id")
-        if not welcome_channel_id:
-            return
-
-        welcome_channel = guild.get_channel(int(welcome_channel_id))
+        welcome_channel = (
+            guild.get_channel(int(welcome_channel_id))
+            if welcome_channel_id
+            else guild.system_channel
+        )
         if not welcome_channel:
             return
 
@@ -199,22 +215,22 @@ class WelcomeCog(commands.Cog):
             )
 
         embed = discord.Embed(
-            title="🦩 عضو جديد انضم إلينا!",
+            title="🦩 عضو جديد انضم إلينا • A new member joined!",
             description=welcome_text,
             color=discord.Color.gold(),
         )
         embed.set_image(url="attachment://welcome.png")
-        embed.set_footer(text=f"عضو رقم {guild.member_count} في {guild.name}")
+        embed.set_footer(text=f"عضو رقم {guild.member_count} في {guild.name} • Member #{guild.member_count}")
         await welcome_channel.send(embed=embed, file=file, view=WelcomeView())
 
-    @app_commands.command(name="تحديد-روم-الترحيب", description="تحديد الروم اللي هتظهر فيه رسائل ترحيب الأعضاء الجدد")
+    @app_commands.command(name="تحديد-روم-الترحيب", description="Set the channel used for new-member welcome messages")
     @app_commands.describe(القناة="روم الترحيب")
     @app_commands.checks.has_permissions(administrator=True)
     async def set_welcome_channel(self, interaction: discord.Interaction, القناة: discord.TextChannel):
         set_setting(interaction.guild.id, "welcome_channel_id", القناة.id)
         await interaction.response.send_message(f"✅ تم تحديد روم الترحيب: {القناة.mention}", ephemeral=True)
 
-    @app_commands.command(name="تحديد-صورة-الترحيب", description="رفع صورة خلفية مخصصة لصورة الترحيب")
+    @app_commands.command(name="تحديد-صورة-الترحيب", description="Set a custom background image for the welcome card")
     @app_commands.describe(الصورة="ملف الصورة اللي هتبقى خلفية لبطاقة الترحيب")
     @app_commands.checks.has_permissions(administrator=True)
     async def set_welcome_background(self, interaction: discord.Interaction, الصورة: discord.Attachment):
@@ -224,7 +240,7 @@ class WelcomeCog(commands.Cog):
         set_setting(interaction.guild.id, "background_url", الصورة.url)
         await interaction.response.send_message("✅ تم تحديد خلفية صورة الترحيب.", ephemeral=True)
 
-    @app_commands.command(name="تحديد-رسالة-الترحيب", description="كتابة نص رسالة الترحيب بنفسك بدل الرسالة الافتراضية")
+    @app_commands.command(name="تحديد-رسالة-الترحيب", description="Customize the new-member welcome message")
     @app_commands.describe(
         الرسالة="نص الرسالة. استخدم: {العضو} لمنشن العضو، {الاسم} لاسمه، {العدد} لرقم عضويته، {الداعي} لاسم من دعاه"
     )
@@ -237,20 +253,20 @@ class WelcomeCog(commands.Cog):
             ephemeral=True,
         )
 
-    @app_commands.command(name="استعادة-رسالة-الترحيب", description="الرجوع لرسالة الترحيب الافتراضية")
+    @app_commands.command(name="استعادة-رسالة-الترحيب", description="Restore the default bilingual welcome message")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_welcome_message(self, interaction: discord.Interaction):
         set_setting(interaction.guild.id, "welcome_message", None)
         await interaction.response.send_message("✅ تم الرجوع لرسالة الترحيب الافتراضية.", ephemeral=True)
 
-    @app_commands.command(name="تحديد-روم-القوانين", description="تحديد الروم اللي فيه القوانين (يُستخدم في زر 'شاهد القوانين')")
+    @app_commands.command(name="تحديد-روم-القوانين", description="Set the channel used by the View Rules button")
     @app_commands.describe(القناة="روم القوانين")
     @app_commands.checks.has_permissions(administrator=True)
     async def set_rules_channel(self, interaction: discord.Interaction, القناة: discord.TextChannel):
         set_setting(interaction.guild.id, "rules_channel_id", القناة.id)
         await interaction.response.send_message(f"✅ تم تحديد روم القوانين: {القناة.mention}", ephemeral=True)
 
-    @app_commands.command(name="ارسال-القوانين", description="إرسال لوحة قوانين السيرفر مع زر موافقة تفاعلي")
+    @app_commands.command(name="ارسال-القوانين", description="Send the server rules panel with an interactive acceptance button")
     @app_commands.checks.has_permissions(administrator=True)
     async def send_rules(self, interaction: discord.Interaction):
         embed = discord.Embed(
@@ -271,7 +287,7 @@ class WelcomeCog(commands.Cog):
         embed.set_footer(text="اضغط على الزر بالأسفل لتأكيد قراءة القوانين والموافقة عليها")
         await interaction.response.send_message(embed=embed, view=RulesView())
 
-    @app_commands.command(name="ارسال-امبيد", description="إرسال رسالة Embed مخصصة في أي روم تحدده")
+    @app_commands.command(name="ارسال-امبيد", description="Send a custom embed to a selected channel")
     @app_commands.describe(
         الرسالة="نص الرسالة اللي هتظهر داخل الـ Embed",
         القناة="الروم اللي هتتبعت فيه الرسالة",
