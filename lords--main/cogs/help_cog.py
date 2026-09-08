@@ -120,6 +120,63 @@ ADMIN_HINTS = (
     "admin",
 )
 
+# English copy used by /help when the user selects English.
+ENGLISH_COMMAND_DESCRIPTIONS = {
+    "help": "Open the live command center and browse commands by section.",
+    "ai": "Ask the Lords advisor a question or attach an image for analysis.",
+    "optimize": "Get an AI plan for completing an Alliance Festival task.",
+    "event": "Calculate whether your speedups can complete a Hell or Solo Event stage.",
+    "shelter": "Start a shelter timer with a reminder 15 minutes before it ends.",
+    "speedup": "Add your speedups and calculate the total time.",
+    "monster": "Find the best hunting heroes for a selected monster.",
+    "add_monster": "[Admin] Add a monster to the hunting guide.",
+    "dict": "Look up a Lords Mobile term in the quick dictionary.",
+    "info": "Read a guide about events such as Dragon Arena, KvK, and Hell Events.",
+    "add_info": "[Admin] Add a new event guide entry.",
+    "task": "[Admin] Add an Alliance Festival task for a member.",
+    "done": "[Admin] Mark an Alliance Festival task as completed.",
+    "board": "View the Alliance Festival leaderboard.",
+    "calc": "Calculate Alliance Festival speedups or ask about resource exchanges.",
+    "log_activity": "[Admin] Record a member's participation in an alliance activity.",
+    "stats_event": "View interactive member participation statistics.",
+    "profile": "View a member profile with alliance participation statistics.",
+    "top5": "View the five most active members across tracked activities.",
+    "event_stats": "View a participation report for a selected alliance event.",
+    "quiz": "Answer a quick Lords Mobile quiz question and earn points.",
+    "reset_stats": "[Admin] Reset activity and quiz records for a new week.",
+    "hunt_log": "Log hunting results manually, from an image, or as a grouped list.",
+    "hunt_channel": "[Admin] Configure the channel and daily target for hunt reports.",
+    "hunt_list": "View each member's hunt count and remaining daily target.",
+    "scout": "Analyze an enemy gear or profile image with AI.",
+    "geartiers": "Browse the complete gear tier guide for war, hunting, and economy.",
+    "offer": "Add a resource exchange offer for alliance members.",
+    "list": "View active resource exchange offers in this server.",
+    "cancel": "Cancel your latest resource exchange offer.",
+    "set": "Register or update your main troop type.",
+    "open": "Open a rally call and notify members with the required troop type.",
+    "rally": "Open a smart rally call for the alliance.",
+    "counter": "Find the ideal counter formation for an enemy formation.",
+    "analyze": "Analyze a battle report image and its numbers.",
+    "shield": "Start a smart shield alarm with a 15-minute warning and voice escalation.",
+    "voice_rescue": "Start a shield alarm with voice escalation if nobody responds.",
+    "shelter_done": "Stop the active shield or shelter alarm.",
+    "setup": "[Admin] Open the guided setup panel for the bot.",
+    "setup_check": "[Admin] Check whether the bot settings and integrations are working.",
+    "language": "[Admin] Set the bot reply language for this server.",
+    "languageme": "Choose your personal bot reply language.",
+    "bot_channel": "[Admin] Set the channel or thread where the bot can respond.",
+    "report": "Record and review alliance battle reports.",
+    "add": "Record a new battle in the server log.",
+    "user": "View the battle history of a selected member.",
+    "تحديد-روم-الترحيب": "[Admin] Set the channel for new-member welcome messages.",
+    "تحديد-صورة-الترحيب": "[Admin] Set a custom background for the welcome card.",
+    "تحديد-رسالة-الترحيب": "[Admin] Customize the new-member welcome message.",
+    "استعادة-رسالة-الترحيب": "[Admin] Restore the default welcome message.",
+    "تحديد-روم-القوانين": "[Admin] Set the channel used by the View Rules button.",
+    "ارسال-القوانين": "[Admin] Send the server rules panel with an acceptance button.",
+    "ارسال-امبيد": "[Admin] Send a custom embed to a selected channel.",
+}
+
 
 def _walk_commands(command_list, prefix: str = ""):
     """Flatten top-level commands and groups into unique display paths."""
@@ -165,26 +222,32 @@ def command_category(path: str) -> str:
 
 
 def command_description(path: str, command: app_commands.Command, lang: str) -> str:
-    description = (command.description or "").strip()
-    if not description:
-        description = "أمر متاح في البوت." if lang == "ar" else "Available bot command."
+    if lang == "en":
+        description = ENGLISH_COMMAND_DESCRIPTIONS.get(path)
+        if description is None:
+            description = ENGLISH_COMMAND_DESCRIPTIONS.get(command.name)
+        if description is None:
+            description = f"Open the {path.replace(' ', ' / ')} feature and follow its interactive prompts."
+    else:
+        description = (command.description or "").strip()
+        if not description:
+            description = "أمر متاح في البوت."
 
-    if command.name in WELCOME_COMMANDS and lang == "ar":
-        welcome_copy = {
-            "ارسال-امبيد": "إرسال Embed احترافي مخصص إلى روم تختاره، مع نص وصورة اختيارية.",
-            "ارسال-القوانين": "إرسال لوحة القوانين مع زر موافقة تفاعلي للأعضاء.",
-            "استعادة-رسالة-الترحيب": "إرجاع رسالة الترحيب الافتراضية.",
-            "تحديد-رسالة-الترحيب": "تخصيص نص الترحيب مع متغيرات العضو والداعي والعدد.",
-            "تحديد-روم-الترحيب": "اختيار الروم الذي يستقبل رسائل الأعضاء الجدد.",
-            "تحديد-روم-القوانين": "تحديد روم القوانين الذي يفتحه زر شاهد القوانين.",
-            "تحديد-صورة-الترحيب": "تعيين خلفية بطاقة الترحيب.",
-        }
-        description = welcome_copy.get(command.name, description)
+        if command.name in WELCOME_COMMANDS:
+            welcome_copy = {
+                "ارسال-امبيد": "إرسال Embed احترافي مخصص إلى روم تختاره، مع نص وصورة اختيارية.",
+                "ارسال-القوانين": "إرسال لوحة القوانين مع زر موافقة تفاعلي للأعضاء.",
+                "استعادة-رسالة-الترحيب": "إرجاع رسالة الترحيب الافتراضية.",
+                "تحديد-رسالة-الترحيب": "تخصيص نص الترحيب مع متغيرات العضو والداعي والعدد.",
+                "تحديد-روم-الترحيب": "اختيار الروم الذي يستقبل رسائل الأعضاء الجدد.",
+                "تحديد-روم-القوانين": "تحديد روم القوانين الذي يفتحه زر شاهد القوانين.",
+                "تحديد-صورة-الترحيب": "تعيين خلفية بطاقة الترحيب.",
+            }
+            description = welcome_copy.get(command.name, description)
 
     if any(hint in description.lower() for hint in ADMIN_HINTS) or command.name in WELCOME_COMMANDS:
-        description = f"🔒 {description}"
+        description = f"🔒 {description.replace('[Admin] ', '').replace('[admin] ', '')}"
     return description[:1000]
-
 
 def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
     commands_list = loaded_commands(bot)
@@ -306,7 +369,7 @@ class HelpCog(commands.Cog):
 
     @app_commands.command(
         name="help",
-        description="📖 مركز أوامر البوت، منظم حسب الوظيفة والإدارة والحرب والـ AI",
+        description="Open the live command center, organized by function, administration, war, and AI.",
     )
     async def help_cmd(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
