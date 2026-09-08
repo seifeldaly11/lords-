@@ -69,7 +69,7 @@ class InfoSelect(discord.ui.Select):
     def __init__(self, info_data: dict, lang: str):
         self.info_data = info_data
         options = [
-            discord.SelectOption(label=val["title"], value=key, emoji=val.get("emoji") or "ℹ️")
+            discord.SelectOption(label=val["title"], value=key, emoji=val.get("emoji") or "👑")
             for key, val in info_data.items()
         ]
         super().__init__(placeholder=t("info_select_placeholder", lang), options=options[:25])
@@ -77,7 +77,7 @@ class InfoSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         info = self.info_data[self.values[0]]
         embed = discord.Embed(
-            title=f"{info.get('emoji') or 'ℹ️'} {info['title']}",
+            title=f"{info.get('emoji') or '👑'} {info['title']}",
             description=info.get("desc", ""),
             color=discord.Color.magenta(),
         )
@@ -102,7 +102,7 @@ class InfoDeleteSelect(discord.ui.Select):
     def __init__(self, entries: dict, lang: str):
         self.lang = lang
         options = [
-            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=value.get("emoji") or "ℹ️")
+            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=value.get("emoji") or "👑")
             for key, value in entries.items()
         ]
         super().__init__(placeholder=t("delete_info_select_placeholder", lang), options=options[:25])
@@ -155,7 +155,7 @@ class InfoEditSelect(discord.ui.Select):
         self.image = image
         self.image2 = image2
         options = [
-            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=value.get("emoji") or "ℹ️")
+            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=value.get("emoji") or "👑")
             for key, value in entries.items()
         ]
         super().__init__(placeholder=t("edit_info_select_placeholder", lang), options=options[:25])
@@ -401,7 +401,7 @@ class GuidesCog(commands.Cog):
         gid = str(interaction.guild_id)
         data.setdefault(gid, {})
         key = title.strip().lower().replace(" ", "_")
-        entry = {"title": title.strip(), "desc": desc.strip(), "emoji": "ℹ️"}
+        entry = {"title": title.strip(), "desc": desc.strip(), "emoji": "👑"}
         if image:
             entry["image_url"] = image.url
         if image2:
