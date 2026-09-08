@@ -132,12 +132,12 @@ class GuidesCog(commands.Cog):
 
     @app_commands.command(name="add_monster", description="🐾 [إدارة] أضف وحش جديد لقائمة /monster (مع إمكانية إرفاق صور)")
     @app_commands.describe(
-        name="اسم الوحش",
-        damage_type="نوع الضرر المطلوب لصيده (مثال: هجوم فرسان)",
-        heroes="الأبطال المقترحين (اكتبهم مفصولين بفاصلة)",
-        defense_note="(اختياري) ملاحظة عن دفاع الوحش",
-        image="(اختياري) صورة للوحش أو التشكيلة المقترحة",
-        image2="(اختياري) صورة تانية",
+        name="Monster name",
+        damage_type="Required damage type (e.g. cavalry attack)",
+        heroes="Suggested heroes (comma-separated)",
+        defense_note="Optional defense note",
+        image="Optional monster or formation image",
+        image2="Optional second image",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def add_monster(
@@ -188,7 +188,7 @@ class GuidesCog(commands.Cog):
     # -- /dict -------------------------------------------------------------
 
     @app_commands.command(name="dict", description="📖 قاموس مصطلحات اللعبة السريع")
-    @app_commands.describe(term="اكتب المصطلح (T4, Rally, RSS...) واختر من الاقتراحات")
+    @app_commands.describe(term="Enter a term (T4, Rally, RSS...) and choose a suggestion")
     async def dict_cmd(self, interaction: discord.Interaction, term: str):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         match = next((v for k, v in self.dict_data.items() if k.lower() == term.lower()), None)
@@ -226,10 +226,10 @@ class GuidesCog(commands.Cog):
 
     @app_commands.command(name="add_info", description="ℹ️ [إدارة] أضف شرح جديد لأمر /info (مع إمكانية إرفاق صور)")
     @app_commands.describe(
-        title="عنوان الشرح (مثال: ساحة التنين)",
-        desc="نص الشرح",
-        image="(اختياري) صورة توضيحية",
-        image2="(اختياري) صورة تانية",
+        title="Info title (e.g. Dragon Arena)",
+        desc="Info description",
+        image="Optional reference image",
+        image2="Optional second image",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def add_info(
