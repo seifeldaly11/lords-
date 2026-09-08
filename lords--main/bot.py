@@ -120,21 +120,24 @@ async def on_ready():
             f"GUILD_ID مضبوط: {bool(GUILD_ID)}"
         )
         if GUILD_ID:
+            # وضع التطوير: أوامر Guild فقط، مع مسح النسخة العالمية القديمة حتى
+            # لا يظهر الأمر مرتين (نسخة Global + نسخة Guild).
             guild_obj = discord.Object(id=int(GUILD_ID))
             bot.tree.copy_global_to(guild=guild_obj)
             synced = await bot.tree.sync(guild=guild_obj)
+            bot.tree.clear_commands(guild=None)
+            await bot.tree.sync()
             log.info(f"🔄 تمت مزامنة {len(synced)} أمر على السيرفر المحدد (GUILD_ID).")
         else:
+            # وضع البيع/الإنتاج: نسخة Global واحدة فقط. الأوامر القديمة التي
+            # كانت Guild-scoped تُمسح بإرسال قائمة فارغة، بدون نسخ الأوامر
+            # العالمية إليها مرة ثانية؛ النسخ كان سبب ظهور /ai وغيره مرتين.
             synced = await bot.tree.sync()
             log.info(f"🔄 تمت مزامنة {len(synced)} أمر عالمياً.")
-
-            # استبدال أوامر السيرفر القديمة فوراً. هذا يمسح أوامر مثل
-            # /dict و /heroes إذا لم تعد موجودة في النسخة الحالية.
             for guild in bot.guilds:
                 bot.tree.clear_commands(guild=guild)
-                bot.tree.copy_global_to(guild=guild)
                 guild_synced = await bot.tree.sync(guild=guild)
-                log.info(f"🔄 تمت مزامنة {len(guild_synced)} أمر على {guild.name}.")
+                log.info(f"🧹 تم تنظيف أوامر Guild القديمة في {guild.name} ({len(guild_synced)} متبقي).")
     except Exception as e:
         log.error(f"فشلت مزامنة الأوامر: {e}")
 
