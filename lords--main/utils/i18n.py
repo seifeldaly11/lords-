@@ -1227,6 +1227,17 @@ TRANSLATIONS = {
     },
     "delete_info_not_found": {"ar": "❌ مش لاقي شرحًا مضافًا بعنوان **{title}**.", "en": "❌ No custom info entry titled **{title}** was found."},
     "delete_info_success": {"ar": "✅ تم حذف الشرح **{title}**.", "en": "✅ Deleted info entry **{title}**."},
+    "delete_info_prompt": {"ar": "🗑️ اختار الشرح اللي عايز تحذفه، وبعدها اضغط زر الحذف للتأكيد.", "en": "🗑️ Choose the info entry to delete, then press the delete button to confirm."},
+    "delete_info_select_placeholder": {"ar": "اختار الشرح للحذف...", "en": "Choose an info entry to delete..."},
+    "delete_info_selected": {"ar": "اخترت **{title}**. لو متأكد اضغط زر الحذف.", "en": "Selected **{title}**. Press delete if you are sure."},
+    "delete_info_selection_needed": {"ar": "⚠️ اختار شرحًا من القائمة الأول.", "en": "⚠️ Choose an info entry first."},
+    "edit_info_prompt": {"ar": "✏️ اختار الشرح اللي عايز تعدله. لو أرفقت صورة مع الأمر هتتحط بدل الصورة الحالية.", "en": "✏️ Choose the info entry to edit. Any image attached to the command will replace the current image."},
+    "edit_info_select_placeholder": {"ar": "اختار الشرح للتعديل...", "en": "Choose an info entry to edit..."},
+    "edit_info_modal_title": {"ar": "✏️ تعديل الشرح", "en": "✏️ Edit info entry"},
+    "edit_info_title_field": {"ar": "عنوان الشرح", "en": "Info title"},
+    "edit_info_desc_field": {"ar": "نص الشرح", "en": "Info description"},
+    "edit_info_success": {"ar": "✅ تم تعديل الشرح **{title}**.", "en": "✅ Updated info entry **{title}**."},
+    "edit_info_empty": {"ar": "📭 مفيش شروحات مضافة للسيرفر ده لسه.", "en": "📭 This server has no custom info entries yet."},
 
     "add_info_bad_image": {
         "ar": "❌ أحد المرفقات اللي حطيتها مش صورة.",
