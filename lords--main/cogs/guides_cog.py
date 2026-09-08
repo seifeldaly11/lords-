@@ -12,6 +12,8 @@
 """
 from typing import Optional
 
+import re
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -72,6 +74,77 @@ def _localized(value, lang: str) -> str:
     if isinstance(value, dict):
         return value.get(lang) or value.get("ar") or value.get("en") or ""
     return value or ""
+
+
+LEGACY_INFO_TRANSLATIONS = (
+    (("academy", "الأبحاث"), "Academy Research", "A guide to castle and academy research priorities."),
+    (("black nest", "dark nest", "العش الأسود", "عش اسود"), "What Is a Dark Nest?", "A guide to Dark Nests, levels, rallies, and rewards."),
+    (("mix", "ميكس"), "Best Mix Hero Lineups", "Recommended mix hero lineups for defense and balanced formations."),
+    (("archaic", "المجلدات العتيقة", "المجلدات"), "How to Get Archaic Tomes", "The main ways to collect Archaic Tomes for research."),
+    (("prison", "السجن"), "Prison, Altar & Battle Hall for T4", "The buildings and requirements needed to unlock T4 troops."),
+    (("infantry", "مشاة"), "Best Infantry Hero Lineups", "Recommended hero lineups for infantry formations."),
+    (("ranged", "الرماة", "رماة"), "Best Ranged Hero Lineups", "Recommended hero lineups for ranged formations."),
+    (("cavalry", "الفرسان", "فرسان"), "Best Cavalry Hero Lineups", "Recommended hero lineups for cavalry formations."),
+    (("familiar", "الوحوش", "المهارة"), "Best Familiars by Skills", "A guide to useful familiars organized by their skills."),
+    (("pact 3", "لفيفة 3", "اللفيفة 3"), "Pact 3 Familiars Guide", "A guide to the most useful Pact 3 familiars."),
+)
+
+
+def _clean_legacy_arabic(value) -> str:
+    if not isinstance(value, str):
+        return value or ""
+    return re.sub(r"\\s*\\([^()]*[A-Za-z][^()]*\\)", "", value).strip()
+
+
+def _extract_legacy_english(value) -> str:
+    if not isinstance(value, str):
+        return ""
+    parts = re.findall(r"\\(([^)]*[A-Za-z][^)]*)\\)", value)
+    return " ".join(part.strip() for part in parts if part.strip())
+
+
+def _legacy_translation(entry_key: str, title: str, desc: str):
+    haystack = f"{entry_key} {title} {desc}".casefold()
+    for terms, title_en, desc_en in LEGACY_INFO_TRANSLATIONS:
+        if any(term.casefold() in haystack for term in terms):
+            return title_en, desc_en
+    return "", ""
+
+
+def _prepare_custom_info(entries: dict) -> dict:
+    """يحوّل الشروحات القديمة ذات النص الواحد إلى صيغة ar/en وقت العرض."""
+    prepared = {}
+    for key, raw_entry in entries.items():
+        entry = dict(raw_entry)
+        raw_title = entry.get("title", key)
+        raw_desc = entry.get("desc", "")
+        if isinstance(raw_title, dict):
+            title_ar = raw_title.get("ar") or raw_title.get("en") or key
+            title_en = raw_title.get("en") or raw_title.get("ar") or key
+        else:
+            title_ar = _clean_legacy_arabic(raw_title)
+            title_en = _extract_legacy_english(raw_title)
+        if isinstance(raw_desc, dict):
+            desc_ar = raw_desc.get("ar") or raw_desc.get("en") or ""
+            desc_en = raw_desc.get("en") or raw_desc.get("ar") or ""
+        else:
+            desc_ar = _clean_legacy_arabic(raw_desc)
+            desc_en = _extract_legacy_english(raw_desc)
+
+        translated_title, translated_desc = _legacy_translation(key, title_ar, desc_ar)
+        if translated_title:
+            title_en = translated_title
+        if translated_desc:
+            desc_en = translated_desc
+        if not title_en:
+            title_en = f"Lords Guide: {str(key).replace('_', ' ').title()}"
+        if not desc_en:
+            desc_en = "English translation not added yet. Use /edit_info to add the English title and description."
+
+        entry["title"] = {"ar": title_ar, "en": title_en}
+        entry["desc"] = {"ar": desc_ar, "en": desc_en}
+        prepared[key] = entry
+    return prepared
 
 
 def _info_emoji(value: dict, fallback: str = INFO_CUSTOM_FALLBACK_EMOJI) -> str:
@@ -345,11 +418,12 @@ class GuidesCog(commands.Cog):
         return data.get(str(guild_id), {})
 
     def _get_info(self, guild_id: int) -> dict:
-        """يرجع الأقسام الجاهزة وإضافات الإدارة الخاصة بالسيرفر ده."""
+        """يرجع الأقسام الجاهزة وإضافات الإدارة بصيغة ثنائية اللغة."""
         data = load(CUSTOM_INFO_FILE)
+        custom = _prepare_custom_info(data.get(str(guild_id), {}))
         return {
             "categories": self.static_info_data.get("categories", []),
-            "custom": data.get(str(guild_id), {}),
+            "custom": custom,
         }
 
     # -- /monster + /add_monster ----------------------------------------
