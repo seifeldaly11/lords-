@@ -29,7 +29,7 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="!lm-unused!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 
 def apply_english_command_descriptions() -> None:
