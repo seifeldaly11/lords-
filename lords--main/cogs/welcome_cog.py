@@ -364,15 +364,53 @@ class WelcomeCog(commands.Cog):
             f"✅ Rules channel set to {channel.mention} • تم تحديد روم القوانين.", ephemeral=True
         )
 
-    @app_commands.command(name="ارسال-القوانين", description="Send the bilingual server rules panel")
+    @app_commands.command(name="تحديد-رسالة-القوانين", description="Set the Arabic and English server rules")
+    @app_commands.describe(
+        message_ar="Arabic rules message",
+        message_en="English rules message (optional)",
+    )
+    @app_commands.checks.has_permissions(administrator=True)
+    async def set_rules_message(
+        self, interaction: discord.Interaction, message_ar: str, message_en: str | None = None
+    ):
+        set_setting(interaction.guild.id, "rules_message_ar", message_ar)
+        set_setting(
+            interaction.guild.id,
+            "rules_message_en",
+            message_en or "Welcome! Respect members, do not advertise, use the correct channels, and respect privacy.",
+        )
+        await interaction.response.send_message(
+            "✅ Bilingual rules message saved • تم حفظ رسالة القوانين الثنائية اللغة.",
+            ephemeral=True,
+        )
+
+    @app_commands.command(name="استعادة-رسالة-القوانين", description="Restore the default bilingual server rules")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def reset_rules_message(self, interaction: discord.Interaction):
+        set_setting(interaction.guild.id, "rules_message_ar", None)
+        set_setting(interaction.guild.id, "rules_message_en", None)
+        await interaction.response.send_message(
+            "✅ Default rules restored • تم استعادة القوانين الافتراضية.", ephemeral=True
+        )
+
+    @app_commands.command(name="ارسال-القوانين", description="Send your customized bilingual server rules")
     @app_commands.checks.has_permissions(administrator=True)
     async def send_rules(self, interaction: discord.Interaction):
+        arabic_rules = get_setting(
+            interaction.guild.id,
+            "rules_message_ar",
+        ) or "أهلاً بك! يرجى احترام الأعضاء، منع الإعلانات، الالتزام بالقنوات، واحترام الخصوصية."
+        english_rules = get_setting(
+            interaction.guild.id,
+            "rules_message_en",
+        ) or "Welcome! Respect members, do not advertise, use the correct channels, and respect privacy."
         embed = discord.Embed(
             title="📜 قوانين السيرفر • Server Rules",
             description=(
-                "**العربية:**\nأهلاً بك! يرجى احترام الأعضاء، منع الإعلانات، الالتزام بالقنوات، واحترام الخصوصية.\n\n"
-                "**English:**\nWelcome! Respect members, do not advertise, use the correct channels, and respect privacy.\n\n"
-                "اضغط الزر بالأسفل للموافقة • Press the button below to agree.") ,
+                f"**العربية:**\n{arabic_rules}\n\n"
+                f"**English:**\n{english_rules}\n\n"
+                "اضغط الزر بالأسفل للموافقة • Press the button below to agree."
+            ),
             color=discord.Color.blue(),
         )
         if interaction.guild.icon:
