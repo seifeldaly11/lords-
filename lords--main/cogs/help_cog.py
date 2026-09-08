@@ -503,9 +503,14 @@ class HelpCog(commands.Cog):
         """Compatibility alias for servers that use the !help prefix command."""
         lang = get_lang(ctx.guild.id if ctx.guild else None, ctx.author.id)
         try:
+            # Send the polished card first. Attach the interactive menu separately so
+            # a component validation issue never hides the actual help content.
             embed = build_intro_embed(self.bot, lang)
-            view = HelpView(self.bot, lang)
-            await ctx.send(embed=embed, view=view)
+            message = await ctx.send(embed=embed)
+            try:
+                await message.edit(view=HelpView(self.bot, lang))
+            except Exception:
+                log.exception("Failed to attach !help menu view")
         except Exception:
             log.exception("Failed to render !help")
             fallback = (
@@ -522,11 +527,14 @@ class HelpCog(commands.Cog):
     async def help_cmd(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         try:
-            # Build both parts before acknowledging the interaction so Discord
-            # receives one valid response even if a newly loaded command is malformed.
+            # Acknowledge with the polished card first. The menu is attached in a
+            # second request so Discord component errors cannot erase the response.
             embed = build_intro_embed(self.bot, lang)
-            view = HelpView(self.bot, lang)
-            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            try:
+                await interaction.edit_original_response(view=HelpView(self.bot, lang))
+            except Exception:
+                log.exception("Failed to attach /help menu view")
         except Exception:
             log.exception("Failed to render /help")
             fallback = (
@@ -538,6 +546,7 @@ class HelpCog(commands.Cog):
                 await interaction.response.send_message(fallback, ephemeral=True)
             else:
                 await interaction.followup.send(fallback, ephemeral=True)
+
 
 
 async def setup(bot: commands.Bot):
