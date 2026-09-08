@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import logging
 
 import discord
 from discord import app_commands
@@ -13,6 +14,8 @@ from discord.ext import commands
 
 from utils.i18n import get_lang
 
+
+log = logging.getLogger("lordsbot.help")
 
 CATEGORY_META = {
     "overview": {
@@ -111,6 +114,8 @@ WELCOME_COMMANDS = {
     "تحديد-روم-الترحيب",
     "تحديد-روم-القوانين",
     "تحديد-صورة-الترحيب",
+    "تحديد-رسالة-القوانين",
+    "استعادة-رسالة-القوانين",
 }
 
 ADMIN_HINTS = (
@@ -175,6 +180,8 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "تحديد-روم-القوانين": "[Admin] Set the channel used by the View Rules button.",
     "ارسال-القوانين": "[Admin] Send the server rules panel with an acceptance button.",
     "ارسال-امبيد": "[Admin] Send a custom embed to a selected channel.",
+    "تحديد-رسالة-القوانين": "[Admin] Set the Arabic and English server rules.",
+    "استعادة-رسالة-القوانين": "[Admin] Restore the default bilingual server rules.",
 }
 
 
@@ -302,6 +309,8 @@ def command_description(path: str, command: app_commands.Command, lang: str) -> 
                 "تحديد-روم-الترحيب": "👋 [إدارة] اختيار الروم الذي يستقبل رسائل الأعضاء الجدد.",
                 "تحديد-روم-القوانين": "📜 [إدارة] تحديد روم القوانين الذي يفتحه زر شاهد القوانين.",
                 "تحديد-صورة-الترحيب": "🖼️ [إدارة] تعيين خلفية بطاقة الترحيب.",
+        "تحديد-رسالة-القوانين": "📜 [إدارة] تخصيص رسالة القوانين بالعربي والإنجليزي.",
+        "استعادة-رسالة-القوانين": "🔄 [إدارة] استعادة رسالة القوانين الافتراضية.",
             }
             description = welcome_copy.get(command.name, description)
 
@@ -464,11 +473,23 @@ class HelpCog(commands.Cog):
     )
     async def help_cmd(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
-        await interaction.response.send_message(
-            embed=build_intro_embed(self.bot, lang),
-            view=HelpView(self.bot, lang),
-            ephemeral=True,
-        )
+        try:
+            # Build both parts before acknowledging the interaction so Discord
+            # receives one valid response even if a newly loaded command is malformed.
+            embed = build_intro_embed(self.bot, lang)
+            view = HelpView(self.bot, lang)
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        except Exception:
+            log.exception("Failed to render /help")
+            fallback = (
+                "تعذر تحميل القائمة التفاعلية مؤقتًا. جرّب الأمر مرة أخرى بعد لحظات."
+                if lang == "ar"
+                else "The interactive help menu could not be loaded. Please try again in a moment."
+            )
+            if not interaction.response.is_done():
+                await interaction.response.send_message(fallback, ephemeral=True)
+            else:
+                await interaction.followup.send(fallback, ephemeral=True)
 
 
 async def setup(bot: commands.Bot):
