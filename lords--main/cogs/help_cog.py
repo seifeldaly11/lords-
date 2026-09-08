@@ -1,551 +1,319 @@
-"""
-/help - دليل الأوامر الكامل، منظّم في أقسام مع شرح متوسط الطول لكل أمر (مش كلمة واحدة، ومش فقرة طويلة).
-بيحترم /language بالكامل: العنوان، الأقسام، وشرح كل أمر بيتغيّر عربي/إنجليزي حسب تفضيل السيرفر.
+"""مركز المساعدة الديناميكي للبوت.
 
-ملحوظة: أسماء ووصف الأوامر اللي ديسكورد نفسه بيعرضها لما تكتب "/" (Metadata مسجّلة عند
-ديسكورد) بتتبع لغة تطبيق ديسكورد بتاع كل شخص، مش تفضيل /language بتاعنا - وده قيد من ديسكورد
-نفسه مش حاجة نقدر نتحكم فيها. الأمر ده (/help) هو المرجع الكامل والمضمون يطلع باللغة الصح
-دايماً لأي حد يفتحه.
+القائمة هنا تُبنى من App Command Tree المحمّل فعلياً، وليس من قائمة يدوية
+قديمة؛ لذلك أي أمر جديد يظهر في /help تلقائياً، وأي أمر محذوف يختفي منه.
 """
+from __future__ import annotations
+
+from collections import defaultdict
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils.i18n import get_lang, t
+from utils.i18n import get_lang
 
-# ---------------------------------------------------------------------------
-# محتوى الأقسام - كل قسم: مفتاح، إيموجي، لون، اسم ثنائي اللغة، وقائمة أوامر
-# (كل أمر: الاسم كامل زي ما بيتكتب، وشرح ثنائي اللغة متوسط الطول)
-# ---------------------------------------------------------------------------
 
-HELP_CATEGORIES = [
-    {
-        "key": "calc",
-        "emoji": "🧮",
-        "color": discord.Color.gold(),
-        "label": {"ar": "حواسب الحدث وتطوير الحساب", "en": "Event & Account Calculators"},
-        "commands": [
-            {
-                "cmd": "/event",
-                "desc": {
-                    "ar": "حاسبة أحداث الجحيم/المنفرد. أول اختيار: هل الحدث **حدث الجحيم** ولا **الحدث "
-                          "الفردي**، وبعدين تختار نوع النشاط (أبحاث، تدريب، صيد...) وتدخّل النقاط المطلوبة "
-                          "والتسريعات المتاحة، والبوت يقولك هتكمل المرحلة ولا لأ، ولو مش هتكمل يوريك هتوصل "
-                          "كام % وناقصك كام وقت بالظبط. وتحت النتيجة زرار 🤖 تقدر تسأل بيه المستشار الذكي "
-                          "يقترحلك استراتيجية بناءً على نفس الأرقام.",
-                    "en": "Hell Event / Individual Event calculator. First pick whether it's a **Hell Event** "
-                          "or an **Individual Event**, then pick the activity type (research, training, "
-                          "hunting...), enter the points needed and your available speedups, and the bot tells "
-                          "you whether you'll finish the stage - and if not, exactly what % you'll reach and how "
-                          "much extra time you need. A 🤖 button under the result lets the AI advisor suggest a "
-                          "strategy based on the same numbers.",
-                },
-            },
-            {
-                "cmd": "/shelter",
-                "desc": {
-                    "ar": "مؤقت حماية المخبأ (4/8/12 ساعة). بيبعتلك تنبيه هنا في القناة ورسالة خاصة قبل "
-                          "ما الحماية تخلص بـ15 دقيقة، عشان متتفاجئش وجيشك مكشوف.",
-                    "en": "A shelter-protection timer (4/8/12 hours). You'll get a ping in the channel plus a "
-                          "DM 15 minutes before it expires, so you're never caught with your army exposed.",
-                },
-            },
-            {
-                "cmd": "/speedup",
-                "desc": {
-                    "ar": "احسب إجمالي تسريعاتك بسرعة: اكتبها في سطر واحد مفصولة بفاصلة زي "
-                          "`4h, 6h, 1d×3` أو `24×4, 3d×2` (لو محددتش وحدة، البوت يفهمها ساعات "
-                          "افتراضياً)، والبوت يجمعهم كلهم ويقولك الإجمالي بالأيام/الساعات/الدقايق. "
-                          "وهنا كمان تحت النتيجة زرار 🤖 تسأل بيه المستشار الذكي.",
-                    "en": "Quickly total up your speedups: write them in one line separated by commas, "
-                          "like `4h, 6h, 1d×3` or `24×4, 3d×2` (no unit given defaults to hours), and "
-                          "the bot adds them all up and gives you the grand total in days/hours/minutes. "
-                          "There's a 🤖 button under the result too, to ask the AI advisor.",
-                },
-            },
-        ],
-    },
-    {
-        "key": "war",
-        "emoji": "⚔️",
-        "color": discord.Color.red(),
-        "label": {"ar": "غرفة الحرب والتكتيك", "en": "War Room & Tactics"},
-        "commands": [
-            {
-                "cmd": "/counter",
-                "desc": {
-                    "ar": "تدخّل تشكيلة العدو (مشاة/رماة/فرسان/حصار) والبوت يرجعلك أنسب رد ونوع التشكيلة "
-                          "التكتيكية (Wedge/Phalanx) اللي تناسب الموقف. تحت النتيجة زرار 🤖 تسأل بيه "
-                          "المستشار الذكي رأيه في الموقف بالتفصيل.",
-                    "en": "Enter the enemy's formation (infantry/ranged/cavalry/siege) and get the best "
-                          "counter troops plus the tactical formation (Wedge/Phalanx) that fits the situation. "
-                          "A 🤖 button under the result lets you ask the AI advisor for a deeper take.",
-                },
-            },
-            {
-                "cmd": "/report add | list | user",
-                "desc": {
-                    "ar": "سجل معارك التحالف: `add` يسجّل نتيجة معركة جديدة، `list` يعرض آخر المعارك المسجلة "
-                          "في السيرفر كله، و`user` يعرض سجل عضو معيّن بس.",
-                    "en": "The alliance battle log: `add` records a new battle result, `list` shows the latest "
-                          "logged battles for the whole server, and `user` shows one member's log only.",
-                },
-            },
-            {
-                "cmd": "/colo",
-                "desc": {
-                    "ar": "محاكي الكولوسيوم: تدخّل أبطال الخصم (مفصولين بفاصلة) وترجعلك التشكيلة المضادة "
-                          "المناسبة لكل بطل، بالإضافة لقاعدة عامة للحالات اللي مفيهاش بيانات محدّدة.",
-                    "en": "Colosseum simulator: enter the opponent's heroes (comma-separated) and get the "
-                          "right counter for each one, plus a general rule for cases without specific data.",
-                },
-            },
-            {
-                "cmd": "/analyze",
-                "desc": {
-                    "ar": "محلل تقارير المعارك. ممكن ترفق صورة التقرير للتوثيق، وتدخّل نسب/أعداد قوات الخصم "
-                          "يدوياً عشان البوت يحللها ويطلعلك الرد التكتيكي المناسب.",
-                    "en": "Battle report analyzer. You can attach a screenshot for documentation, then enter "
-                          "the enemy troop ratios/counts manually so the bot can analyze them and suggest a "
-                          "tactical response.",
-                },
-            },
-        ],
-    },
-    {
-        "key": "guides",
-        "emoji": "📖",
-        "color": discord.Color.dark_teal(),
-        "label": {"ar": "الأدلة والأبطال والمصطلحات", "en": "Guides, Heroes & Terms"},
-        "commands": [
-            {
-                "cmd": "/wiki",
-                "desc": {
-                    "ar": "الدليل الشامل للعبة في قائمة منسدلة واحدة: 🐾 الوحوش (نوع الضرر والأبطال والعتاد "
-                          "المطلوب)، 🛡️ المعدات (أفضل تشكيلات F2P/P2P)، 🦸 الأبطال، و🐉 المرافقين.",
-                    "en": "The full game guide in one dropdown menu: 🐾 Monsters (damage type, heroes, gear "
-                          "needed), 🛡️ Gear (best F2P/P2P setups), 🦸 Heroes, and 🐉 Companions.",
-                },
-            },
-            {
-                "cmd": "/monster",
-                "desc": {
-                    "ar": "تختار اسم الوحش وترجعلك أفضل الأبطال لصيده حسب نوع الضرر المناسب (سحري/فيزيائي)، "
-                          "شامل حالات خاصة زي Frostwing وNoceros اللي دفاعهم غير متوازن.",
-                    "en": "Pick a monster's name and get the best heroes to hunt it based on the right damage "
-                          "type (magic/physical), including special cases like Frostwing and Noceros with "
-                          "lopsided defenses.",
-                },
-            },
-            {
-                "cmd": "/dict",
-                "desc": {
-                    "ar": "قاموس مصطلحات سريع مع اقتراحات تلقائية أثناء الكتابة (T4, Rally, RSS, Wedge...) "
-                          "لأي مصطلح جديد شفته وحابب تفهمه بسرعة.",
-                    "en": "A quick terminology dictionary with live autocomplete suggestions (T4, Rally, RSS, "
-                          "Wedge...) for any new term you come across and want explained fast.",
-                },
-            },
-            {
-                "cmd": "/info",
-                "desc": {
-                    "ar": "شرح مبسط للأحداث الرئيسية في اللعبة زي ساحة التنين، حدث المنفرد، KvK، مهرجان "
-                          "التحالف، ونظام الجيش.",
-                    "en": "A simplified explanation of the game's major events - Dragon Arena, the Solo "
-                          "Event, KvK, Alliance Festival, and the army system.",
-                },
-            },
-            {
-                "cmd": "/heroes",
-                "desc": {
-                    "ar": "خلاصة الأبطال المهمين: أبطال التطوير، أبطال حرب مجانيين، وأبطال حرب للشحن، "
-                          "عشان تعرف تخطط لأولوياتك من غير ما تضيع وقتك على أبطال ضعيفة.",
-                    "en": "A summary of the important heroes: growth heroes, free war heroes, and premium war "
-                          "heroes, so you can plan your priorities without wasting time on weak picks.",
-                },
-            },
-            {
-                "cmd": "/geartiers",
-                "desc": {
-                    "ar": "تصنيف كامل للعتاد حسب الغرض: عتاد الحرب، عتاد الصيد، وعتاد الاقتصاد - مع تحذير "
-                          "واضح إن لبس عتاد الاقتصاد وقت الحرب بيخلي دفاعك ضعيف جداً.",
-                    "en": "A full gear classification by purpose: war gear, hunting gear, and economy gear - "
-                          "with a clear warning that wearing economy gear during war leaves your defense very weak.",
-                },
-            },
-            {
-                "cmd": "/scout",
-                "desc": {
-                    "ar": "🔍 ارفق صورة عتاد أو بروفايل الخصم، والذكاء الاصطناعي يحللها فعلياً ويطلعلك حكم "
-                          "واضح: قوي 💪 ولا ضعيف 🪶 ولا متوسط ⚖️، مع سبب مختصر للحكم.",
-                    "en": "🔍 Attach a screenshot of an enemy's gear or profile, and the AI actually analyzes "
-                          "it and gives you a clear verdict: strong 💪, weak 🪶, or average ⚖️, with a short reason.",
-                },
-            },
-        ],
-    },
-    {
-        "key": "games",
-        "emoji": "🎮",
+CATEGORY_META = {
+    "overview": {
+        "emoji": "🧭",
+        "ar": "نظرة عامة",
+        "en": "Overview",
         "color": discord.Color.blurple(),
-        "label": {"ar": "الألعاب التفاعلية", "en": "Interactive Games"},
-        "commands": [
-            {
-                "cmd": "/quiz",
-                "desc": {
-                    "ar": "مسابقة تفاعلية بأزرار مع نقاط ورتب (🧠 خبير لوردس) - وسيلة حلوة تحفّز الأعضاء "
-                          "يتفاعلوا ويتعلموا معلومات عن اللعبة وهما بيلعبوا.",
-                    "en": "An interactive button-based quiz with points and ranks (🧠 Lords Expert) - a fun "
-                          "way to get members engaged and picking up game knowledge while they play.",
-                },
-            },
-        ],
     },
-    {
-        "key": "alliance",
-        "emoji": "🏯",
-        "color": discord.Color.dark_gold(),
-        "label": {"ar": "إدارة التحالف والتتبع", "en": "Alliance Management & Tracking"},
-        "commands": [
-            {
-                "cmd": "/log_activity (إدارة)",
-                "desc": {
-                    "ar": "يسجّل مشاركة عضو في نشاط معيّن (حشود، مهرجان، ساحة تنين، KvK) - أساس كل تقارير "
-                          "النشاط اللي بعد كده زي /information و/top5.",
-                    "en": "Logs a member's participation in an activity (rallies, festival, Dragon Arena, "
-                          "KvK) - the foundation for all the activity reports that follow, like /information "
-                          "and /top5.",
-                },
-            },
-            {
-                "cmd": "/rally_log (إدارة)",
-                "desc": {
-                    "ar": "يسجّل حضور حشد فعلي: تختار الأعضاء المشاركين (لحد 25 دفعة واحدة)، نوعه (هجوم/دفاع)، "
-                          "ونتيجته (فوز/خسارة/تعادل) مع ملاحظة اختيارية.",
-                    "en": "Logs actual rally attendance: pick the participating members (up to 25 at once), "
-                          "the type (attack/defense), and the result (win/loss/draw) with an optional note.",
-                },
-            },
-            {
-                "cmd": "/information [member]",
-                "desc": {
-                    "ar": "ملف شامل لأي عضو (نفسك افتراضياً): مشاركاته في الحشود، التزامه بالحروب وKvK، "
-                          "والفعاليات اللي شارك فيها، بالإضافة لرتبته العامة بين باقي الأعضاء.",
-                    "en": "A full member profile (yourself by default): their rally participation, war/KvK "
-                          "commitment, and event history, plus their overall rank among other members.",
-                },
-            },
-            {
-                "cmd": "/user_admin_check (إدارة)",
-                "desc": {
-                    "ar": "لوحة متابعة إدارية: تختار عضو من قائمة منسدلة عشان تشوف سجله الكامل في كل الأحداث "
-                          "(حروب/حشود/KvK/ساحة تنين/مهرجان) شامل آخر 5 أنشطة وآخر 5 حشود بتاريخها.",
-                    "en": "An admin tracking dashboard: pick a member from a dropdown to see their full record "
-                          "across every event type (wars/rallies/KvK/Dragon Arena/festival), including their "
-                          "last 5 activities and last 5 rallies with dates.",
-                },
-            },
-            {
-                "cmd": "/top5",
-                "desc": {
-                    "ar": "أنشط 5 أعضاء في كل الفعاليات والحشود مجتمعة، بناءً على مجموع نقاط الأنشطة والحشود "
-                          "والمعارك المسجلة - وسيلة سريعة لتكريم الأعضاء الأكتر مجهود.",
-                    "en": "The top 5 most active members across all events and rallies combined, based on "
-                          "total logged activity/rally/battle points - a quick way to spotlight the hardest "
-                          "workers.",
-                },
-            },
-            {
-                "cmd": "/event_stats event_type",
-                "desc": {
-                    "ar": "تقرير نسبة مشاركة التحالف في فعالية معينة (حشود/مهرجان/ساحة تنين/KvK/الكل)، بيوريك "
-                          "عدد ونسبة المشاركين وقائمة اللي لسه ماشاركوش.",
-                    "en": "A participation-rate report for a specific event (rallies/festival/Dragon Arena/"
-                          "KvK/all), showing the count and % of participants plus a list of who hasn't joined yet.",
-                },
-            },
-            {
-                "cmd": "/stats_event",
-                "desc": {
-                    "ar": "لوحة تفاعلية سريعة تلخص الأوائل، الأعضاء النشطين، وغير المشاركين - في مكان واحد.",
-                    "en": "A quick interactive dashboard summarizing the top members, active participants, "
-                          "and non-participants - all in one place.",
-                },
-            },
-            {
-                "cmd": "/gf task | done | board | optimize",
-                "desc": {
-                    "ar": "إدارة مهام مهرجان التحالف بالكامل: `task` لإضافة مهمة، `done` لتعليمها منجزة، "
-                          "`board` للوحة الصدارة، و`optimize` عشان الـAI يقترحلك أفضل طريقة تنفيذ.",
-                    "en": "Full Alliance Festival task management: `task` adds a task, `done` marks it "
-                          "complete, `board` shows the leaderboard, and `optimize` gets AI suggestions for the "
-                          "best way to complete it.",
-                },
-            },
-            {
-                "cmd": "/reset_stats (إدارة فقط)",
-                "desc": {
-                    "ar": "يصفّر كل السجلات عشان تبدأ أسبوع جديد من الصفر. محتاج صلاحية Administrator "
-                          "ورسالة تأكيد بزرار قبل التنفيذ الفعلي - مفيش تصفير بضغطة واحدة بالغلط.",
-                    "en": "Resets all records to start a fresh week. Requires Administrator permission plus a "
-                          "confirmation button before it actually runs - no accidental one-tap resets.",
-                },
-            },
-        ],
-    },
-    {
-        "key": "market",
-        "emoji": "💱",
-        "color": discord.Color.green(),
-        "label": {"ar": "بورصة الموارد", "en": "Resource Market"},
-        "commands": [
-            {
-                "cmd": "/market offer",
-                "desc": {
-                    "ar": "تعرض \"عندي X مقابل Y\"، والبوت يدوّر تلقائياً على تطابق مع عرض عضو تاني ويبعت "
-                          "تنبيه للطرفين لو لقى واحد مناسب.",
-                    "en": "Post \"I have X for Y\" and the bot automatically looks for a matching offer from "
-                          "another member, pinging both sides if it finds one.",
-                },
-            },
-            {
-                "cmd": "/market list | cancel",
-                "desc": {
-                    "ar": "`list` يعرض كل العروض المفتوحة حالياً في السيرفر، و`cancel` يلغي عرضك الحالي "
-                          "لو غيّرت رأيك.",
-                    "en": "`list` shows every open offer currently posted on the server, and `cancel` "
-                          "withdraws your own offer if you change your mind.",
-                },
-            },
-        ],
-    },
-    {
-        "key": "ai",
+    "ai": {
         "emoji": "🤖",
+        "ar": "الذكاء الاصطناعي والمستشار",
+        "en": "AI Advisor",
         "color": discord.Color.purple(),
-        "label": {"ar": "مستشار لوردس المطوّر (AI)", "en": "The Advanced Lords Advisor (AI)"},
-        "commands": [
-            {
-                "cmd": "/ai [question] [image] [might]",
-                "desc": {
-                    "ar": "خبير اللعبة بالذكاء الاصطناعي. اكتب سؤالك وهيردّ عليك مباشرة بمعلومات دقيقة من "
-                          "قاعدة معرفة اللعبة، أو ارفق صورة عتاد/تقرير معركة وهيحللها فعلياً لك. محتاج "
-                          "`COHERE_API_KEY` مضبوط عند صاحب البوت عشان يشتغل.",
-                    "en": "The game's AI expert. Type a question and get an answer straight from the game's "
-                          "knowledge base, or attach a gear/battle report screenshot and it will actually "
-                          "analyze it for you. Requires the bot owner to have `COHERE_API_KEY` configured.",
-                },
-            },
-        ],
     },
-    {
-        "key": "rally",
-        "emoji": "📯",
-        "color": discord.Color.orange(),
-        "label": {"ar": "نداء الحشود الذكي", "en": "Smart Rally System"},
-        "commands": [
-            {
-                "cmd": "/troop set",
-                "desc": {
-                    "ar": "كل عضو يسجّل نوع قواته الأساسي (مشاة/رماة/فرسان/حصار/هجين) مرة واحدة - معلومة "
-                          "مرجعية عن أعضاء التحالف.",
-                    "en": "Every member registers their main troop type (infantry/ranged/cavalry/siege/"
-                          "hybrid) once - reference info about alliance members.",
-                },
-            },
-            {
-                "cmd": "/rally set troop:<نوع> target:<الاسم>",
-                "desc": {
-                    "ar": "يفتح نداء حشد وينبّه **كل أعضاء السيرفر** (@everyone)! تكتب نوع القوات المطلوبة "
-                          "واسم التحالف أو الشخص المستهدف بالحشد، وممكن كمان ترفق صورة سكرين شوت للحشد - "
-                          "كل ده بيظهر في رسالة واحدة مع عد تنازلي حي وزرار \"📲 افتح التطبيق\".",
-                    "en": "Opens a rally call and pings **everyone on the server** (@everyone)! Enter the "
-                          "troop type needed and the target alliance/player name, and optionally attach a "
-                          "rally screenshot - all shown in one message with a live countdown and a "
-                          "\"📲 Open the app\" button.",
-                },
-            },
-        ],
+    "calculators": {
+        "emoji": "🧮",
+        "ar": "الحواسب والأدلة السريعة",
+        "en": "Calculators & Quick Guides",
+        "color": discord.Color.gold(),
     },
-    {
-        "key": "hunt",
+    "war": {
+        "emoji": "⚔️",
+        "ar": "الحرب والتكتيك",
+        "en": "War & Tactics",
+        "color": discord.Color.red(),
+    },
+    "alliance": {
+        "emoji": "🏯",
+        "ar": "إدارة التحالف والتتبع",
+        "en": "Alliance Management",
+        "color": discord.Color.dark_gold(),
+    },
+    "market": {
+        "emoji": "💱",
+        "ar": "بورصة الموارد",
+        "en": "Resource Market",
+        "color": discord.Color.green(),
+    },
+    "hunt": {
         "emoji": "🐾",
+        "ar": "متتبع الصيد",
+        "en": "Hunt Tracker",
         "color": discord.Color.dark_green(),
-        "label": {"ar": "متتبع الصيد اليومي", "en": "Daily Hunt Tracker"},
-        "commands": [
-            {
-                "cmd": "/hunt_log",
-                "desc": {
-                    "ar": "يسجّل صيد عضو بثلاث طرق (وحدة واحدة كل مرة): يدوي (اسم العضو والرقم)، صورة "
-                          "لجدول الصيد يتحلل تلقائياً، أو قائمة مجمّعة (سطر لكل عضو).",
-                    "en": "Logs a member's hunting count three ways (one at a time): manually (member + "
-                          "number), from an auto-analyzed hunt screenshot, or as a bulk list (one line per member).",
-                },
-            },
-            {
-                "cmd": "/hunt_channel (إدارة)",
-                "desc": {
-                    "ar": "يحدد قناة تقارير الصيد اليومية، ويقدر كمان يضبط التارجت المطلوب من كل عضو "
-                          "(افتراضياً 100 لو محدش ضبطه).",
-                    "en": "Sets the channel for daily hunt reports, and can also set the daily target "
-                          "required from each member (defaults to 100 if unset).",
-                },
-            },
-            {
-                "cmd": "/hunt_list",
-                "desc": {
-                    "ar": "عرض شامل لكل الأعضاء المتابَعين: مين خلّص التارجت اليومي بتاعه ومين لسه باقيله كام.",
-                    "en": "A full overview of every tracked member: who has hit their daily target and who "
-                          "still has some way to go.",
-                },
-            },
-        ],
     },
-    {
-        "key": "shield",
+    "shield": {
         "emoji": "🔔",
+        "ar": "منبه الدرع",
+        "en": "Shield Alarm",
         "color": discord.Color.dark_orange(),
-        "label": {"ar": "منبه الدرع الذكي", "en": "Smart Shield Alarm"},
-        "commands": [
-            {
-                "cmd": "/shield (أو /voice_rescue)",
-                "desc": {
-                    "ar": "يضبط مؤقت درع/مخبأ بمدة حرة، ويبعت تنبيه (رسالة + DM) قبل الانتهاء بـ15 دقيقة مع "
-                          "زرار \"✅ استلمت\". لو محدش رد، البوت يدخل الروم الصوتية بتاعتك ويرن بنغمة إنذار "
-                          "لحد ما حد يرد.",
-                    "en": "Sets a shield/shelter timer of any length, and sends an alert (message + DM) 15 "
-                          "minutes before it ends with an \"✅ Acknowledged\" button. If nobody responds, the "
-                          "bot joins your voice channel and plays an alarm tone until someone does.",
-                },
-            },
-            {
-                "cmd": "/shelter_done [stop_repeat]",
-                "desc": {
-                    "ar": "يوقف المنبه الحالي فوراً (وبيفصل البوت من الروم لو كان داخل يرن). ضبط "
-                          "`stop_repeat:True` بيلغي كمان أي تكرار مجدول.",
-                    "en": "Stops the current alarm right away (and disconnects the bot from the voice channel "
-                          "if it's ringing). Setting `stop_repeat:True` also cancels any scheduled repeats.",
-                },
-            },
-        ],
     },
-    {
-        "key": "settings",
-        "emoji": "🌐",
+    "settings": {
+        "emoji": "⚙️",
+        "ar": "الإعدادات واللغة",
+        "en": "Settings & Language",
         "color": discord.Color.light_grey(),
-        "label": {"ar": "اللغة وإعدادات السيرفر", "en": "Language & Server Settings"},
-        "commands": [
-            {
-                "cmd": "/setup (إدارة)",
-                "desc": {
-                    "ar": "دليل التثبيت السريع بضغطة زر: يضبط اللغة، قناة تقارير الصيد، ورتبة قادة "
-                          "التحالف (R4/R5) اللي هتتمنشن تلقائياً وقت تنبيهات الدرع - وفيه زرار 🩺 فحص "
-                          "يتأكد إن كل حاجة شغالة فعلاً مش بس متسجلة.",
-                    "en": "One-click quick-setup wizard: sets the language, hunt report channel, and the "
-                          "leadership (R4/R5) role that gets auto-mentioned on shield alerts - includes a "
-                          "🩺 diagnostics button that verifies everything actually works, not just that it's saved.",
-                },
-            },
-            {
-                "cmd": "/setup_check (إدارة)",
-                "desc": {
-                    "ar": "فحص سريع بدون فتح /setup كامل: هل قناة الصيد عندها صلاحيات صح؟ هل رتبة القيادة "
-                          "فعلاً هتتمنشن؟ هل مفتاح Cohere موجود؟ هل PyNaCl والصوت شغالين؟ هل Server Members "
-                          "Intent مفعّل؟",
-                    "en": "A quick check without opening the full /setup: does the hunt channel have the "
-                          "right permissions? Will the leadership role actually get mentioned? Is the Cohere "
-                          "key present? Is voice (PyNaCl) working? Is the Server Members Intent enabled?",
-                },
-            },
-            {
-                "cmd": "/language (إدارة)",
-                "desc": {
-                    "ar": "يضبط لغة ردود البوت لهذا السيرفر (عربي 🇪🇬 / إنجليزي 🇬🇧) - كل رسالة، قائمة، "
-                          "زرار، ونافذة يتغير معاها فوراً.",
-                    "en": "Sets the bot's reply language for this server (Arabic 🇪🇬 / English 🇬🇧) - every "
-                          "message, dropdown, button, and modal switches immediately.",
-                },
-            },
-            {
-                "cmd": "/bot_channel (إدارة)",
-                "desc": {
-                    "ar": "حدد أي قناة نصية أو ثريد تحب إن البوت يتواصل فيه - اختار اللي يناسبك من قائمة "
-                          "قنوات/ثريدز السيرفر، والاختيار بيتحفظ لحد ما تغيّره تاني.",
-                    "en": "Pick any text channel or thread you want the bot to communicate in - choose "
-                          "whichever fits from the server's channels/threads, and it stays saved until you change it.",
-                },
-            },
-            {
-                "cmd": "/help",
-                "desc": {
-                    "ar": "الدليل اللي انت فاتحه دلوقتي 🙂 - قائمة كل الأقسام والأوامر مع شرح لكل واحد فيهم.",
-                    "en": "The very guide you're looking at now 🙂 - every category and command, with an "
-                          "explanation for each.",
-                },
-            },
-        ],
     },
+    "welcome": {
+        "emoji": "👋",
+        "ar": "الترحيب والقوانين والـ Embed",
+        "en": "Welcome, Rules & Embeds",
+        "color": discord.Color.blue(),
+    },
+    "games": {
+        "emoji": "🎮",
+        "ar": "الألعاب والتفاعل",
+        "en": "Games & Interaction",
+        "color": discord.Color.blurple(),
+    },
+    "general": {
+        "emoji": "📚",
+        "ar": "أوامر عامة",
+        "en": "General",
+        "color": discord.Color.dark_teal(),
+    },
+}
+
+CATEGORY_ORDER = [
+    "ai",
+    "calculators",
+    "war",
+    "alliance",
+    "market",
+    "hunt",
+    "shield",
+    "settings",
+    "welcome",
+    "games",
+    "general",
 ]
 
+WELCOME_COMMANDS = {
+    "ارسال-امبيد",
+    "ارسال-القوانين",
+    "استعادة-رسالة-الترحيب",
+    "تحديد-رسالة-الترحيب",
+    "تحديد-روم-الترحيب",
+    "تحديد-روم-القوانين",
+    "تحديد-صورة-الترحيب",
+}
 
-def build_intro_embed(lang: str) -> discord.Embed:
-    embed = discord.Embed(
-        title=t("help_title", lang),
-        description=t("help_intro", lang),
-        color=discord.Color.blurple(),
+ADMIN_HINTS = (
+    "إدارة",
+    "administrator",
+    "manage server",
+    "admin",
+)
+
+
+def _walk_commands(command_list, prefix: str = ""):
+    """Flatten top-level commands and groups into unique display paths."""
+    for command in command_list:
+        path = f"{prefix} {command.name}".strip()
+        if isinstance(command, app_commands.Group):
+            yield from _walk_commands(command.commands, path)
+        else:
+            yield path, command
+
+
+def loaded_commands(bot: commands.Bot) -> list[tuple[str, app_commands.Command]]:
+    """Return the actual current tree, deduplicated by full command path."""
+    unique = {}
+    for path, command in _walk_commands(bot.tree.get_commands()):
+        unique[path] = command
+    return sorted(unique.items(), key=lambda item: item[0].casefold())
+
+
+def command_category(path: str) -> str:
+    root = path.split(" ", 1)[0]
+    if root in {"ai", "scout", "optimize"} or path.startswith("gf optimize"):
+        return "ai"
+    if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "geartiers"}:
+        return "calculators"
+    if root in {"counter", "analyze", "report"}:
+        return "war"
+    if root in {"log_activity", "information", "user_admin_check", "top5", "event_stats", "stats_event", "gf"}:
+        return "alliance"
+    if root == "market":
+        return "market"
+    if root in {"hunt_log", "hunt_channel", "hunt_list"}:
+        return "hunt"
+    if root in {"shield", "voice_rescue", "shelter_done"}:
+        return "shield"
+    if root in {"setup", "setup_check", "language", "languageme", "bot_channel", "server", "me"}:
+        return "settings"
+    if root in WELCOME_COMMANDS:
+        return "welcome"
+    if root in {"quiz", "play"}:
+        return "games"
+    return "general"
+
+
+def command_description(path: str, command: app_commands.Command, lang: str) -> str:
+    description = (command.description or "").strip()
+    if not description:
+        description = "أمر متاح في البوت." if lang == "ar" else "Available bot command."
+
+    if command.name in WELCOME_COMMANDS and lang == "ar":
+        welcome_copy = {
+            "ارسال-امبيد": "إرسال Embed احترافي مخصص إلى روم تختاره، مع نص وصورة اختيارية.",
+            "ارسال-القوانين": "إرسال لوحة القوانين مع زر موافقة تفاعلي للأعضاء.",
+            "استعادة-رسالة-الترحيب": "إرجاع رسالة الترحيب الافتراضية.",
+            "تحديد-رسالة-الترحيب": "تخصيص نص الترحيب مع متغيرات العضو والداعي والعدد.",
+            "تحديد-روم-الترحيب": "اختيار الروم الذي يستقبل رسائل الأعضاء الجدد.",
+            "تحديد-روم-القوانين": "تحديد روم القوانين الذي يفتحه زر شاهد القوانين.",
+            "تحديد-صورة-الترحيب": "تعيين خلفية بطاقة الترحيب.",
+        }
+        description = welcome_copy.get(command.name, description)
+
+    if any(hint in description.lower() for hint in ADMIN_HINTS) or command.name in WELCOME_COMMANDS:
+        description = f"🔒 {description}"
+    return description[:1000]
+
+
+def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
+    commands_list = loaded_commands(bot)
+    counts = defaultdict(int)
+    for path, _ in commands_list:
+        counts[command_category(path)] += 1
+
+    if lang == "en":
+        title = "📖 Lords Mobile Command Center"
+        description = (
+            f"Everything currently loaded in this bot, organized by function.\n"
+            f"**{len(commands_list)} commands** across **{len([c for c in counts if counts[c]])} sections**.\n"
+            "Use the menu below to open a focused section."
+        )
+        count_label = "commands"
+    else:
+        title = "📖 مركز أوامر Lords Mobile"
+        description = (
+            f"دي قائمة الأوامر المحمّلة فعلياً في البوت، متقسمة حسب الوظيفة.\n"
+            f"**{len(commands_list)} أمر** في **{len([c for c in counts if counts[c]])} أقسام**.\n"
+            "اختار قسم من القائمة عشان تشوف التفاصيل."
+        )
+        count_label = "أمر"
+
+    embed = discord.Embed(title=title, description=description, color=discord.Color.blurple())
+    overview = []
+    for key in CATEGORY_ORDER:
+        if counts.get(key):
+            meta = CATEGORY_META[key]
+            overview.append(f"{meta['emoji']} **{meta[lang]}** — {counts[key]} {count_label}")
+    embed.add_field(
+        name="الأقسام" if lang == "ar" else "Sections",
+        value="\n".join(overview) or ("لا توجد أوامر." if lang == "ar" else "No commands loaded."),
+        inline=False,
     )
-    overview_lines = [
-        f"{cat['emoji']} **{cat['label'][lang]}**" for cat in HELP_CATEGORIES
-    ]
-    embed.add_field(name=t("help_overview_field", lang), value="\n".join(overview_lines), inline=False)
-    embed.set_footer(text=t("help_footer", lang))
+    embed.add_field(
+        name="مهم للإدارة" if lang == "ar" else "For alliance admins",
+        value=(
+            "ابدأ بـ `/setup`، وبعدها اضبط الترحيب والقوانين من قسم 👋. "
+            "الأوامر التي عليها 🔒 تحتاج صلاحية إدارية."
+            if lang == "ar"
+            else "Start with `/setup`, then configure welcome, rules, and embeds from the 👋 section. "
+            "Commands marked 🔒 require admin permissions."
+        ),
+        inline=False,
+    )
+    embed.set_footer(
+        text="القائمة تتحدث تلقائياً مع الأوامر الفعلية • Lords Mobile Alliance Suite"
+        if lang == "ar"
+        else "This list is generated from the live command tree • Lords Mobile Alliance Suite"
+    )
     return embed
 
 
-def build_category_embed(cat: dict, lang: str) -> discord.Embed:
+def build_category_embed(bot: commands.Bot, category: str, lang: str) -> discord.Embed:
+    meta = CATEGORY_META[category]
+    commands_in_category = [
+        (path, command)
+        for path, command in loaded_commands(bot)
+        if command_category(path) == category
+    ]
     embed = discord.Embed(
-        title=f"{cat['emoji']} {cat['label'][lang]}",
-        color=cat["color"],
+        title=f"{meta['emoji']} {meta[lang]}",
+        description=(
+            f"{len(commands_in_category)} أمر في هذا القسم."
+            if lang == "ar"
+            else f"{len(commands_in_category)} commands in this section."
+        ),
+        color=meta["color"],
     )
-    for c in cat["commands"]:
-        embed.add_field(name=f"`{c['cmd']}`", value=c["desc"][lang], inline=False)
-    embed.set_footer(text=t("help_footer", lang))
+    for path, command in commands_in_category:
+        embed.add_field(
+            name=f"`/{path}`",
+            value=command_description(path, command, lang),
+            inline=False,
+        )
+    embed.set_footer(
+        text="الأوصاف تتبع الأوامر المحمّلة حالياً • استخدم القائمة للانتقال بين الأقسام"
+        if lang == "ar"
+        else "Descriptions reflect the commands currently loaded • Use the menu to switch sections"
+    )
     return embed
 
 
 class HelpCategorySelect(discord.ui.Select):
-    def __init__(self, lang: str):
+    def __init__(self, bot: commands.Bot, lang: str):
+        self.bot = bot
         self.lang = lang
-        options = [
-            discord.SelectOption(label=cat["label"][lang], value=cat["key"], emoji=cat["emoji"])
-            for cat in HELP_CATEGORIES
-        ]
-        super().__init__(placeholder=t("help_select_placeholder", lang), options=options)
+        options = []
+        available = {command_category(path) for path, _ in loaded_commands(bot)}
+        for key in CATEGORY_ORDER:
+            if key not in available:
+                continue
+            meta = CATEGORY_META[key]
+            options.append(discord.SelectOption(label=meta[lang][:100], value=key, emoji=meta["emoji"]))
+        super().__init__(
+            placeholder="اختار قسم الأوامر" if lang == "ar" else "Choose a command section",
+            options=options[:25],
+        )
 
     async def callback(self, interaction: discord.Interaction):
-        cat = next(c for c in HELP_CATEGORIES if c["key"] == self.values[0])
-        await interaction.response.send_message(
-            embed=build_category_embed(cat, self.lang), ephemeral=True
+        await interaction.response.edit_message(
+            embed=build_category_embed(self.bot, self.values[0], self.lang),
+            view=self.view,
         )
 
 
 class HelpView(discord.ui.View):
-    def __init__(self, lang: str):
-        super().__init__(timeout=180)
-        self.add_item(HelpCategorySelect(lang))
+    def __init__(self, bot: commands.Bot, lang: str):
+        super().__init__(timeout=300)
+        self.add_item(HelpCategorySelect(bot, lang))
 
 
 class HelpCog(commands.Cog):
-    """/help - دليل الأوامر الكامل."""
+    """/help - مركز أوامر ديناميكي مناسب لتحالفات كبيرة."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(name="help", description="📖 دليل كل أوامر البوت مع شرح كل أمر - Full command guide")
+    @app_commands.command(
+        name="help",
+        description="📖 مركز أوامر البوت، منظم حسب الوظيفة والإدارة والحرب والـ AI",
+    )
     async def help_cmd(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
-            embed=build_intro_embed(lang), view=HelpView(lang), ephemeral=True
+            embed=build_intro_embed(self.bot, lang),
+            view=HelpView(self.bot, lang),
+            ephemeral=True,
         )
 
 
