@@ -52,7 +52,7 @@ troop_group = app_commands.Group(name="troop", description="🪖 تسجيل/عر
 
 @troop_group.command(name="set", description="سجّل نوع قواتك الأساسي عشان توصلك تنبيهات /rally المناسبة | Register your main troop type")
 @app_commands.choices(
-    troop=[app_commands.Choice(name=TROOP_LABELS[k]["ar"] + " / " + TROOP_LABELS[k]["en"], value=k) for k in TROOP_LABELS]
+    troop=[app_commands.Choice(name=TROOP_LABELS[k]["en"], value=k) for k in TROOP_LABELS]
 )
 async def troop_set(interaction: discord.Interaction, troop: app_commands.Choice[str]):
     lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -78,11 +78,11 @@ rally_group = app_commands.Group(name="rally", description="📯 نداء حشو
     description="📯 افتح نداء حشد وينبّه كل أعضاء السيرفر (@everyone) | Open a rally call and ping everyone",
 )
 @app_commands.describe(
-    troop="نوع القوات المطلوبة للحشد | Troop type needed",
-    target="اسم التحالف أو الشخص المستهدف بالحشد | Target alliance or player name",
-    image="صورة لقطة شاشة الحشد (اختياري) | Rally screenshot (optional)",
-    minutes="بعد كام دقيقة هيتقفل الحشد تقريباً (افتراضي 5) | Minutes until the rally closes (default 5)",
-    note="ملاحظة اختيارية | Optional note",
+    troop="Troop type needed",
+    target="Target alliance or player name",
+    image="Optional rally screenshot",
+    minutes="Minutes until rally closes (default: 5)",
+    note="Optional note",
 )
 @app_commands.choices(
     troop=[app_commands.Choice(name=TROOP_LABELS[k]["ar"] + " / " + TROOP_LABELS[k]["en"], value=k) for k in TROOP_LABELS]
@@ -142,19 +142,19 @@ class RallyCog(commands.Cog):
         description="👥 (إدارة) سجّل حضور حشد: الأعضاء المشاركين ونوعه (هجوم/دفاع) ونتيجته",
     )
     @app_commands.describe(
-        rally_type="نوع الحشد",
-        result="نتيجة الحشد",
-        note="ملاحظة اختيارية (هدف الحشد مثلاً)",
+        rally_type="Rally type",
+        result="Rally result",
+        note="Optional note (e.g. rally target)",
     )
     @app_commands.choices(
         rally_type=[
-            app_commands.Choice(name="⚔️ هجوم", value="attack"),
-            app_commands.Choice(name="🛡️ دفاع", value="defense"),
+            app_commands.Choice(name="⚔️ Attack", value="attack"),
+            app_commands.Choice(name="🛡️ Defense", value="defense"),
         ],
         result=[
-            app_commands.Choice(name="🏆 فوز", value="win"),
-            app_commands.Choice(name="❌ خسارة", value="loss"),
-            app_commands.Choice(name="🤝 تعادل", value="draw"),
+            app_commands.Choice(name="🏆 Win", value="win"),
+            app_commands.Choice(name="❌ Loss", value="loss"),
+            app_commands.Choice(name="🤝 Draw", value="draw"),
         ],
     )
     @app_commands.checks.has_permissions(manage_guild=True)
