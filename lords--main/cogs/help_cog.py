@@ -28,13 +28,17 @@ HELP_CATEGORIES = [
             {
                 "cmd": "/event",
                 "desc": {
-                    "ar": "حاسبة أحداث الجحيم/المنفرد. تختار نوع النشاط (أبحاث، تدريب، صيد...) وتدخّل "
-                          "النقاط المطلوبة والتسريحات المتاحة، والبوت يقولك هتكمل المرحلة ولا لأ، ولو مش هتكمل "
-                          "يوريك هتوصل كام % وناقصك كام وقت بالظبط.",
-                    "en": "Hell Event / Solo Event calculator. Pick the activity type (research, training, "
+                    "ar": "حاسبة أحداث الجحيم/المنفرد. أول اختيار: هل الحدث **حدث الجحيم** ولا **الحدث "
+                          "الفردي**، وبعدين تختار نوع النشاط (أبحاث، تدريب، صيد...) وتدخّل النقاط المطلوبة "
+                          "والتسريعات المتاحة، والبوت يقولك هتكمل المرحلة ولا لأ، ولو مش هتكمل يوريك هتوصل "
+                          "كام % وناقصك كام وقت بالظبط. وتحت النتيجة زرار 🤖 تقدر تسأل بيه المستشار الذكي "
+                          "يقترحلك استراتيجية بناءً على نفس الأرقام.",
+                    "en": "Hell Event / Individual Event calculator. First pick whether it's a **Hell Event** "
+                          "or an **Individual Event**, then pick the activity type (research, training, "
                           "hunting...), enter the points needed and your available speedups, and the bot tells "
                           "you whether you'll finish the stage - and if not, exactly what % you'll reach and how "
-                          "much extra time you need.",
+                          "much extra time you need. A 🤖 button under the result lets the AI advisor suggest a "
+                          "strategy based on the same numbers.",
                 },
             },
             {
@@ -47,32 +51,16 @@ HELP_CATEGORIES = [
                 },
             },
             {
-                "cmd": "/cost",
-                "desc": {
-                    "ar": "حاسبة تكلفة التدريب (T4/T5/الأبحاث). تدخّل عدد الوحدات وتكلفة الموارد لكل وحدة وزمن "
-                          "التدريب، وترجعلك الإجمالي المطلوب من كل مورد والوقت الكلي التقريبي.",
-                    "en": "Training cost calculator (T4/T5/research). Enter the unit count, per-unit resource "
-                          "cost, and training time, and you'll get the total resources needed plus the "
-                          "estimated total time.",
-                },
-            },
-            {
                 "cmd": "/speedup",
                 "desc": {
-                    "ar": "حساب سريع لإجمالي أيام/ساعات/دقايق التسريحات اللي معاك في الحقيبة، مفيد قبل ما "
-                          "تستخدمها في حدث أو تدريب عشان تعرف رصيدك بالظبط.",
-                    "en": "A quick calculation of your total speedup time (days/hours/minutes) in your bag - "
-                          "handy before spending them on an event or training so you know exactly what you have.",
-                },
-            },
-            {
-                "cmd": "/jewel_calc",
-                "desc": {
-                    "ar": "حاسبة دمج الجواهر. تختار التاير المستهدف (لغاية 🔴 الخرافي/Mythic)، تدخّل الكمية "
-                          "المطلوبة ونسبة الدمج، وترجعلك تفصيل تاير بتاير لغاية إجمالي جواهر Common اللي محتاجها.",
-                    "en": "Jewel merge calculator. Pick the target tier (all the way to 🔴 Mythic), enter the "
-                          "quantity and merge ratio you need, and get a full tier-by-tier breakdown down to the "
-                          "total Common jewels required.",
+                    "ar": "احسب إجمالي تسريعاتك بسرعة: اكتبها في سطر واحد مفصولة بفاصلة زي "
+                          "`4h, 6h, 1d×3` أو `24×4, 3d×2` (لو محددتش وحدة، البوت يفهمها ساعات "
+                          "افتراضياً)، والبوت يجمعهم كلهم ويقولك الإجمالي بالأيام/الساعات/الدقايق. "
+                          "وهنا كمان تحت النتيجة زرار 🤖 تسأل بيه المستشار الذكي.",
+                    "en": "Quickly total up your speedups: write them in one line separated by commas, "
+                          "like `4h, 6h, 1d×3` or `24×4, 3d×2` (no unit given defaults to hours), and "
+                          "the bot adds them all up and gives you the grand total in days/hours/minutes. "
+                          "There's a 🤖 button under the result too, to ask the AI advisor.",
                 },
             },
         ],
@@ -87,9 +75,11 @@ HELP_CATEGORIES = [
                 "cmd": "/counter",
                 "desc": {
                     "ar": "تدخّل تشكيلة العدو (مشاة/رماة/فرسان/حصار) والبوت يرجعلك أنسب رد ونوع التشكيلة "
-                          "التكتيكية (Wedge/Phalanx) اللي تناسب الموقف.",
+                          "التكتيكية (Wedge/Phalanx) اللي تناسب الموقف. تحت النتيجة زرار 🤖 تسأل بيه "
+                          "المستشار الذكي رأيه في الموقف بالتفصيل.",
                     "en": "Enter the enemy's formation (infantry/ranged/cavalry/siege) and get the best "
-                          "counter troops plus the tactical formation (Wedge/Phalanx) that fits the situation.",
+                          "counter troops plus the tactical formation (Wedge/Phalanx) that fits the situation. "
+                          "A 🤖 button under the result lets you ask the AI advisor for a deeper take.",
                 },
             },
             {
@@ -99,14 +89,6 @@ HELP_CATEGORIES = [
                           "في السيرفر كله، و`user` يعرض سجل عضو معيّن بس.",
                     "en": "The alliance battle log: `add` records a new battle result, `list` shows the latest "
                           "logged battles for the whole server, and `user` shows one member's log only.",
-                },
-            },
-            {
-                "cmd": "/darknest",
-                "desc": {
-                    "ar": "تختار مستوى الحصن المظلم (1-6) وياخدك على أفضل أبطال وتشكيلة مقترحة لإسقاطه بنجاح.",
-                    "en": "Pick a Dark Nest level (1-6) and get the best suggested heroes and formation to "
-                          "take it down successfully.",
                 },
             },
             {
@@ -137,21 +119,12 @@ HELP_CATEGORIES = [
         "label": {"ar": "الأدلة والأبطال والمصطلحات", "en": "Guides, Heroes & Terms"},
         "commands": [
             {
-                "cmd": "/wiki (أو /guide)",
+                "cmd": "/wiki",
                 "desc": {
                     "ar": "الدليل الشامل للعبة في قائمة منسدلة واحدة: 🐾 الوحوش (نوع الضرر والأبطال والعتاد "
                           "المطلوب)، 🛡️ المعدات (أفضل تشكيلات F2P/P2P)، 🦸 الأبطال، و🐉 المرافقين.",
                     "en": "The full game guide in one dropdown menu: 🐾 Monsters (damage type, heroes, gear "
                           "needed), 🛡️ Gear (best F2P/P2P setups), 🦸 Heroes, and 🐉 Companions.",
-                },
-            },
-            {
-                "cmd": "/gear",
-                "desc": {
-                    "ar": "تختار نوع القوات (مشاة/رماة/فرسان/حصار/هجين) بعدها فئتك (F2P أو P2P) وترجعلك "
-                          "أفضل عتاد مناسب لنمط لعبك.",
-                    "en": "Choose your troop type (infantry/ranged/cavalry/siege/hybrid), then your player "
-                          "type (F2P or P2P), and get the best gear suited to your playstyle.",
                 },
             },
             {
@@ -203,11 +176,10 @@ HELP_CATEGORIES = [
             {
                 "cmd": "/scout",
                 "desc": {
-                    "ar": "🔍 كاشف الخصم الضعيف: تصف عتاد الخصم اللي شايفه، والبوت يكتشفلك تلقائياً لو لابس "
-                          "عتاد اقتصادي (يعني دفاعه شبه ميت) أو فيه لخبطة في نوع عتاده/جواهره.",
-                    "en": "🔍 Weak-opponent detector: describe the gear you see on an enemy, and the bot "
-                          "automatically flags whether they're wearing economy gear (meaning near-zero defense) "
-                          "or have a mismatched gear/jewel setup.",
+                    "ar": "🔍 ارفق صورة عتاد أو بروفايل الخصم، والذكاء الاصطناعي يحللها فعلياً ويطلعلك حكم "
+                          "واضح: قوي 💪 ولا ضعيف 🪶 ولا متوسط ⚖️، مع سبب مختصر للحكم.",
+                    "en": "🔍 Attach a screenshot of an enemy's gear or profile, and the AI actually analyzes "
+                          "it and gives you a clear verdict: strong 💪, weak 🪶, or average ⚖️, with a short reason.",
                 },
             },
         ],
@@ -218,16 +190,6 @@ HELP_CATEGORIES = [
         "color": discord.Color.blurple(),
         "label": {"ar": "الألعاب التفاعلية", "en": "Interactive Games"},
         "commands": [
-            {
-                "cmd": "/play",
-                "desc": {
-                    "ar": "لعبة تحدي ومعرفة: البوت يختار عنصر عشوائي (عتاد/بطل/وحش/مرافق) ويديك تلميح، "
-                          "وتخمّن الاسم خلال 30 ثانية عن طريق زرار. النقاط بتتراكم مع رتب زي الكويز.",
-                    "en": "A guess-and-learn game: the bot picks a random item (gear/hero/monster/companion) "
-                          "and gives you a hint, you guess the name within 30 seconds via a button. Points build "
-                          "up into ranks just like the quiz.",
-                },
-            },
             {
                 "cmd": "/quiz",
                 "desc": {
@@ -385,19 +347,22 @@ HELP_CATEGORIES = [
             {
                 "cmd": "/troop set",
                 "desc": {
-                    "ar": "كل عضو يسجّل نوع قواته الأساسي (مشاة/رماة/فرسان/حصار/هجين) مرة واحدة - ده اللي "
-                          "بيحدد مين هيتوصله تنبيه لما حد يفتح حشد.",
+                    "ar": "كل عضو يسجّل نوع قواته الأساسي (مشاة/رماة/فرسان/حصار/هجين) مرة واحدة - معلومة "
+                          "مرجعية عن أعضاء التحالف.",
                     "en": "Every member registers their main troop type (infantry/ranged/cavalry/siege/"
-                          "hybrid) once - this decides who gets pinged when someone opens a rally.",
+                          "hybrid) once - reference info about alliance members.",
                 },
             },
             {
-                "cmd": "/rally set troop:<نوع>",
+                "cmd": "/rally set troop:<نوع> target:<الاسم>",
                 "desc": {
-                    "ar": "يفتح نداء حشد وينبّه بس الأعضاء المسجلين بنفس نوع القوات المطلوب (+ الأعضاء "
-                          "الهجين)، مع عد تنازلي حي وزرار \"📲 افتح التطبيق\".",
-                    "en": "Opens a rally call and pings only the members registered with the matching troop "
-                          "type (plus hybrid members), with a live countdown and a \"📲 Open the app\" button.",
+                    "ar": "يفتح نداء حشد وينبّه **كل أعضاء السيرفر** (@everyone)! تكتب نوع القوات المطلوبة "
+                          "واسم التحالف أو الشخص المستهدف بالحشد، وممكن كمان ترفق صورة سكرين شوت للحشد - "
+                          "كل ده بيظهر في رسالة واحدة مع عد تنازلي حي وزرار \"📲 افتح التطبيق\".",
+                    "en": "Opens a rally call and pings **everyone on the server** (@everyone)! Enter the "
+                          "troop type needed and the target alliance/player name, and optionally attach a "
+                          "rally screenshot - all shown in one message with a live countdown and a "
+                          "\"📲 Open the app\" button.",
                 },
             },
         ],
@@ -502,20 +467,12 @@ HELP_CATEGORIES = [
                 },
             },
             {
-                "cmd": "/set_game_link (إدارة)",
+                "cmd": "/bot_channel (إدارة)",
                 "desc": {
-                    "ar": "يضبط رابط فتح اللعبة (Deep Link) المستخدم في زرار \"📲 افتح اللعبة\" بأوامر "
-                          "التنبيهات زي /rally set و/shield.",
-                    "en": "Sets the game deep link used by the \"📲 Open the game\" button in alert commands "
-                          "like /rally set and /shield.",
-                },
-            },
-            {
-                "cmd": "/game_link",
-                "desc": {
-                    "ar": "يعرض الرابط المضبوط حالياً لهذا السيرفر (متاح للجميع، للمراجعة فقط).",
-                    "en": "Shows the link currently configured for this server (visible to everyone, "
-                          "read-only).",
+                    "ar": "حدد أي قناة نصية أو ثريد تحب إن البوت يتواصل فيه - اختار اللي يناسبك من قائمة "
+                          "قنوات/ثريدز السيرفر، والاختيار بيتحفظ لحد ما تغيّره تاني.",
+                    "en": "Pick any text channel or thread you want the bot to communicate in - choose "
+                          "whichever fits from the server's channels/threads, and it stays saved until you change it.",
                 },
             },
             {
