@@ -46,11 +46,6 @@ class MonsterSelect(discord.ui.Select):
             title=f"{info.get('emoji') or '🐾'} {info.get('name', self.values[0])}",
             color=discord.Color.dark_green(),
         )
-        embed.add_field(name=t("monster_damage_field", lang), value=info.get("damage_type", "-"), inline=False)
-        if info.get("defense_note"):
-            embed.add_field(name=t("monster_defense_field", lang), value=info["defense_note"], inline=False)
-        if info.get("heroes"):
-            embed.add_field(name=t("monster_heroes_field", lang), value=info["heroes"], inline=False)
         if info.get("image_url"):
             embed.set_image(url=info["image_url"])
         embed.set_footer(text=t("monster_footer", lang))
@@ -439,31 +434,25 @@ class GuidesCog(commands.Cog):
             t("monster_prompt", lang), view=MonsterView(monsters, lang), ephemeral=True
         )
 
-    @app_commands.command(name="add_monster", description="🐾 [إدارة] أضف وحش جديد لقائمة /monster (مع إمكانية إرفاق صور)")
+    @app_commands.command(
+        name="add_monster",
+        description="🐾 [إدارة/Admin] أضف وحشًا بالاسم والصورة | Add a monster with its name and image",
+    )
     @app_commands.describe(
-        name="Monster name",
-        damage_type="Required damage type (e.g. cavalry attack)",
-        heroes="Suggested heroes (comma-separated)",
-        defense_note="Optional defense note",
-        image="Optional monster or formation image",
-        image2="Optional second image",
+        name="اسم الوحش | Monster name",
+        image="صورة الوحش | Monster image",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def add_monster(
         self,
         interaction: discord.Interaction,
         name: str,
-        damage_type: str,
-        heroes: str,
-        defense_note: Optional[str] = None,
-        image: Optional[discord.Attachment] = None,
-        image2: Optional[discord.Attachment] = None,
+        image: discord.Attachment,
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
-        for att in (image, image2):
-            if att and not (att.content_type or "").startswith("image/"):
-                await interaction.response.send_message(t("add_monster_bad_image", lang), ephemeral=True)
-                return
+        if not (image.content_type or "").startswith("image/"):
+            await interaction.response.send_message(t("add_monster_bad_image", lang), ephemeral=True)
+            return
 
         data = load(CUSTOM_MONSTERS_FILE)
         gid = str(interaction.guild_id)
@@ -471,16 +460,9 @@ class GuidesCog(commands.Cog):
         key = name.strip().lower().replace(" ", "_")
         entry = {
             "name": name.strip(),
-            "damage_type": damage_type.strip(),
-            "heroes": heroes.strip(),
             "emoji": "🐾",
+            "image_url": image.url,
         }
-        if defense_note:
-            entry["defense_note"] = defense_note.strip()
-        if image:
-            entry["image_url"] = image.url
-        if image2:
-            entry["image_url_2"] = image2.url
         data[gid][key] = entry
         save(CUSTOM_MONSTERS_FILE, data)
 
