@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+guild_settings.json
+storage/*.db-shm
+storage/*.db-wal
