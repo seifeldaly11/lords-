@@ -185,14 +185,19 @@ class InfoDeleteSelect(discord.ui.Select):
     def __init__(self, entries: dict, lang: str):
         self.lang = lang
         options = [
-            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=_info_emoji(value))
+            discord.SelectOption(
+                label=_localized(value.get("title", key), lang)[:100],
+                value=key,
+                emoji=_info_emoji(value),
+            )
             for key, value in entries.items()
         ]
         super().__init__(placeholder=t("delete_info_select_placeholder", lang), options=options[:25])
 
     async def callback(self, interaction: discord.Interaction):
         self.view.selected_key = self.values[0]
-        title = self.view.entries[self.view.selected_key].get("title", self.view.selected_key)
+        entry = self.view.entries[self.view.selected_key]
+        title = _localized(entry.get("title", self.view.selected_key), self.lang)
         await interaction.response.send_message(t("delete_info_selected", self.lang, title=title), ephemeral=True)
 
 
@@ -205,7 +210,7 @@ class InfoDeleteView(discord.ui.View):
         self.add_item(InfoDeleteSelect(entries, lang))
         self.confirm.label = t("delete_info_confirm", lang)
 
-    @discord.ui.button(label="🗑️ حذف الشرح", style=discord.ButtonStyle.danger, row=1)
+    @discord.ui.button(label="🗑️", style=discord.ButtonStyle.danger, row=1)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.selected_key:
             await interaction.response.send_message(t("delete_info_selection_needed", self.lang), ephemeral=True)
@@ -224,8 +229,9 @@ class InfoDeleteView(discord.ui.View):
         save(CUSTOM_INFO_FILE, data)
         for child in self.children:
             child.disabled = True
+        removed_title = _localized(removed.get("title", self.selected_key), self.lang)
         await interaction.response.edit_message(
-            content=t("delete_info_success", self.lang, title=removed.get("title", self.selected_key)),
+            content=t("delete_info_success", self.lang, title=removed_title),
             embed=None,
             view=self,
         )
@@ -238,7 +244,11 @@ class InfoEditSelect(discord.ui.Select):
         self.image = image
         self.image2 = image2
         options = [
-            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=_info_emoji(value))
+            discord.SelectOption(
+                label=_localized(value.get("title", key), lang)[:100],
+                value=key,
+                emoji=_info_emoji(value),
+            )
             for key, value in entries.items()
         ]
         super().__init__(placeholder=t("edit_info_select_placeholder", lang), options=options[:25])
@@ -264,21 +274,36 @@ class InfoEditModal(discord.ui.Modal):
         self.lang = lang
         self.image = image
         self.image2 = image2
-        self.title_input = discord.ui.TextInput(
-            label=t("edit_info_title_field", lang)[:45],
-            default=entry.get("title", "")[:100],
-            required=False,
+        self.title_ar_input = discord.ui.TextInput(
+            label=t("info_title_ar_field", lang)[:45],
+            default=_localized(entry.get("title", ""), "ar")[:100],
+            required=True,
             max_length=100,
         )
-        self.desc_input = discord.ui.TextInput(
-            label=t("edit_info_desc_field", lang)[:45],
-            default=entry.get("desc", "")[:4000],
+        self.title_en_input = discord.ui.TextInput(
+            label=t("info_title_en_field", lang)[:45],
+            default=_localized(entry.get("title", ""), "en")[:100],
+            required=True,
+            max_length=100,
+        )
+        self.desc_ar_input = discord.ui.TextInput(
+            label=t("info_desc_ar_field", lang)[:45],
+            default=_localized(entry.get("desc", ""), "ar")[:4000],
             style=discord.TextStyle.paragraph,
-            required=False,
+            required=True,
             max_length=4000,
         )
-        self.add_item(self.title_input)
-        self.add_item(self.desc_input)
+        self.desc_en_input = discord.ui.TextInput(
+            label=t("info_desc_en_field", lang)[:45],
+            default=_localized(entry.get("desc", ""), "en")[:4000],
+            style=discord.TextStyle.paragraph,
+            required=True,
+            max_length=4000,
+        )
+        self.add_item(self.title_ar_input)
+        self.add_item(self.title_en_input)
+        self.add_item(self.desc_ar_input)
+        self.add_item(self.desc_en_input)
 
     async def on_submit(self, interaction: discord.Interaction):
         data = load(CUSTOM_INFO_FILE)
@@ -288,20 +313,24 @@ class InfoEditModal(discord.ui.Modal):
         if entry is None:
             await interaction.response.send_message(t("delete_info_not_found", self.lang, title=self.key), ephemeral=True)
             return
-        if self.title_input.value.strip():
-            entry["title"] = self.title_input.value.strip()
-        if self.desc_input.value.strip():
-            entry["desc"] = self.desc_input.value.strip()
+        entry["title"] = {
+            "ar": self.title_ar_input.value.strip(),
+            "en": self.title_en_input.value.strip(),
+        }
+        entry["desc"] = {
+            "ar": self.desc_ar_input.value.strip(),
+            "en": self.desc_en_input.value.strip(),
+        }
         if self.image:
             entry["image_url"] = self.image.url
         if self.image2:
             entry["image_url_2"] = self.image2.url
         save(CUSTOM_INFO_FILE, data)
+        saved_title = _localized(entry["title"], self.lang)
         await interaction.response.send_message(
-            t("edit_info_success", self.lang, title=entry.get("title", self.key)),
+            t("edit_info_success", self.lang, title=saved_title),
             ephemeral=True,
         )
-
 
 class GuidesCog(commands.Cog):
     """الأدلة والمصطلحات (وحوش وشروحات أحداث قابلة للإضافة من الإدارة)."""
@@ -448,7 +477,10 @@ class GuidesCog(commands.Cog):
 
     # -- /info + /add_info --------------------------------------------------
 
-    @app_commands.command(name="info", description="ℹ️ شرح الأحداث (ساحة التنين، المنفرد، KvK، الجحيم...)")
+    @app_commands.command(
+        name="info",
+        description="ℹ️ شرح الأدلة والفعاليات | Lords guides and events",
+    )
     async def info(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         info_data = self._get_info(interaction.guild_id)
@@ -461,12 +493,17 @@ class GuidesCog(commands.Cog):
             ephemeral=True,
         )
 
-    @app_commands.command(name="add_info", description="ℹ️ [إدارة] أضف شرح جديد لأمر /info (مع إمكانية إرفاق صور)")
+    @app_commands.command(
+        name="add_info",
+        description="ℹ️ [إدارة/Admin] أضف شرحًا ثنائي اللغة | Add a bilingual Lords guide",
+    )
     @app_commands.describe(
-        title="Info title (e.g. Dragon Arena)",
-        desc="Info description",
-        image="Optional reference image",
-        image2="Optional second image",
+        title="عنوان الشرح بالعربي | Arabic guide title",
+        desc="نص الشرح بالعربي | Arabic guide text",
+        title_en="عنوان الشرح بالإنجليزي | English guide title",
+        desc_en="نص الشرح بالإنجليزي | English guide text",
+        image="صورة اختيارية | Optional reference image",
+        image2="صورة ثانية اختيارية | Optional second image",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def add_info(
@@ -474,6 +511,8 @@ class GuidesCog(commands.Cog):
         interaction: discord.Interaction,
         title: str,
         desc: str,
+        title_en: str,
+        desc_en: str,
         image: Optional[discord.Attachment] = None,
         image2: Optional[discord.Attachment] = None,
     ):
@@ -487,7 +526,11 @@ class GuidesCog(commands.Cog):
         gid = str(interaction.guild_id)
         data.setdefault(gid, {})
         key = title.strip().lower().replace(" ", "_")
-        entry = {"title": title.strip(), "desc": desc.strip(), "emoji": INFO_CUSTOM_FALLBACK_EMOJI}
+        entry = {
+            "title": {"ar": title.strip(), "en": title_en.strip()},
+            "desc": {"ar": desc.strip(), "en": desc_en.strip()},
+            "emoji": INFO_CUSTOM_FALLBACK_EMOJI,
+        }
         if image:
             entry["image_url"] = image.url
         if image2:
@@ -495,7 +538,8 @@ class GuidesCog(commands.Cog):
         data[gid][key] = entry
         save(CUSTOM_INFO_FILE, data)
 
-        await interaction.response.send_message(t("add_info_success", lang, title=title.strip()), ephemeral=True)
+        shown_title = title_en.strip() if lang == "en" else title.strip()
+        await interaction.response.send_message(t("add_info_success", lang, title=shown_title), ephemeral=True)
 
     @add_info.error
     async def add_info_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -505,7 +549,7 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
-    @app_commands.command(name="delete_info", description="🗑️ [إدارة] اختر شرحًا مضافًا واحذفه")
+    @app_commands.command(name="delete_info", description="🗑️ [إدارة/Admin] احذف شرحًا | Delete a Lords guide")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def delete_info(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -527,10 +571,10 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
-    @app_commands.command(name="edit_info", description="✏️ [إدارة] اختر شرحًا وعدّل نصه أو أضف صورة")
+    @app_commands.command(name="edit_info", description="✏️ [إدارة/Admin] عدّل شرحًا ثنائي اللغة | Edit a bilingual Lords guide")
     @app_commands.describe(
-        image="Optional new first image (replaces the current one)",
-        image2="Optional new second image (replaces the current one)",
+        image="صورة جديدة اختيارية | Optional replacement image",
+        image2="صورة ثانية جديدة اختيارية | Optional second replacement image",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def edit_info(
