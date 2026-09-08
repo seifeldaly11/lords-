@@ -38,10 +38,18 @@ class EventCalcModal(discord.ui.Modal):
     required_points = discord.ui.TextInput(label="🎯 النقاط المطلوبة للمرحلة", placeholder="مثال: 500000")
     points_per_action = discord.ui.TextInput(label="✨ النقاط لكل مرّة/فعل", placeholder="مثال: 1000")
     time_per_action = discord.ui.TextInput(
-        label="⏱️ الوقت اللازم لكل مرة (بالدقائق)", placeholder="مثال: 30"
+        label="⏱️ الوقت اللازم لكل مرة (اختياري)", placeholder="مثال: 30", required=False
     )
     available_speedups = discord.ui.TextInput(
-        label="🚀 إجمالي التسريعات المتاحة (بالدقائق)", placeholder="مثال: 4320"
+        label="🚀 التسريعات المتاحة (مثال: 24×2, 8×3)",
+        placeholder="24×2, 8×3 أو 4h, 1d×2",
+        required=False,
+    )
+    ai_question = discord.ui.TextInput(
+        label="🤖 سؤال للـAI (اختياري)",
+        placeholder="اسأل عن الحدث أو سيب الـAI يساعدك",
+        style=discord.TextStyle.paragraph,
+        required=False,
     )
 
     def __init__(self, event_key: str, event_label: str, lang: str):
@@ -60,19 +68,42 @@ class EventCalcModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         lang = self.lang
+        question = self.ai_question.value.strip()
         try:
             required = float(self.required_points.value)
             per_action = float(self.points_per_action.value)
-            per_time = float(self.time_per_action.value)
-            speedups = float(self.available_speedups.value)
-            if per_action <= 0 or per_time <= 0:
+            if required <= 0 or per_action <= 0:
+                raise ValueError
+        except ValueError:
+            if question:
+                from cogs.ai_cog import ask_ai
+                answer = await ask_ai(
+                    question,
+                    extra_context=f"الحدث المختار: {self.event_label}. البيانات التي أدخلها المستخدم غير مكتملة أو غير صحيحة.",
+                    lang=lang,
+                )
+                await interaction.response.send_message(embed=discord.Embed(title="🤖 مساعدة الحدث", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
+            else:
+                await interaction.response.send_message(t("event_invalid_numbers", lang), ephemeral=True)
+            return
+
+        time_raw = self.time_per_action.value.strip()
+        try:
+            per_time = float(time_raw) if time_raw else None
+            if per_time is not None and per_time <= 0:
                 raise ValueError
         except ValueError:
             await interaction.response.send_message(t("event_invalid_numbers", lang), ephemeral=True)
             return
 
+        speedup_raw = self.available_speedups.value.strip()
+        if speedup_raw:
+            speedups, speedup_breakdown, speedup_errors = parse_speedup_text(speedup_raw, lang)
+        else:
+            speedups, speedup_breakdown, speedup_errors = 0.0, [], []
+
         actions_needed = math.ceil(required / per_action)
-        time_needed = actions_needed * per_time  # بالدقائق
+        time_needed = actions_needed * per_time if per_time is not None else None
 
         embed = discord.Embed(
             title=t("event_result_title", lang, label=self.event_label),
@@ -81,35 +112,48 @@ class EventCalcModal(discord.ui.Modal):
         embed.add_field(name=t("event_required_points_field", lang), value=f"{required:,.0f}", inline=True)
         embed.add_field(name=t("event_points_per_action_field", lang), value=f"{per_action:,.0f}", inline=True)
         embed.add_field(name=t("event_actions_needed_field", lang), value=f"{actions_needed:,}", inline=True)
-        embed.add_field(name=t("event_total_time_field", lang), value=fmt_minutes(time_needed, lang), inline=True)
-        embed.add_field(name=t("event_speedups_available_field", lang), value=fmt_minutes(speedups, lang), inline=True)
-
-        if speedups >= time_needed:
-            remaining = speedups - time_needed
-            embed.add_field(name=t("event_can_complete_field", lang), value=t("event_can_complete_value", lang), inline=False)
-            embed.add_field(
-                name=t("event_remaining_speedups_field", lang), value=fmt_minutes(remaining, lang), inline=False
-            )
-            embed.color = discord.Color.green()
+        if time_needed is None:
+            embed.add_field(name=t("event_total_time_field", lang), value=t("event_time_not_provided", lang), inline=True)
         else:
-            missing = time_needed - speedups
-            achievable_actions = math.floor(speedups / per_time)
-            achievable_points = achievable_actions * per_action
-            remaining_points = max(0, required - achievable_points)
-            percentage = min(100.0, (achievable_points / required) * 100)
-            embed.add_field(name=t("event_cannot_complete_field", lang), value=t("event_cannot_complete_value", lang), inline=False)
-            embed.add_field(name=t("event_percentage_field", lang), value=f"{percentage:.1f}%", inline=True)
-            embed.add_field(name=t("event_achievable_points_field", lang), value=f"{achievable_points:,.0f}", inline=True)
-            embed.add_field(name=t("event_missing_points_field", lang), value=f"{remaining_points:,.0f}", inline=True)
-            embed.add_field(
-                name=t("event_missing_speedups_field", lang), value=fmt_minutes(missing, lang), inline=False
+            embed.add_field(name=t("event_total_time_field", lang), value=fmt_minutes(time_needed, lang), inline=True)
+        embed.add_field(name=t("event_speedups_available_field", lang), value=fmt_minutes(speedups, lang), inline=True)
+        if speedup_breakdown:
+            embed.add_field(name=t("speedup_breakdown_field", lang), value="\n".join(speedup_breakdown)[:1024], inline=False)
+        if speedup_errors:
+            embed.add_field(name=t("speedup_errors_field", lang), value=", ".join(speedup_errors)[:1024], inline=False)
+
+        if time_needed is not None:
+            if speedups >= time_needed:
+                remaining = speedups - time_needed
+                embed.add_field(name=t("event_can_complete_field", lang), value=t("event_can_complete_value", lang), inline=False)
+                embed.add_field(name=t("event_remaining_speedups_field", lang), value=fmt_minutes(remaining, lang), inline=False)
+                embed.color = discord.Color.green()
+            else:
+                missing = time_needed - speedups
+                achievable_actions = math.floor(speedups / per_time)
+                achievable_points = achievable_actions * per_action
+                remaining_points = max(0, required - achievable_points)
+                percentage = min(100.0, (achievable_points / required) * 100)
+                embed.add_field(name=t("event_cannot_complete_field", lang), value=t("event_cannot_complete_value", lang), inline=False)
+                embed.add_field(name=t("event_percentage_field", lang), value=f"{percentage:.1f}%", inline=True)
+                embed.add_field(name=t("event_achievable_points_field", lang), value=f"{achievable_points:,.0f}", inline=True)
+                embed.add_field(name=t("event_missing_points_field", lang), value=f"{remaining_points:,.0f}", inline=True)
+                embed.add_field(name=t("event_missing_speedups_field", lang), value=fmt_minutes(missing, lang), inline=False)
+                embed.color = discord.Color.orange()
+        else:
+            embed.add_field(name=t("event_time_optional_note", lang), value=t("event_time_optional_value", lang), inline=False)
+
+        if question:
+            from cogs.ai_cog import ask_ai
+            answer = await ask_ai(
+                question,
+                extra_context=f"نتيجة حاسبة الحدث: {actions_needed} أفعال، التسريعات المتاحة: {fmt_minutes(speedups, lang)}.",
+                lang=lang,
             )
-            embed.color = discord.Color.orange()
+            embed.add_field(name="🤖 مساعدة الـAI", value=answer[:1024], inline=False)
 
         embed.set_footer(text=t("event_footer", lang))
-
         await interaction.response.send_message(embed=embed, ephemeral=True)
-
 
 class EventTypeSelect(discord.ui.Select):
     def __init__(self, lang: str, category_label: str):
@@ -256,6 +300,12 @@ class SpeedupModal(discord.ui.Modal):
         style=discord.TextStyle.paragraph,
         placeholder="مثال: 4h, 6h, 1d×3  أو  24×4, 3d×2",
     )
+    ai_question = discord.ui.TextInput(
+        label="🤖 سؤال للـAI (اختياري)",
+        placeholder="اسأل عن التسريعات أو طريقة استخدامها",
+        style=discord.TextStyle.paragraph,
+        required=False,
+    )
 
     def __init__(self, lang: str):
         super().__init__(title=t("speedup_modal_title", lang))
@@ -266,9 +316,15 @@ class SpeedupModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         lang = self.lang
         total_minutes, breakdown, errors = parse_speedup_text(self.entries.value, lang)
+        question = self.ai_question.value.strip()
 
         if not breakdown:
-            await interaction.response.send_message(t("speedup_invalid_numbers", lang), ephemeral=True)
+            if question:
+                from cogs.ai_cog import ask_ai
+                answer = await ask_ai(question, extra_context=f"المدخلات التي كتبها المستخدم للتسريعات: {self.entries.value}", lang=lang)
+                await interaction.response.send_message(embed=discord.Embed(title="🤖 مساعدة التسريعات", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
+            else:
+                await interaction.response.send_message(t("speedup_invalid_numbers", lang), ephemeral=True)
             return
 
         embed = discord.Embed(
@@ -277,15 +333,16 @@ class SpeedupModal(discord.ui.Modal):
             color=discord.Color.purple(),
             timestamp=datetime.utcnow(),
         )
+        embed.add_field(name=t("speedup_breakdown_field", lang), value="\n".join(breakdown)[:1024], inline=False)
+        embed.add_field(name=t("speedup_in_hours_field", lang), value=f"{total_minutes / 60:g} {t('speedup_hours_unit', lang)}", inline=True)
         if errors:
-            embed.add_field(
-                name=t("speedup_errors_field", lang),
-                value=", ".join(errors)[:1024],
-                inline=False,
-            )
+            embed.add_field(name=t("speedup_errors_field", lang), value=", ".join(errors)[:1024], inline=False)
+        if question:
+            from cogs.ai_cog import ask_ai
+            answer = await ask_ai(question, extra_context=f"إجمالي التسريعات المحسوب: {fmt_minutes(total_minutes, lang)}. التفاصيل: {', '.join(breakdown)}", lang=lang)
+            embed.add_field(name="🤖 مساعدة الـAI", value=answer[:1024], inline=False)
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
-
 
 # ---------------------------------------------------------------------------
 # الـ Cog الرئيسي
