@@ -289,9 +289,9 @@ def command_category(path: str) -> str:
     root = path.split(" ", 1)[0]
     if root in {"ai", "scout", "optimize"} or path.startswith("gf optimize"):
         return "ai"
-    if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "geartiers"}:
+    if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "delete_info", "delete_monster", "geartiers"}:
         return "calculators"
-    if root in {"counter", "analyze", "report"}:
+    if root in {"counter", "analyze", "report", "rallyset"}:
         return "war"
     if root in {"log_activity", "information", "user_admin_check", "top5", "event_stats", "stats_event", "gf"}:
         return "alliance"
