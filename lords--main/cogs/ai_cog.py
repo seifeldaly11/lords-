@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 
 import discord
@@ -11,6 +12,7 @@ from utils.ui import styled_embed, loading_embed, ROYAL_BLUE
 from cogs.guild_cog import gf_group
 
 MAX_INPUT_CHARS = 1200  # حماية بسيطة ضد الإدخال الطويل جداً/إساءة الاستخدام
+log = logging.getLogger("lordsbot.ai")
 # command-r-plus was removed by Cohere on 2025-09-15.
 # command-a-03-2025 is an active chat model.
 TEXT_MODEL = "command-a-03-2025"
@@ -67,6 +69,13 @@ async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None 
     try:
         return await asyncio.to_thread(_call)
     except Exception as e:
+        # Keep the user-facing message safe while logging enough detail for hosting diagnostics.
+        log.exception(
+            "Cohere request failed (model=%s, has_image=%s, error=%s)",
+            model,
+            bool(image_url),
+            type(e).__name__,
+        )
         return t("ai_error", lang, err=type(e).__name__)
 
 
