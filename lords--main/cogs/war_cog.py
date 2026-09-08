@@ -7,6 +7,8 @@ from discord.ext import commands
 
 from utils.i18n import get_lang, t
 from utils.storage import load, save, load_json_data
+from utils.ui import styled_embed, loading_embed, ROYAL_BLUE
+from cogs.ai_cog import ask_ai
 
 REPORTS_FILE = "reports"
 
@@ -210,21 +212,46 @@ class WarCog(commands.Cog):
             t("counter_prompt", lang), view=CounterView(lang), ephemeral=True
         )
 
-    @app_commands.command(name="analyze", description="🖼️ محلل تقارير المعارك - ارفع صورة التقرير وأدخل الأرقام لتحليلها")
-    @app_commands.describe(screenshot="Optional battle report screenshot (documentation only)")
-    async def analyze(self, interaction: discord.Interaction, screenshot: Optional[discord.Attachment] = None):
+    @app_commands.command(name="analyze", description="🖼️ حلّل صورة تقرير المعركة والأرقام بالذكاء الاصطناعي")
+    @app_commands.describe(
+        screenshot="Battle report screenshot",
+        numbers="Optional numbers from the report (troops, losses, percentages, etc.)",
+        question="Optional question for the AI",
+    )
+    @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
+    async def analyze(
+        self,
+        interaction: discord.Interaction,
+        screenshot: Optional[discord.Attachment] = None,
+        numbers: Optional[str] = None,
+        question: Optional[str] = None,
+    ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
-        note = ""
-        if screenshot:
-            if not (screenshot.content_type or "").startswith("image/"):
-                await interaction.response.send_message(t("analyze_bad_image", lang), ephemeral=True)
-                return
-            note = t("analyze_with_image_note", lang, filename=screenshot.filename)
-        await interaction.response.send_message(
-            note or t("analyze_no_image_note", lang),
-            view=CounterView(lang),
-            ephemeral=True,
+        if not screenshot and not numbers and not question:
+            await interaction.response.send_message(t("analyze_need_input", lang), ephemeral=True)
+            return
+        if screenshot and not (screenshot.content_type or "").lower().startswith("image/"):
+            await interaction.response.send_message(t("analyze_bad_image", lang), ephemeral=True)
+            return
+
+        await interaction.response.defer(thinking=True, ephemeral=True)
+        loading_text = "جارٍ تحليل الصورة والأرقام بالذكاء الاصطناعي... ⏳" if lang == "ar" else "Analyzing the image and numbers with AI... ⏳"
+        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang), ephemeral=True)
+        prompt = question or (
+            "حلل تقرير المعركة في الصورة واستخرج الأرقام المهمة، ثم اشرح النتيجة ونقاط القوة والضعف والتوصية."
+            if screenshot else "حلل أرقام تقرير المعركة واشرح النتيجة والتوصية."
         )
+        context = "ركز على قراءة الأرقام الظاهرة في الصورة وعدم اختلاق رقم غير واضح."
+        if numbers:
+            context += f"\nالأرقام التي أدخلها المستخدم: {numbers[:1200]}"
+        answer = await ask_ai(prompt, extra_context=context, image_url=screenshot.url if screenshot else None, lang=lang)
+        embed = styled_embed(title="🖼️ نتيجة تحليل المعركة", description=answer[:3500], color=ROYAL_BLUE, lang=lang)
+        if screenshot:
+            embed.set_thumbnail(url=screenshot.url)
+        try:
+            await loading_msg.edit(embed=embed)
+        except discord.HTTPException:
+            await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 async def setup(bot: commands.Bot):
