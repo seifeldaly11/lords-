@@ -4,111 +4,35 @@ from discord.ext import commands
 
 from utils.storage import load_json_data
 from utils.i18n import get_lang, t
-
-# كلمات مفتاحية للكشف عن عتاد الاقتصاد (Noceros / Gryphon / Lunar Flute) بالعربي والإنجليزي
-ECONOMY_KEYWORDS = [
-    "noceros", "نوسيروس",
-    "gryphon", "جريفون", "جريفين",
-    "lunar flute", "لونار فلوت", "مزمار",
-]
-
-# كلمات مفتاحية لأنواع القوات عشان نكشف تضارب (خوذة رماة + جواهر مشاة مثلاً)
-# (دي مفاتيح داخلية للكشف بس، مش نص ظاهر للمستخدم، فمش محتاجة ترجمة)
-TROOP_KEYWORDS = {
-    "infantry": ["مشاة", "infantry"],
-    "ranged": ["رماة", "ranged"],
-    "cavalry": ["فرسان", "cavalry"],
-}
-
-
-def analyze_enemy_gear(text: str, lang: str) -> list[str]:
-    """يحلل نص وصف عتاد الخصم ويرجع قائمة بالتنبيهات المكتشفة (مترجمة حسب lang)."""
-    lowered = text.lower()
-    alerts = []
-
-    if any(k in lowered for k in ECONOMY_KEYWORDS):
-        alerts.append(t("scout_alert_economy", lang))
-
-    found_troops = {key for key, kws in TROOP_KEYWORDS.items() if any(k in lowered for k in kws)}
-    if len(found_troops) >= 2:
-        alerts.append(t("scout_alert_mixed", lang))
-
-    if not alerts:
-        alerts.append(t("scout_alert_normal", lang))
-
-    return alerts
+from utils.ui import styled_embed, loading_embed, ROYAL_BLUE
+from cogs.ai_cog import ask_ai
 
 
 # ---------------------------------------------------------------------------
-# /scout - كاشف الخصم الضعيف
+# /scout - تحليل صورة الخصم بالذكاء الاصطناعي (قوي / ضعيف)
 # ---------------------------------------------------------------------------
 
-class ScoutModal(discord.ui.Modal):
-    gear_seen = discord.ui.TextInput(
-        label="👀 العتاد اللي شايفه على الخصم",
-        style=discord.TextStyle.paragraph,
-        placeholder="مثال: خوذة نوسيروس، درع رماة فيه جواهر مشاة...",
+def _scout_prompt(lang: str) -> str:
+    if lang == "ar":
+        return (
+            "حلل الصورة دي (عتاد أو بروفايل خصم في لعبة Lords Mobile) وحدد هل اللاعب ده قوي "
+            "ولا ضعيف، بناءً على نوع العتاد الظاهر (اقتصادي = ضعيف دفاعياً، حربي = قوي)، "
+            "الجواهر، أو أي مؤشر قوة زي الـ Might لو ظاهر في الصورة. "
+            "ابدأ ردك بكلمة حكم واضحة في أول سطر: \"💪 قوي\" أو \"🪶 ضعيف\" أو \"⚖️ متوسط\"، "
+            "وبعدها اشرح سبب حكمك في سطرين مختصرين بس."
+        )
+    return (
+        "Analyze this image (a Lords Mobile opponent's gear or profile) and determine whether "
+        "this player looks strong or weak, based on the visible gear type (economy gear = weak "
+        "defense, war gear = strong), jewels, or any power indicator like visible Might. "
+        "Start your reply with a clear verdict on the first line: \"💪 Strong\", \"🪶 Weak\", or "
+        "\"⚖️ Average\", then explain your reasoning in two short sentences only."
     )
 
-    def __init__(self, lang: str):
-        super().__init__(title=t("scout_modal_title", lang))
-        self.lang = lang
-        self.gear_seen.label = t("scout_modal_label", lang)[:45]
-        self.gear_seen.placeholder = t("scout_modal_placeholder", lang)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        lang = self.lang
-        alerts = analyze_enemy_gear(self.gear_seen.value, lang)
-        embed = discord.Embed(title=t("scout_result_title", lang), color=discord.Color.dark_orange())
-        embed.add_field(name=t("scout_input_field", lang), value=self.gear_seen.value[:1000], inline=False)
-        for a in alerts:
-            embed.add_field(name="\u200b", value=a, inline=False)
-        embed.set_footer(text=t("scout_footer", lang))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
-class ScoutView(discord.ui.View):
-    def __init__(self, lang: str):
-        super().__init__(timeout=60)
-        self.lang = lang
-        self.open_modal.label = t("scout_button_label", lang)
-
-    @discord.ui.button(label="صف عتاد الخصم", emoji="🔍", style=discord.ButtonStyle.danger)
-    async def open_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(ScoutModal(self.lang))
-
 
 # ---------------------------------------------------------------------------
-# /heroes و /geartiers
+# /geartiers
 # ---------------------------------------------------------------------------
-
-class HeroCategoryView(discord.ui.View):
-    def __init__(self, heroes_data: dict, lang: str):
-        super().__init__(timeout=60)
-        self.heroes_data = heroes_data
-        self.lang = lang
-        self.economy.label = t("heroes_btn_economy", lang)
-        self.free_war.label = t("heroes_btn_free_war", lang)
-        self.paid_war.label = t("heroes_btn_paid_war", lang)
-
-    @discord.ui.button(label="🧪 أبطال التطوير", style=discord.ButtonStyle.secondary)
-    async def economy(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._send(interaction, "economy", t("heroes_title_economy", self.lang))
-
-    @discord.ui.button(label="🆓 أبطال حرب مجانيين", style=discord.ButtonStyle.green)
-    async def free_war(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._send(interaction, "free_war", t("heroes_title_free_war", self.lang))
-
-    @discord.ui.button(label="💎 أبطال حرب للشحن", style=discord.ButtonStyle.blurple)
-    async def paid_war(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._send(interaction, "paid_war", t("heroes_title_paid_war", self.lang))
-
-    async def _send(self, interaction: discord.Interaction, key: str, title: str):
-        heroes = self.heroes_data[key]
-        desc = "\n".join(f"{h['emoji']} **{h['name']}** — {h['role']}" for h in heroes)
-        embed = discord.Embed(title=title, description=desc, color=discord.Color.dark_teal())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
 
 class GearTierView(discord.ui.View):
     def __init__(self, gear_tiers: dict, lang: str):
@@ -157,26 +81,48 @@ class GearTierView(discord.ui.View):
 # ---------------------------------------------------------------------------
 
 class IntelCog(commands.Cog):
-    """استخبارات: كشف الخصم الضعيف، خلاصة الأبطال، وتصنيف العتاد."""
+    """استخبارات: كشف قوة الخصم بالذكاء الاصطناعي، خلاصة الأبطال، وتصنيف العتاد."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.heroes_data = load_json_data("heroes.json")
         self.gear_tiers = load_json_data("gear_tiers.json")
 
-    @app_commands.command(name="scout", description="🔍 اكتشف هل الخصم ضعيف من عتاده (عتاد اقتصادي/جواهر ملخبطة)")
-    async def scout(self, interaction: discord.Interaction):
+    @app_commands.command(
+        name="scout",
+        description="🔍 ارفق صورة عتاد/بروفايل الخصم والـ AI يحللها ويقولك هو قوي ولا ضعيف",
+    )
+    @app_commands.describe(image="صورة عتاد الخصم أو بروفايله (Might) عشان الـ AI يحللها")
+    @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
+    async def scout(self, interaction: discord.Interaction, image: discord.Attachment):
         lang = get_lang(interaction.guild_id, interaction.user.id)
-        await interaction.response.send_message(
-            t("scout_button_prompt", lang), view=ScoutView(lang), ephemeral=True
-        )
 
-    @app_commands.command(name="heroes", description="🦸 خلاصة أفضل الأبطال (تطوير / حرب مجاني / حرب مدفوع)")
-    async def heroes(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        await interaction.response.send_message(
-            t("heroes_prompt", lang), view=HeroCategoryView(self.heroes_data, lang), ephemeral=True
+        if not (image.content_type or "").lower().startswith("image/"):
+            await interaction.response.send_message(t("ai_bad_image", lang), ephemeral=True)
+            return
+
+        await interaction.response.defer(thinking=True, ephemeral=True)
+        loading_text = (
+            "جارٍ تحليل قوة الخصم من الصورة... ⏳" if lang == "ar" else "Analyzing opponent strength from the image... ⏳"
         )
+        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang), ephemeral=True)
+
+        answer = await ask_ai(_scout_prompt(lang), image_url=image.url, lang=lang)
+
+        embed = styled_embed(title=t("scout_result_title", lang), description=answer[:3500], color=ROYAL_BLUE, lang=lang)
+        embed.set_thumbnail(url=image.url)
+        embed.set_footer(text=t("scout_footer", lang))
+        try:
+            await loading_msg.edit(embed=embed)
+        except discord.HTTPException:
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
+    @scout.error
+    async def scout_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        if isinstance(error, app_commands.CommandOnCooldown):
+            await interaction.response.send_message(t("ai_cooldown", lang, s=f"{error.retry_after:.0f}"), ephemeral=True)
+        else:
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
     @app_commands.command(name="geartiers", description="🧰 تصنيف العتاد الكامل (حرب / صيد / اقتصاد)")
     async def geartiers(self, interaction: discord.Interaction):
