@@ -73,52 +73,61 @@ async def troop_set(interaction: discord.Interaction, troop: app_commands.Choice
 rally_group = app_commands.Group(name="rally", description="📯 نداء حشود يستهدف الأعضاء بالنوع المطلوب | Smart rally calls")
 
 
-@rally_group.command(name="set", description="افتح نداء حشد وينبّه بس أصحاب القوات المتوافقة | Open a rally ping for matching troop owners")
+@rally_group.command(
+    name="set",
+    description="📯 افتح نداء حشد وينبّه كل أعضاء السيرفر (@everyone) | Open a rally call and ping everyone",
+)
 @app_commands.describe(
     troop="نوع القوات المطلوبة للحشد | Troop type needed",
+    target="اسم التحالف أو الشخص المستهدف بالحشد | Target alliance or player name",
+    image="صورة لقطة شاشة الحشد (اختياري) | Rally screenshot (optional)",
     minutes="بعد كام دقيقة هيتقفل الحشد تقريباً (افتراضي 5) | Minutes until the rally closes (default 5)",
-    note="ملاحظة اختيارية (هدف الحشد مثلاً) | Optional note (rally target, etc.)",
+    note="ملاحظة اختيارية | Optional note",
 )
 @app_commands.choices(
-    troop=[app_commands.Choice(name=TROOP_LABELS[k]["ar"] + " / " + TROOP_LABELS[k]["en"], value=k) for k in TROOP_LABELS if k != "hybrid"]
+    troop=[app_commands.Choice(name=TROOP_LABELS[k]["ar"] + " / " + TROOP_LABELS[k]["en"], value=k) for k in TROOP_LABELS]
 )
-async def rally_set(interaction: discord.Interaction, troop: app_commands.Choice[str], minutes: int = 5, note: str = None):
+async def rally_set(
+    interaction: discord.Interaction,
+    troop: app_commands.Choice[str],
+    target: str,
+    image: discord.Attachment = None,
+    minutes: int = 5,
+    note: str = None,
+):
     lang = get_lang(interaction.guild_id, interaction.user.id)
-    data = load(TROOP_FILE)
-    gid = str(interaction.guild_id)
-    members = data.get(gid, {})
-
-    matched_ids = [uid for uid, info in members.items() if info.get("troop") in (troop.value, "hybrid")]
-    mentions = " ".join(f"<@{uid}>" for uid in matched_ids[:50])
 
     deadline = datetime.now(timezone.utc) + timedelta(minutes=max(1, minutes))
     countdown = discord.utils.format_dt(deadline, style="R")
 
-    desc = t(
-        "rally_desc",
-        lang,
-        leader=interaction.user.mention,
-        troop=troop_label(troop.value, lang),
-        countdown=countdown,
+    embed = discord.Embed(
+        title=t("rally_title", lang),
+        description=t(
+            "rally_desc_v2",
+            lang,
+            leader=interaction.user.mention,
+            troop=troop_label(troop.value, lang),
+            countdown=countdown,
+        ),
+        color=discord.Color.orange(),
+        timestamp=datetime.now(timezone.utc),
     )
+    embed.add_field(name=t("rally_target_field", lang), value=target, inline=True)
     if note:
-        desc += f"\n\n**{t('rally_note_field', lang)}:** {note}"
-    if not mentions:
-        desc += f"\n\n{t('rally_no_matches', lang)}"
-    else:
-        desc += t("rally_no_troop_note", lang)
+        embed.add_field(name=t("rally_note_field", lang), value=note, inline=True)
+    if image is not None and (image.content_type or "").lower().startswith("image/"):
+        embed.set_image(url=image.url)
+    embed.set_footer(text=t("rally_footer_v2", lang, leader=str(interaction.user)))
 
     view = discord.ui.View()
     app_link = get_game_link(interaction.guild_id, default=DEFAULT_APP_LINK)
     view.add_item(discord.ui.Button(label=t("rally_open_app", lang), style=discord.ButtonStyle.link, url=app_link, emoji="📲"))
 
-    header = t("rally_title", lang)
-    ping_line = f"{t('rally_pinged', lang)}: {mentions}" if mentions else ""
-
     await interaction.response.send_message(
-        content=f"# {header}\n{desc}\n{ping_line}".strip(),
+        content=f"@everyone {t('rally_everyone_ping', lang)}",
+        embed=embed,
         view=view,
-        allowed_mentions=discord.AllowedMentions(users=True),
+        allowed_mentions=discord.AllowedMentions(everyone=True),
     )
 
 
@@ -223,7 +232,7 @@ class RallyLogView(discord.ui.View):
         data[gid]["entries"].append(entry)
         save(RALLY_LOG_FILE, data)
 
-        mentions = "، ".join(f"<@{uid}>" for uid in self.selected_ids)
+        mentions = t("rally_log_mentions_joiner", lang).join(f"<@{uid}>" for uid in self.selected_ids)
         embed = discord.Embed(title=t("rally_log_success_title", lang), color=discord.Color.green())
         embed.add_field(name=t("rally_log_type_field", lang), value=rally_type_label(self.rally_type, lang), inline=True)
         embed.add_field(name=t("rally_log_result_field", lang), value=rally_result_label(self.result, lang), inline=True)
