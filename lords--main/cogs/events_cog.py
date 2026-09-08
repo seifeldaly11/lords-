@@ -1,12 +1,13 @@
 import asyncio
 import math
+import re
 from datetime import datetime, timedelta
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils.i18n import get_lang, t, EVENT_TYPE_LABELS_I18N
+from utils.i18n import get_lang, t, EVENT_TYPE_LABELS_I18N, EVENT_CATEGORY_LABELS_I18N
 
 EVENT_TYPE_KEYS = [
     "research", "building", "t1", "t2", "t3", "t4", "t5",
@@ -40,7 +41,7 @@ class EventCalcModal(discord.ui.Modal):
         label="⏱️ الوقت اللازم لكل مرة (بالدقائق)", placeholder="مثال: 30"
     )
     available_speedups = discord.ui.TextInput(
-        label="🚀 إجمالي التسريحات المتاحة (بالدقائق)", placeholder="مثال: 4320"
+        label="🚀 إجمالي التسريعات المتاحة (بالدقائق)", placeholder="مثال: 4320"
     )
 
     def __init__(self, event_key: str, event_label: str, lang: str):
@@ -52,6 +53,10 @@ class EventCalcModal(discord.ui.Modal):
         self.points_per_action.label = t("event_field_points_per_action", lang)[:45]
         self.time_per_action.label = t("event_field_time_per_action", lang)[:45]
         self.available_speedups.label = t("event_field_speedups", lang)[:45]
+        self.required_points.placeholder = t("event_placeholder_required_points", lang)
+        self.points_per_action.placeholder = t("event_placeholder_points_per_action", lang)
+        self.time_per_action.placeholder = t("event_placeholder_time_per_action", lang)
+        self.available_speedups.placeholder = t("event_placeholder_speedups", lang)
 
     async def on_submit(self, interaction: discord.Interaction):
         lang = self.lang
@@ -72,7 +77,6 @@ class EventCalcModal(discord.ui.Modal):
         embed = discord.Embed(
             title=t("event_result_title", lang, label=self.event_label),
             color=discord.Color.gold(),
-            timestamp=datetime.utcnow(),
         )
         embed.add_field(name=t("event_required_points_field", lang), value=f"{required:,.0f}", inline=True)
         embed.add_field(name=t("event_points_per_action_field", lang), value=f"{per_action:,.0f}", inline=True)
@@ -103,12 +107,32 @@ class EventCalcModal(discord.ui.Modal):
             embed.color = discord.Color.orange()
 
         embed.set_footer(text=t("event_footer", lang))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        # زرار "اسأل المستشار الذكي" - بيدّي الـ AI كل الأرقام دي عشان يقترح استراتيجية
+        from cogs.ai_cog import AIAdviceView  # استيراد وقت الطلب لتفادي أي تعارض ترتيب تحميل الكوجز
+
+        ai_context = (
+            f"{t('event_result_title', lang, label=self.event_label)}\n"
+            f"{t('event_required_points_field', lang)}: {required:,.0f}\n"
+            f"{t('event_points_per_action_field', lang)}: {per_action:,.0f}\n"
+            f"{t('event_actions_needed_field', lang)}: {actions_needed:,}\n"
+            f"{t('event_total_time_field', lang)}: {fmt_minutes(time_needed, lang)}\n"
+            f"{t('event_speedups_available_field', lang)}: {fmt_minutes(speedups, lang)}\n"
+            + (
+                t("event_can_complete_value", lang)
+                if speedups >= time_needed
+                else t("event_cannot_complete_value", lang)
+            )
+        )
+        await interaction.response.send_message(
+            embed=embed, view=AIAdviceView(context=ai_context, lang=lang), ephemeral=True
+        )
 
 
 class EventTypeSelect(discord.ui.Select):
-    def __init__(self, lang: str):
+    def __init__(self, lang: str, category_label: str):
         self.lang = lang
+        self.category_label = category_label
         options = [
             discord.SelectOption(label=EVENT_TYPE_LABELS_I18N[key][lang], value=key)
             for key in EVENT_TYPE_KEYS
@@ -116,14 +140,38 @@ class EventTypeSelect(discord.ui.Select):
         super().__init__(placeholder=t("event_select_placeholder", lang), options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        label = EVENT_TYPE_LABELS_I18N[self.values[0]][self.lang]
-        await interaction.response.send_modal(EventCalcModal(self.values[0], label, self.lang))
+        type_label = EVENT_TYPE_LABELS_I18N[self.values[0]][self.lang]
+        full_label = f"{self.category_label} - {type_label}"
+        await interaction.response.send_modal(EventCalcModal(self.values[0], full_label, self.lang))
 
 
 class EventTypeView(discord.ui.View):
+    def __init__(self, lang: str, category_label: str):
+        super().__init__(timeout=120)
+        self.add_item(EventTypeSelect(lang, category_label))
+
+
+class EventCategorySelect(discord.ui.Select):
+    def __init__(self, lang: str):
+        self.lang = lang
+        options = [
+            discord.SelectOption(label=EVENT_CATEGORY_LABELS_I18N[key][lang], value=key)
+            for key in ("hell", "solo")
+        ]
+        super().__init__(placeholder=t("event_category_select_placeholder", lang), options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        category_label = EVENT_CATEGORY_LABELS_I18N[self.values[0]][self.lang]
+        await interaction.response.edit_message(
+            content=t("event_prompt", self.lang, category=category_label),
+            view=EventTypeView(self.lang, category_label),
+        )
+
+
+class EventCategoryView(discord.ui.View):
     def __init__(self, lang: str):
         super().__init__(timeout=120)
-        self.add_item(EventTypeSelect(lang))
+        self.add_item(EventCategorySelect(lang))
 
 
 # ---------------------------------------------------------------------------
@@ -153,125 +201,75 @@ class ShelterDurationView(discord.ui.View):
 
 
 # ---------------------------------------------------------------------------
-# /cost - حاسبة تكلفة التدريب
+# /speedup - حساب إجمالي التسريعات (يفهم صيغة "4h, 6h, 1d×3")
 # ---------------------------------------------------------------------------
 
-COST_TIER_KEYS = ["t4", "t5", "research"]
-COST_TIER_LABEL_KEYS = {"t4": "cost_tier_t4", "t5": "cost_tier_t5", "research": "cost_tier_research"}
+# وحدة تلقائية = ساعات لو محدش كتب وحدة (زي "24×4")
+SPEEDUP_UNIT_MINUTES = {"d": 24 * 60, "h": 60, "m": 1}
+SPEEDUP_UNIT_ALIASES = {
+    "d": "d", "day": "d", "days": "d", "يوم": "d", "أيام": "d",
+    "h": "h", "hr": "h", "hrs": "h", "hour": "h", "hours": "h", "ساعة": "h", "ساعات": "h",
+    "m": "m", "min": "m", "mins": "m", "minute": "m", "minutes": "m", "دقيقة": "m", "دقايق": "m",
+}
+SPEEDUP_ENTRY_RE = re.compile(
+    r"^\s*(\d+(?:\.\d+)?)\s*([a-zA-Zء-ي]*)\s*(?:[×xX*]\s*(\d+(?:\.\d+)?))?\s*$"
+)
 
 
-class CostModal(discord.ui.Modal):
-    quantity = discord.ui.TextInput(label="🔢 عدد الوحدات المطلوب تدريبها", placeholder="مثال: 10000")
-    food = discord.ui.TextInput(label="🍖 تكلفة الطعام لكل وحدة", placeholder="مثال: 500")
-    wood_stone = discord.ui.TextInput(label="🪵 تكلفة الخشب/الحجر لكل وحدة", placeholder="مثال: 300")
-    ore_gold = discord.ui.TextInput(label="⛏️ تكلفة الخام/الذهب لكل وحدة", placeholder="مثال: 100")
-    time_per_unit_sec = discord.ui.TextInput(
-        label="⏱️ زمن الوحدة (ثانية) وعدد الطوابير",
-        placeholder="مثال: 12,2  (زمن,عدد الطوابير المتزامنة)",
-    )
+def parse_speedup_text(raw: str, lang: str = "ar") -> tuple[float, list[str], list[str]]:
+    """
+    يفهم نص زي "4h, 6h, 1d×3" أو "24×4, 3d×2" ويرجع:
+    (إجمالي الدقائق, تفاصيل كل بند بعد الحساب, أخطاء البنود اللي ما اتفهمتش)
+    لو مفيش وحدة (زي "24×4") بتتفسر ساعات افتراضياً.
+    """
+    total_minutes = 0.0
+    breakdown: list[str] = []
+    errors: list[str] = []
 
-    def __init__(self, tier_key: str, tier_label: str, lang: str):
-        super().__init__(title=t("cost_modal_title", lang))
-        self.tier_label = tier_label
-        self.lang = lang
-        self.quantity.label = t("cost_field_quantity", lang)[:45]
-        self.food.label = t("cost_field_food", lang)[:45]
-        self.wood_stone.label = t("cost_field_wood_stone", lang)[:45]
-        self.ore_gold.label = t("cost_field_ore_gold", lang)[:45]
-        self.time_per_unit_sec.label = t("cost_field_time_per_unit", lang)[:45]
+    for chunk in raw.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        match = SPEEDUP_ENTRY_RE.match(chunk)
+        if not match:
+            errors.append(chunk)
+            continue
 
-    async def on_submit(self, interaction: discord.Interaction):
-        lang = self.lang
-        try:
-            qty = float(self.quantity.value)
-            food_cost = float(self.food.value)
-            ws_cost = float(self.wood_stone.value)
-            og_cost = float(self.ore_gold.value)
-            raw = self.time_per_unit_sec.value.split(",")
-            time_per_unit = float(raw[0].strip())
-            queues = float(raw[1].strip()) if len(raw) > 1 and raw[1].strip() else 1
-            queues = max(1.0, queues)
-        except (ValueError, IndexError):
-            await interaction.response.send_message(t("cost_invalid_numbers", lang), ephemeral=True)
-            return
+        amount_str, unit_str, multiplier_str = match.groups()
+        amount = float(amount_str)
+        multiplier = float(multiplier_str) if multiplier_str else 1.0
+        unit_key = SPEEDUP_UNIT_ALIASES.get(unit_str.lower(), "h" if not unit_str else None)
+        if unit_key is None:
+            errors.append(chunk)
+            continue
 
-        total_food = qty * food_cost
-        total_ws = qty * ws_cost
-        total_og = qty * og_cost
-        total_seconds = math.ceil(qty / queues) * time_per_unit
+        entry_minutes = amount * SPEEDUP_UNIT_MINUTES[unit_key] * multiplier
+        total_minutes += entry_minutes
+        breakdown.append(f"{chunk} = {fmt_minutes(entry_minutes, lang)}")
 
-        embed = discord.Embed(
-            title=t("cost_result_title", lang, tier=self.tier_label),
-            color=discord.Color.blue(),
-            timestamp=datetime.utcnow(),
-        )
-        embed.add_field(name=t("cost_quantity_field", lang), value=f"{qty:,.0f}", inline=True)
-        embed.add_field(name=t("cost_total_food_field", lang), value=f"{total_food:,.0f}", inline=True)
-        embed.add_field(name=t("cost_total_wood_stone_field", lang), value=f"{total_ws:,.0f}", inline=True)
-        embed.add_field(name=t("cost_total_ore_gold_field", lang), value=f"{total_og:,.0f}", inline=True)
-        embed.add_field(
-            name=t("cost_total_time_field", lang), value=fmt_minutes(total_seconds / 60, lang), inline=True
-        )
-        embed.set_footer(text=t("cost_footer", lang))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+    return total_minutes, breakdown, errors
 
-
-class TrainingTierSelect(discord.ui.Select):
-    def __init__(self, lang: str):
-        self.lang = lang
-        options = [
-            discord.SelectOption(label=t(COST_TIER_LABEL_KEYS[key], lang), value=key)
-            for key in COST_TIER_KEYS
-        ]
-        super().__init__(placeholder=t("cost_tier_select_placeholder", lang), options=options)
-
-    async def callback(self, interaction: discord.Interaction):
-        tier_key = self.values[0]
-        tier_label = t(COST_TIER_LABEL_KEYS[tier_key], self.lang)
-        await interaction.response.send_modal(CostModal(tier_key, tier_label, self.lang))
-
-
-class CostTierView(discord.ui.View):
-    def __init__(self, lang: str):
-        super().__init__(timeout=60)
-        self.add_item(TrainingTierSelect(lang))
-
-
-# ---------------------------------------------------------------------------
-# /speedup - حساب إجمالي التسريحات
-# ---------------------------------------------------------------------------
 
 class SpeedupModal(discord.ui.Modal):
-    days = discord.ui.TextInput(label="📅 إجمالي الأيام", placeholder="مثال: 3", required=False, default="0")
-    hours = discord.ui.TextInput(label="⏰ إجمالي الساعات", placeholder="مثال: 12", required=False, default="0")
-    minutes = discord.ui.TextInput(label="⏱️ إجمالي الدقائق", placeholder="مثال: 45", required=False, default="0")
-    stacks = discord.ui.TextInput(
-        label="📦 عدد الحزم المتشابهة (لو عندك أكتر من نسخة)",
-        placeholder="مثال: 1",
-        required=False,
-        default="1",
+    entries = discord.ui.TextInput(
+        label="🚀 التسريعات",
+        style=discord.TextStyle.paragraph,
+        placeholder="مثال: 4h, 6h, 1d×3  أو  24×4, 3d×2",
     )
 
     def __init__(self, lang: str):
         super().__init__(title=t("speedup_modal_title", lang))
         self.lang = lang
-        self.days.label = t("speedup_field_days", lang)[:45]
-        self.hours.label = t("speedup_field_hours", lang)[:45]
-        self.minutes.label = t("speedup_field_minutes", lang)[:45]
-        self.stacks.label = t("speedup_field_stacks", lang)[:45]
+        self.entries.label = t("speedup_field_entries", lang)[:45]
+        self.entries.placeholder = t("speedup_field_entries_placeholder", lang)
 
     async def on_submit(self, interaction: discord.Interaction):
         lang = self.lang
-        try:
-            d = float(self.days.value or 0)
-            h = float(self.hours.value or 0)
-            m = float(self.minutes.value or 0)
-            stacks = float(self.stacks.value or 1)
-        except ValueError:
+        total_minutes, breakdown, errors = parse_speedup_text(self.entries.value, lang)
+
+        if not breakdown and not errors:
             await interaction.response.send_message(t("speedup_invalid_numbers", lang), ephemeral=True)
             return
-
-        total_minutes = (d * 24 * 60 + h * 60 + m) * stacks
 
         embed = discord.Embed(
             title=t("speedup_result_title", lang),
@@ -279,6 +277,12 @@ class SpeedupModal(discord.ui.Modal):
             color=discord.Color.purple(),
             timestamp=datetime.utcnow(),
         )
+        if breakdown:
+            embed.add_field(
+                name=t("speedup_breakdown_field", lang),
+                value="\n".join(f"• {line}" for line in breakdown)[:1024],
+                inline=False,
+            )
         embed.add_field(
             name=t("speedup_in_minutes_field", lang),
             value=f"{total_minutes:,.0f} {t('speedup_minutes_unit', lang)}",
@@ -289,7 +293,22 @@ class SpeedupModal(discord.ui.Modal):
             value=f"{total_minutes / 60:,.1f} {t('speedup_hours_unit', lang)}",
             inline=True,
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        if errors:
+            embed.add_field(
+                name=t("speedup_errors_field", lang),
+                value=", ".join(errors)[:1024],
+                inline=False,
+            )
+
+        from cogs.ai_cog import AIAdviceView  # استيراد وقت الطلب لتفادي أي تعارض ترتيب تحميل الكوجز
+
+        ai_context = (
+            f"{t('speedup_result_title', lang)}: {fmt_minutes(total_minutes, lang)}\n"
+            + ("\n".join(breakdown) if breakdown else "")
+        )
+        await interaction.response.send_message(
+            embed=embed, view=AIAdviceView(context=ai_context, lang=lang), ephemeral=True
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -306,8 +325,8 @@ class EventsCog(commands.Cog):
     async def event(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
-            t("event_prompt", lang),
-            view=EventTypeView(lang),
+            t("event_category_prompt", lang),
+            view=EventCategoryView(lang),
             ephemeral=True,
         )
 
@@ -343,14 +362,7 @@ class EventsCog(commands.Cog):
         except discord.Forbidden:
             pass  # المستخدم مقفل الـ DMs
 
-    @app_commands.command(name="cost", description="💰 حاسبة تكلفة تدريب T4/T5 والموارد اللازمة")
-    async def cost(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        await interaction.response.send_message(
-            t("cost_prompt", lang), view=CostTierView(lang), ephemeral=True
-        )
-
-    @app_commands.command(name="speedup", description="🚀 حساب إجمالي أيام وساعات التسريحات المتاحة بالحقيبة")
+    @app_commands.command(name="speedup", description="🚀 اجمع كل تسريعاتك في نص واحد (مثال: 4h, 6h, 1d×3) واعرف الإجمالي")
     async def speedup(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_modal(SpeedupModal(lang))
