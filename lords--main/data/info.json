@@ -187,11 +187,11 @@
       ]
     },
     {
-      "key": "gear_tactics_events",
+      "key": "gear_tactics",
       "emoji": "⚙️",
       "title": {
-        "ar": "المعدات والتكتيكات والفعاليات",
-        "en": "Gear, Tactics & Events"
+        "ar": "المعدات والتكتيكات",
+        "en": "Gear & Tactics"
       },
       "items": [
         {
@@ -219,18 +219,6 @@
           }
         },
         {
-          "key": "kingdom_paragon",
-          "emoji": "🏆",
-          "title": {
-            "ar": "شرح حدث قدوة الممالك",
-            "en": "Kingdom Paragon Event Guide"
-          },
-          "desc": {
-            "ar": "شرح فكرة الحدث وكيفية التخطيط للمشاركة والاستفادة من مكافآته.",
-            "en": "How the event works and how to plan participation for its rewards."
-          }
-        },
-        {
           "key": "farm_gems",
           "emoji": "💰",
           "title": {
@@ -252,6 +240,28 @@
           "desc": {
             "ar": "ملخص للتغييرات الخاصة بالزينات وواجهة اللعبة وكيفية الاستفادة منها.",
             "en": "A summary of skin and game interface changes and how to use them."
+          }
+        }
+      ]
+    },
+    {
+      "key": "events",
+      "emoji": "🎪",
+      "title": {
+        "ar": "الأحداث",
+        "en": "Events"
+      },
+      "items": [
+        {
+          "key": "kingdom_paragon",
+          "emoji": "🏆",
+          "title": {
+            "ar": "شرح حدث قدوة الممالك",
+            "en": "Kingdom Paragon Event Guide"
+          },
+          "desc": {
+            "ar": "شرح فكرة الحدث وكيفية التخطيط للمشاركة والاستفادة من مكافآته.",
+            "en": "How the event works and how to plan participation for its rewards."
           }
         },
         {
