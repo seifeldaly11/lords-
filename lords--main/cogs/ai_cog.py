@@ -80,31 +80,6 @@ async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None 
 
 
 # ---------------------------------------------------------------------------
-# زرار "اسأل المستشار الذكي" - قابل لإعادة الاستخدام في أي حاسبة (حدث/تسريعات/
-# كاونتر/... إلخ). بيبعت للـ AI ملخص أرقام النتيجة اللي ظهرت ويرجع نصيحة.
-# ---------------------------------------------------------------------------
-
-class AIAdviceView(discord.ui.View):
-    def __init__(self, context: str, lang: str, question: str | None = None):
-        super().__init__(timeout=180)
-        self.context = context
-        self.lang = lang
-        self.question = question
-        self.ask_button.label = t("calc_ai_advice_button", lang)
-
-    @discord.ui.button(emoji="🤖", style=discord.ButtonStyle.primary)
-    async def ask_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.defer(thinking=True, ephemeral=True)
-        question = self.question or t("calc_ai_advice_default_question", self.lang)
-        answer = await ask_ai(question, extra_context=self.context, lang=self.lang)
-        embed = styled_embed(
-            title=t("ai_header", self.lang), description=answer[:3500], color=ROYAL_BLUE, lang=self.lang
-        )
-        embed.set_footer(text=t("calc_ai_advice_footer", self.lang))
-        await interaction.followup.send(embed=embed, ephemeral=True)
-
-
-# ---------------------------------------------------------------------------
 # /ai - محادثة عامة عن اللعبة + تحليل صور عتاد/تقارير
 # ---------------------------------------------------------------------------
 
@@ -119,9 +94,9 @@ class AICog(commands.Cog):
         description="🤖 اسأل مستشار لوردس أو أرفق صورة عتاد/تقرير لتحليلها",
     )
     @app_commands.describe(
-        question="اكتب سؤالك (اختياري لو مرفق صورة) | Your question (optional if attaching an image)",
-        image="صورة عتاد أو تقرير معركة عشان يحللها | A gear or battle report screenshot to analyze",
-        might="قوة حسابك (Might) لو حابب تضيفها للسياق | Your account Might, if you want it in context",
+        question="Your question (optional if attaching an image)",
+        image="A gear or battle report screenshot to analyze",
+        might="Your account Might, if you want it in context",
     )
     @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
     async def ai(
