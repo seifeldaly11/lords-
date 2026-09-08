@@ -13,6 +13,7 @@ import os
 import re
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -29,6 +30,25 @@ intents.members = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!lm-unused!", intents=intents, help_command=None)
+
+
+def apply_english_command_descriptions() -> None:
+    """Keep Discord's slash-command metadata permanently in English."""
+    from cogs.help_cog import ENGLISH_COMMAND_DESCRIPTIONS
+
+    def walk(command_list, prefix: str = ""):
+        for command in command_list:
+            path = f"{prefix} {command.name}".strip()
+            description = ENGLISH_COMMAND_DESCRIPTIONS.get(path)
+            if description is None:
+                description = ENGLISH_COMMAND_DESCRIPTIONS.get(command.name)
+            if description is None:
+                description = f"Open the /{path.replace(' ', ' ') } feature and follow its prompts."
+            command.description = description[:100]
+            if isinstance(command, app_commands.Group):
+                walk(command.commands, path)
+
+    walk(bot.tree.get_commands())
 
 INITIAL_EXTENSIONS = [
     "cogs.components_cog",
@@ -113,6 +133,7 @@ async def on_message(message: discord.Message):
 
 @bot.event
 async def on_ready():
+    apply_english_command_descriptions()
     log.info(f"✅ سجّل الدخول باسم: {bot.user} (ID: {bot.user.id})")
     try:
         log.info(
@@ -157,6 +178,7 @@ async def main():
                 log.info(f"📦 تم تحميل: {ext}")
             except Exception:
                 log.exception(f"❌ فشل تحميل {ext}")
+        apply_english_command_descriptions()
         await bot.start(TOKEN)
 
 
