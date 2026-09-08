@@ -157,7 +157,7 @@ async def report_add_error(interaction: discord.Interaction, error: app_commands
 
 
 @report_group.command(name="list", description="📚 استدعاء آخر المعارك المسجلة في السيرفر")
-@app_commands.describe(count="عدد المعارك المطلوب عرضها (افتراضي 10)")
+@app_commands.describe(count="Number of battles to show (default: 10)")
 async def report_list(interaction: discord.Interaction, count: app_commands.Range[int, 1, 25] = 10):
     lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(REPORTS_FILE)
@@ -221,7 +221,7 @@ class WarCog(commands.Cog):
         )
 
     @app_commands.command(name="analyze", description="🖼️ محلل تقارير المعارك - ارفع صورة التقرير وأدخل الأرقام لتحليلها")
-    @app_commands.describe(screenshot="صورة تقرير المعركة (اختياري - للتوثيق فقط)")
+    @app_commands.describe(screenshot="Optional battle report screenshot (documentation only)")
     async def analyze(self, interaction: discord.Interaction, screenshot: Optional[discord.Attachment] = None):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         note = ""
