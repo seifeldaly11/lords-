@@ -175,6 +175,10 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "set": "Register or update your main troop type.",
     "open": "Open a rally call and notify members with the required troop type.",
     "rally": "Open a smart rally call for the alliance.",
+    "rallyset": "Open a rally with a green self-registration button.",
+    "delete_info": "[Admin] Delete a custom /info entry.",
+    "edit_info": "[Admin] Edit a custom /info entry or add an image.",
+    "delete_monster": "[Admin] Delete a custom monster entry.",
     "counter": "Find the ideal counter formation for an enemy formation.",
     "analyze": "Analyze a battle report image and its numbers.",
     "shield": "Start a smart shield alarm with a 15-minute warning and voice escalation.",
@@ -235,6 +239,10 @@ ARABIC_COMMAND_DESCRIPTIONS = {
     "set": "🪖 سجّل أو حدّث نوع قواتك الأساسي",
     "open": "📯 افتح نداء حشد ونبّه الأعضاء بالنوع المطلوب",
     "rally": "📯 افتح نداء حشد ذكي للتحالف",
+    "rallyset": "✅ افتح حشدًا بزر تسجيل أخضر للمشاركين",
+    "delete_info": "🗑️ [إدارة] اختر شرحًا مضافًا واحذفه",
+    "edit_info": "✏️ [إدارة] عدّل شرحًا مضافًا أو أضف له صورة",
+    "delete_monster": "🗑️ [إدارة] اختر وحشًا مضافًا واحذفه",
     "counter": "⚔️ اعرف التشكيلة المضادة الأفضل لتشكيلة العدو",
     "analyze": "🖼️ حلّل صورة تقرير المعركة والأرقام الموجودة بها",
     "shield": "🛡️ شغّل منبه الدرع مع تنبيه قبل 15 دقيقة وتصعيد صوتي",
@@ -289,7 +297,7 @@ def command_category(path: str) -> str:
     root = path.split(" ", 1)[0]
     if root in {"ai", "scout", "optimize"} or path.startswith("gf optimize"):
         return "ai"
-    if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "delete_info", "delete_monster", "geartiers"}:
+    if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "delete_info", "edit_info", "delete_monster", "geartiers"}:
         return "calculators"
     if root in {"counter", "analyze", "report", "rallyset"}:
         return "war"
