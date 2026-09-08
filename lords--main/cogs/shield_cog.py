@@ -316,17 +316,17 @@ class ShieldCog(commands.Cog):
         description="🛡️ منبه الدرع الذكي: تنبيه قبل 15 دقيقة، ولو محدش رد يدخل الروم الصوتية وينبّه بصوت إنذار",
     )
     @app_commands.describe(
-        amount="المدة (رقم)",
-        unit="وحدة المدة",
-        repeat_every_hours="(اختياري) كرّر المنبه تلقائياً كل كام ساعة",
-        voice_channel="(اختياري) روم صوتية احتياطية لو مكنتش داخل روم وقت التصعيد",
-        leadership_role="(اختياري) رتبة قادة التحالف (R4/R5) تتمنشن فوراً لو الدرع خلص من غير رد",
+        amount="Duration amount",
+        unit="Duration unit",
+        repeat_every_hours="Optional repeat interval in hours",
+        voice_channel="Optional fallback voice channel",
+        leadership_role="Optional leadership role to ping if unanswered",
     )
     @app_commands.choices(
         unit=[
-            app_commands.Choice(name="⏱️ دقائق", value="minutes"),
-            app_commands.Choice(name="🕐 ساعات", value="hours"),
-            app_commands.Choice(name="📅 أيام", value="days"),
+            app_commands.Choice(name="⏱️ Minutes", value="minutes"),
+            app_commands.Choice(name="🕐 Hours", value="hours"),
+            app_commands.Choice(name="📅 Days", value="days"),
         ]
     )
     async def shield(
@@ -345,11 +345,11 @@ class ShieldCog(commands.Cog):
         description="🔊 نفس أمر /shield بالظبط - منبه درع مع تصعيد صوتي لو محدش رد",
     )
     @app_commands.describe(
-        amount="المدة (رقم)",
-        unit="وحدة المدة",
-        repeat_every_hours="(اختياري) كرّر المنبه تلقائياً كل كام ساعة",
-        voice_channel="(اختياري) روم صوتية احتياطية لو مكنتش داخل روم وقت التصعيد",
-        leadership_role="(اختياري) رتبة قادة التحالف (R4/R5) تتمنشن فوراً لو الدرع خلص من غير رد",
+        amount="Duration amount",
+        unit="Duration unit",
+        repeat_every_hours="Optional repeat interval in hours",
+        voice_channel="Optional fallback voice channel",
+        leadership_role="Optional leadership role to ping if unanswered",
     )
     @app_commands.choices(
         unit=[
@@ -375,7 +375,7 @@ class ShieldCog(commands.Cog):
         name="shelter_done",
         description="✅ أوقف منبه الدرع الحالي (وأخرج البوت من الروم الصوتية لو داخل يرن)",
     )
-    @app_commands.describe(stop_repeat="ألغِ أي تكرار مجدول لهذا المنبه كمان؟ (افتراضياً: لأ)")
+    @app_commands.describe(stop_repeat="Also cancel any scheduled repeat? (default: No)")
     async def shelter_done(self, interaction: discord.Interaction, stop_repeat: bool = False):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         key = timer_key(interaction.guild_id, interaction.user.id)
