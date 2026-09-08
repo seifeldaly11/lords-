@@ -153,6 +153,22 @@ def set_leadership_role_id(guild_id: int, role_id: int) -> None:
     save(LEADERSHIP_ROLE_FILE, data)
 
 
+BOT_CHANNEL_FILE = "bot_channel"
+
+
+def get_bot_channel_id(guild_id: int) -> int | None:
+    """يرجع الـ ID بتاع القناة/الثريد المحدد للبوت يتواصل فيه في سيرفر معيّن، أو None لو مفيش."""
+    data = load(BOT_CHANNEL_FILE)
+    return data.get(str(guild_id), {}).get("channel_id")
+
+
+def set_bot_channel_id(guild_id: int, channel_id: int) -> None:
+    """يحفظ قناة/ثريد التواصل المحددة للبوت في سيرفر معيّن."""
+    data = load(BOT_CHANNEL_FILE)
+    data.setdefault(str(guild_id), {})["channel_id"] = channel_id
+    save(BOT_CHANNEL_FILE, data)
+
+
 def load_json_data(filename: str) -> dict:
     """يحمّل ملفات البيانات الثابتة (الأدلة، القاموس، الوحوش...) من مجلد data/.
     دي ملفات مرجعية للقراءة فقط (مش بيانات مستخدمين)، فبتفضل JSON عادي زي ما هي."""
