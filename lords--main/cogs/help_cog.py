@@ -410,7 +410,7 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
     return embed
 
 
-def build_category_embed(bot: commands.Bot, category: str, lang: str) -> discord.Embed:
+def build_category_embed(bot: commands.Bot, category: str, lang: str, page: int = 0) -> discord.Embed:
     all_commands = loaded_commands(bot)
     if category == "all":
         meta = {
@@ -464,29 +464,33 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str) -> discord
     if current:
         chunks.append("\n\n".join(current))
 
-    visible_chunks = chunks[:5]
+    page_count = max(1, (len(chunks) + 4) // 5)
+    page = max(0, min(page, page_count - 1))
+    visible_chunks = chunks[page * 5:(page + 1) * 5]
     for index, chunk in enumerate(visible_chunks, start=1):
         field_name = f"{meta['emoji']}  {meta[lang]}"
         if len(chunks) > 1:
             field_name += f"  •  {index}/{len(chunks)}"
         embed.add_field(name=field_name, value=chunk[:1024], inline=False)
 
-    if len(chunks) > len(visible_chunks):
-        remaining = len(commands_in_category) - sum(chunk.count("**/") for chunk in visible_chunks)
+    if page_count > 1:
         embed.add_field(
-            name="📌 المزيد" if lang == "ar" else "📌 More",
+            name="📄 التنقل" if lang == "ar" else "📄 Navigation",
             value=(
-                f"يوجد {remaining} أمر إضافي في هذا القسم."
+                f"صفحة {page + 1} من {page_count} — استخدم الأزرار تحت القائمة."
                 if lang == "ar"
-                else f"There are {remaining} more commands in this section."
+                else f"Page {page + 1} of {page_count} — use the buttons below to browse."
             ),
             inline=False,
         )
-    embed.set_footer(
-        text="استخدم القائمة أو زر 🏠 للرجوع للأقسام"
+    footer = (
+        "استخدم القائمة والأزرار للتنقل بين كل الأوامر"
         if lang == "ar"
-        else "Use the menu or the 🏠 button to browse sections"
+        else "Use the menu and buttons to browse every command"
     )
+    if page_count > 1:
+        footer += f" • {page + 1}/{page_count}"
+    embed.set_footer(text=footer)
     return embed
 
 
@@ -513,11 +517,91 @@ class HelpCategorySelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        category = self.values[0]
         await interaction.response.edit_message(
-            embed=build_category_embed(self.bot, self.values[0], self.lang),
-            view=self.view,
+            embed=build_category_embed(self.bot, category, self.lang, page=0),
+            view=HelpSectionView(self.bot, self.lang, category, page=0),
         )
 
+
+
+class HelpHomeButton(discord.ui.Button):
+    def __init__(self, bot: commands.Bot, lang: str):
+        self.bot = bot
+        self.lang = lang
+        super().__init__(
+            label="الرئيسية" if lang == "ar" else "Home",
+            emoji="🏠",
+            style=discord.ButtonStyle.secondary,
+            row=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(
+            embed=build_intro_embed(self.bot, self.lang),
+            view=HelpView(self.bot, self.lang),
+        )
+
+
+def _category_page_count(bot: commands.Bot, category: str, lang: str) -> int:
+    if category == "all":
+        commands_in_category = loaded_commands(bot)
+    else:
+        commands_in_category = [
+            (path, command)
+            for path, command in loaded_commands(bot)
+            if command_category(path) == category
+        ]
+    chunks = 0
+    current_size = 0
+    for path, command in commands_in_category:
+        line = f"**/{path}**\n{command_description(path, command, lang)}"
+        if current_size and current_size + len(line) + 2 > 850:
+            chunks += 1
+            current_size = 0
+        current_size += len(line) + 2
+    if current_size or not chunks:
+        chunks += 1
+    return chunks
+
+
+class HelpPageButton(discord.ui.Button):
+    def __init__(self, bot: commands.Bot, lang: str, category: str, page: int, direction: int):
+        self.bot = bot
+        self.lang = lang
+        self.category = category
+        self.page = page
+        self.direction = direction
+        is_next = direction > 0
+        super().__init__(
+            label=("التالي" if lang == "ar" else "Next") if is_next else ("السابق" if lang == "ar" else "Back"),
+            emoji="▶️" if is_next else "◀️",
+            style=discord.ButtonStyle.primary,
+            row=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        next_page = self.page + self.direction
+        await interaction.response.edit_message(
+            embed=build_category_embed(self.bot, self.category, self.lang, page=next_page),
+            view=HelpSectionView(self.bot, self.lang, self.category, page=next_page),
+        )
+
+
+class HelpSectionView(discord.ui.View):
+    def __init__(self, bot: commands.Bot, lang: str, category: str, page: int = 0):
+        super().__init__(timeout=600)
+        self.bot = bot
+        self.lang = lang
+        self.category = category
+        self.page = page
+        self.page_count = _category_page_count(bot, category, lang)
+        self.add_item(HelpCategorySelect(bot, lang))
+        self.add_item(HelpHomeButton(bot, lang))
+        if page > 0:
+            self.add_item(HelpPageButton(bot, lang, category, page, -1))
+        if page < self.page_count - 1:
+            self.add_item(HelpPageButton(bot, lang, category, page, 1))
 
 
 class HelpView(discord.ui.View):
