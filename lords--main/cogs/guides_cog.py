@@ -185,6 +185,35 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
+    @app_commands.command(name="delete_monster", description="🗑️ [إدارة] احذف وحشًا مضافًا من قائمة /monster")
+    @app_commands.describe(name="Monster name or key to delete")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def delete_monster(self, interaction: discord.Interaction, name: str):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        data = load(CUSTOM_MONSTERS_FILE)
+        gid = str(interaction.guild_id)
+        bucket = data.get(gid, {})
+        normalized = name.strip().lower().replace(" ", "_")
+        key = next((k for k, value in bucket.items() if k == normalized or value.get("name", "").strip().lower() == name.strip().lower()), None)
+        if key is None:
+            await interaction.response.send_message(t("delete_monster_not_found", lang, name=name), ephemeral=True)
+            return
+        removed = bucket.pop(key)
+        if bucket:
+            data[gid] = bucket
+        else:
+            data.pop(gid, None)
+        save(CUSTOM_MONSTERS_FILE, data)
+        await interaction.response.send_message(t("delete_monster_success", lang, name=removed.get("name", name)), ephemeral=True)
+
+    @delete_monster.error
+    async def delete_monster_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=True)
+        else:
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+
     # -- /dict -------------------------------------------------------------
 
     @app_commands.command(name="dict", description="📖 قاموس مصطلحات اللعبة السريع")
@@ -262,6 +291,35 @@ class GuidesCog(commands.Cog):
 
     @add_info.error
     async def add_info_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message(t("add_info_admin_only", lang), ephemeral=True)
+        else:
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+
+    @app_commands.command(name="delete_info", description="🗑️ [إدارة] احذف شرحًا مضافًا من قائمة /info")
+    @app_commands.describe(title="Info title or key to delete")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def delete_info(self, interaction: discord.Interaction, title: str):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        data = load(CUSTOM_INFO_FILE)
+        gid = str(interaction.guild_id)
+        bucket = data.get(gid, {})
+        normalized = title.strip().lower().replace(" ", "_")
+        key = next((k for k, value in bucket.items() if k == normalized or value.get("title", "").strip().lower() == title.strip().lower()), None)
+        if key is None:
+            await interaction.response.send_message(t("delete_info_not_found", lang, title=title), ephemeral=True)
+            return
+        removed = bucket.pop(key)
+        if bucket:
+            data[gid] = bucket
+        else:
+            data.pop(gid, None)
+        save(CUSTOM_INFO_FILE, data)
+        await interaction.response.send_message(t("delete_info_success", lang, title=removed.get("title", title)), ephemeral=True)
+
+    @delete_info.error
+    async def delete_info_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(t("add_info_admin_only", lang), ephemeral=True)
