@@ -68,7 +68,18 @@ class CounterModal(discord.ui.Modal):
         embed.add_field(name=t("counter_suggestion_field", lang), value=counter_troop, inline=True)
         embed.add_field(name=t("counter_formation_field", lang), value=formation, inline=False)
         embed.set_footer(text=t("counter_footer", lang))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        from cogs.ai_cog import AIAdviceView  # استيراد وقت الطلب لتفادي أي تعارض ترتيب تحميل الكوجز
+
+        ai_context = (
+            f"{breakdown}\n"
+            f"{t('counter_dominant_field', lang)}: {dominant}\n"
+            f"{t('counter_suggestion_field', lang)}: {counter_troop}\n"
+            f"{t('counter_formation_field', lang)}: {formation}"
+        )
+        await interaction.response.send_message(
+            embed=embed, view=AIAdviceView(context=ai_context, lang=lang), ephemeral=True
+        )
 
 
 class CounterView(discord.ui.View):
@@ -142,7 +153,7 @@ async def report_add_error(interaction: discord.Interaction, error: app_commands
         )
         await interaction.response.send_message(msg, ephemeral=True)
     else:
-        await interaction.response.send_message("❌ حصل خطأ غير متوقع.", ephemeral=True)
+        await interaction.response.send_message(t("hunt_channel_error", lang), ephemeral=True)
 
 
 @report_group.command(name="list", description="📚 استدعاء آخر المعارك المسجلة في السيرفر")
@@ -193,88 +204,6 @@ async def report_user(interaction: discord.Interaction, member: discord.Member):
 
 
 # ---------------------------------------------------------------------------
-# /darknest
-# ---------------------------------------------------------------------------
-
-class DarknestSelect(discord.ui.Select):
-    def __init__(self, data: dict, lang: str):
-        self.data = data
-        self.lang = lang
-        options = [
-            discord.SelectOption(label=f"Dark Nest Lv {lvl}", value=lvl)
-            for lvl in data.keys() if lvl != "_note"
-        ]
-        super().__init__(placeholder=t("darknest_select_placeholder", lang), options=options)
-
-    async def callback(self, interaction: discord.Interaction):
-        lang = self.lang
-        info = self.data[self.values[0]]
-        embed = discord.Embed(
-            title=t("darknest_title", lang, lvl=self.values[0]),
-            color=discord.Color.dark_red(),
-        )
-        embed.add_field(name=t("darknest_heroes_field", lang), value=info["heroes"][lang], inline=False)
-        embed.add_field(name=t("darknest_formation_field", lang), value=info["formation"][lang], inline=True)
-        embed.add_field(name=t("darknest_notes_field", lang), value=info["notes"][lang], inline=False)
-        embed.set_footer(text=t("darknest_footer", lang))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
-class DarknestView(discord.ui.View):
-    def __init__(self, data: dict, lang: str):
-        super().__init__(timeout=60)
-        self.add_item(DarknestSelect(data, lang))
-
-
-# ---------------------------------------------------------------------------
-# /colo
-# ---------------------------------------------------------------------------
-
-class ColoModal(discord.ui.Modal):
-    def __init__(self, lang: str):
-        super().__init__(title=t("colo_modal_title", lang))
-        self.lang = lang
-        self.heroes = discord.ui.TextInput(
-            label=t("colo_field_heroes", lang)[:45],
-            placeholder="Talus, Natalya" if lang == "en" else "طالوس, ناتاليا",
-        )
-        self.add_item(self.heroes)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        lang = self.lang
-        colo_data = load_json_data("colo_counters.json")
-        heroes_db = colo_data.get("heroes", [])
-        general_rule = colo_data.get("general_rule", {}).get(lang, "")
-
-        entered = [h.strip() for h in self.heroes.value.split(",") if h.strip()]
-        embed = discord.Embed(title=t("colo_result_title", lang), color=discord.Color.blurple())
-        for hero in entered:
-            match = next(
-                (
-                    h for h in heroes_db
-                    if hero.lower() in (h["names"].get("ar", "").lower(), h["names"].get("en", "").lower())
-                ),
-                None,
-            )
-            display_name = hero
-            if match:
-                display_name = match["names"].get(lang, hero)
-                embed.add_field(
-                    name=t("colo_vs_field", lang, hero=display_name),
-                    value=match["counter"][lang],
-                    inline=False,
-                )
-            else:
-                embed.add_field(
-                    name=t("colo_vs_field", lang, hero=display_name),
-                    value=t("colo_no_data", lang),
-                    inline=False,
-                )
-        embed.add_field(name=t("colo_general_rule_field", lang), value=general_rule, inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
-# ---------------------------------------------------------------------------
 # الـ Cog
 # ---------------------------------------------------------------------------
 
@@ -283,7 +212,6 @@ class WarCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.darknest_data = load_json_data("darknest.json")
 
     @app_commands.command(name="counter", description="⚔️ احصل على التشكيلة المضادة المثالية لتشكيلة العدو")
     async def counter(self, interaction: discord.Interaction):
@@ -291,18 +219,6 @@ class WarCog(commands.Cog):
         await interaction.response.send_message(
             t("counter_prompt", lang), view=CounterView(lang), ephemeral=True
         )
-
-    @app_commands.command(name="darknest", description="🏯 أفضل أبطال وتشكيلة لإسقاط الحصن المظلم")
-    async def darknest(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        await interaction.response.send_message(
-            t("darknest_prompt", lang), view=DarknestView(self.darknest_data, lang), ephemeral=True
-        )
-
-    @app_commands.command(name="colo", description="🏟️ محاكي الكولوسيوم - التشكيلة المضادة لأبطال الخصم")
-    async def colo(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        await interaction.response.send_modal(ColoModal(lang))
 
     @app_commands.command(name="analyze", description="🖼️ محلل تقارير المعارك - ارفع صورة التقرير وأدخل الأرقام لتحليلها")
     @app_commands.describe(screenshot="صورة تقرير المعركة (اختياري - للتوثيق فقط)")
