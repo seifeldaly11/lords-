@@ -69,15 +69,18 @@ class ComponentsCog(commands.Cog):
     async def send_test_message(self, channel: discord.abc.Messageable):
         await channel.send(embed=build_test_embed(), view=TestComponentsView())
 
-    @app_commands.command(
-        name="test",
-        description="🧩 جرّب الأزرار وقائمة الاختيار التفاعلية",
-    )
-    async def test(self, interaction: discord.Interaction):
-        await interaction.response.send_message(
-            embed=build_test_embed(),
-            view=TestComponentsView(),
-        )
+    # أمر /test اتقفل بناءً على طلب صاحب البوت (اللوجيك اتسيب زي ما هو تحت
+    # عشان !test في bot.py يفضل شغال، بس مبقاش في قائمة أوامر السلاش "/").
+    # لو حابب ترجّعه تاني، شيل التعليق عن الـ decorator والدالة دول.
+    # @app_commands.command(
+    #     name="test",
+    #     description="🧩 جرّب الأزرار وقائمة الاختيار التفاعلية",
+    # )
+    # async def test(self, interaction: discord.Interaction):
+    #     await interaction.response.send_message(
+    #         embed=build_test_embed(),
+    #         view=TestComponentsView(),
+    #     )
 
 
 async def setup(bot: commands.Bot):
