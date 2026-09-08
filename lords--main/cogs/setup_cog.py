@@ -50,55 +50,61 @@ class SetupLanguageSelect(discord.ui.Select):
 
 
 class SetupHuntChannelSelect(discord.ui.ChannelSelect):
-    def __init__(self):
+    def __init__(self, lang: str):
+        self.lang = lang
         super().__init__(
-            placeholder="🏹 قناة تقارير الصيد اليومي (اختياري)",
+            placeholder=t("setup_hunt_channel_select_placeholder", lang),
             channel_types=[discord.ChannelType.text],
             min_values=1,
             max_values=1,
         )
 
     async def callback(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         channel = self.values[0]
         data = load(HUNT_FILE)
         bucket = _get_hunt_bucket(interaction.guild_id)
         data[str(interaction.guild_id)] = bucket
         bucket["channel_id"] = channel.id
         save(HUNT_FILE, data)
-        await interaction.response.send_message(f"✅ قناة الصيد اتضبطت: {channel.mention}", ephemeral=True)
+        await interaction.response.send_message(
+            t("setup_hunt_channel_set_confirm", lang, channel=channel.mention), ephemeral=True
+        )
 
 
 class SetupLeadershipRoleSelect(discord.ui.RoleSelect):
-    def __init__(self):
+    def __init__(self, lang: str):
+        self.lang = lang
         super().__init__(
-            placeholder="📣 رتبة قادة التحالف (R4/R5) لتنبيهات الدرع (اختياري)",
+            placeholder=t("setup_leadership_role_select_placeholder", lang),
             min_values=1,
             max_values=1,
         )
 
     async def callback(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
         role = self.values[0]
         set_leadership_role_id(interaction.guild_id, role.id)
         await interaction.response.send_message(
-            f"✅ رتبة القيادة اتضبطت: {role.mention} — هتتمنشن تلقائياً لو حد اتأخر يرد على تنبيه درعه.",
+            t("setup_leadership_role_set_confirm", lang, role=role.mention),
             ephemeral=True,
         )
 
 
 class SetupView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, lang: str):
         super().__init__(timeout=300)
         self.add_item(SetupLanguageSelect())
-        self.add_item(SetupHuntChannelSelect())
-        self.add_item(SetupLeadershipRoleSelect())
-        self.add_item(SetupDiagnosticsButton())
+        self.add_item(SetupHuntChannelSelect(lang))
+        self.add_item(SetupLeadershipRoleSelect(lang))
+        self.add_item(SetupDiagnosticsButton(lang))
 
 
 class SetupDiagnosticsButton(discord.ui.Button):
     """زرار 🩺 فحص الإعدادات: بيتأكد إن كل حاجة اتضبطت فعلاً شغالة، مش بس متسجلة."""
 
-    def __init__(self):
-        super().__init__(label="🩺 فحص الإعدادات الحالية", style=discord.ButtonStyle.secondary, row=3)
+    def __init__(self, lang: str):
+        super().__init__(label=t("setup_diagnostics_button_label", lang), style=discord.ButtonStyle.secondary, row=3)
 
     async def callback(self, interaction: discord.Interaction):
         embed = build_diagnostics_embed(interaction)
@@ -121,76 +127,77 @@ def build_diagnostics_embed(interaction: discord.Interaction) -> discord.Embed:
 
     # 1) اللغة
     lang_label = "العربية 🇪🇬" if lang == "ar" else "English 🇬🇧"
-    lines.append(f"✅ اللغة مضبوطة: **{lang_label}**")
+    lines.append(t("setup_diag_lang_line", lang, lang_label=lang_label))
 
     # 2) قناة تقارير الصيد
     hunt_bucket = load(HUNT_FILE).get(str(interaction.guild_id), {})
     hunt_channel_id = hunt_bucket.get("channel_id")
     if not hunt_channel_id:
-        lines.append("⚠️ قناة تقارير الصيد لسه ماتحددتش (اختياري - `/hunt_log` هيرد في نفس القناة اللي بتنفّذ فيها الأمر)")
+        lines.append(t("setup_diag_hunt_channel_not_set", lang))
     else:
         channel = guild.get_channel(hunt_channel_id) if guild else None
         if not channel:
-            lines.append("❌ قناة الصيد المحددة اتمسحت أو البوت طرد منها - اضبطها تاني من `/setup`")
+            lines.append(t("setup_diag_hunt_channel_deleted", lang))
         else:
             perms = channel.permissions_for(me) if me else None
             if perms and perms.send_messages and perms.embed_links:
-                lines.append(f"✅ قناة الصيد شغالة: {channel.mention}")
+                lines.append(t("setup_diag_hunt_channel_ok", lang, channel=channel.mention))
             else:
-                lines.append(f"❌ البوت ناقصه صلاحية Send Messages/Embed Links في {channel.mention}")
+                lines.append(t("setup_diag_hunt_channel_perms_missing", lang, channel=channel.mention))
 
     # 3) رتبة قادة التحالف (R4/R5)
     role_id = get_leadership_role_id(interaction.guild_id)
     if not role_id:
-        lines.append("⚠️ رتبة القيادة لسه ماتحددتش (اختياري - تنبيه `/shield` مش هيمنشن حد لو الدرع خلص من غير رد)")
+        lines.append(t("setup_diag_role_not_set", lang))
     else:
         role = guild.get_role(role_id) if guild else None
         if not role:
-            lines.append("❌ رتبة القيادة المحددة اتمسحت - اضبط رتبة تانية من `/setup`")
+            lines.append(t("setup_diag_role_deleted", lang))
         elif role.mentionable or (me and me.guild_permissions.mention_everyone):
-            lines.append(f"✅ رتبة القيادة هتتمنشن فعلياً: {role.mention}")
+            lines.append(t("setup_diag_role_ok", lang, role=role.mention))
         else:
-            lines.append(
-                f"⚠️ رتبة القيادة {role.mention} مضبوطة، بس الرتبة مش Mentionable والبوت مالوش صلاحية "
-                "Mention Everyone - يعني المنشنة ممكن متوصلش تنبيه فعلي. فعّل \"Allow anyone to mention\" "
-                "في إعدادات الرتبة، أو ادّي البوت صلاحية Mention Everyone."
-            )
+            lines.append(t("setup_diag_role_warn", lang, role=role.mention))
 
     # 4) رابط فتح اللعبة
     link = get_game_link(interaction.guild_id) if guild else DEFAULT_GAME_LINK
     if link == DEFAULT_GAME_LINK:
-        lines.append("⚠️ رابط اللعبة لسه بالقيمة الافتراضية (اختياري تخصيصه بـ `/set_game_link`)")
+        lines.append(t("setup_diag_link_default", lang))
     else:
-        lines.append(f"✅ رابط اللعبة مخصص: {link}")
+        lines.append(t("setup_diag_link_custom", lang, link=link))
 
     # 5) مفتاح Cohere (/ai و/hunt_log بوضع الصورة)
     if os.getenv("COHERE_API_KEY"):
-        lines.append("✅ مفتاح Cohere موجود - `/ai` وتحليل صور الصيد شغالين")
+        lines.append(t("setup_diag_cohere_ok", lang))
     else:
-        lines.append("❌ مفيش COHERE_API_KEY في `.env` - `/ai` وتحليل الصور بالكامل معطّلين حالياً")
+        lines.append(t("setup_diag_cohere_missing", lang))
 
     # 6) PyNaCl (الصوت وقت تصعيد /shield)
     try:
         import nacl  # noqa: F401
-        lines.append("✅ PyNaCl متثبتة - تصعيد `/shield` الصوتي هيشتغل")
+        lines.append(t("setup_diag_nacl_ok", lang))
     except ImportError:
-        lines.append("❌ PyNaCl مش متثبتة - تصعيد `/shield` الصوتي مش هيشتغل (`pip install PyNaCl`)")
+        lines.append(t("setup_diag_nacl_missing", lang))
 
     # 7) Server Members Intent
     if interaction.client.intents.members:
-        lines.append("✅ Server Members Intent مفعّل")
+        lines.append(t("setup_diag_intent_ok", lang))
     else:
-        lines.append(
-            "❌ Server Members Intent مقفول من Discord Developer Portal - أوامر زي `/stats_event` "
-            "و`/log_activity` ممكن ما تشتغلش صح"
-        )
+        lines.append(t("setup_diag_intent_missing", lang))
 
     # 8) صلاحيات البوت الأساسية في السيرفر
     if me:
         base_ok = me.guild_permissions.send_messages and me.guild_permissions.embed_links
         voice_ok = me.guild_permissions.connect and me.guild_permissions.speak
-        lines.append(_check_line(base_ok, "صلاحيات الرسائل الأساسية (Send Messages/Embed Links) سليمة", "ناقص صلاحية Send Messages أو Embed Links في السيرفر"))
-        lines.append(_check_line(voice_ok, "صلاحيات الصوت (Connect/Speak) سليمة لتصعيد الدرع", "ناقص صلاحية Connect أو Speak - تصعيد `/shield` الصوتي مش هيقدر يدخل الروم"))
+        lines.append(_check_line(
+            base_ok,
+            t("setup_diag_base_perms_ok", lang),
+            t("setup_diag_base_perms_bad", lang),
+        ))
+        lines.append(_check_line(
+            voice_ok,
+            t("setup_diag_voice_perms_ok", lang),
+            t("setup_diag_voice_perms_bad", lang),
+        ))
 
     healthy = sum(1 for l in lines if l.startswith("✅"))
     warnings = sum(1 for l in lines if l.startswith("⚠️"))
@@ -198,14 +205,14 @@ def build_diagnostics_embed(interaction: discord.Interaction) -> discord.Embed:
 
     color = CRIMSON if broken else GOLD
     embed = styled_embed(
-        title="🩺 فحص حالة إعدادات البوت",
+        title=t("setup_diag_title", lang),
         description="\n".join(lines),
         color=color,
         lang=lang,
     )
     embed.add_field(
-        name="📋 الخلاصة",
-        value=f"✅ سليم: {healthy}  •  ⚠️ تنبيه: {warnings}  •  ❌ معطّل: {broken}",
+        name=t("setup_diag_summary_field", lang),
+        value=t("setup_diag_summary_value", lang, healthy=healthy, warnings=warnings, broken=broken),
         inline=False,
     )
     return embed
@@ -225,33 +232,25 @@ class SetupCog(commands.Cog):
     async def setup_cmd(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         embed = styled_embed(
-            title="⚙️ دليل التثبيت السريع",
-            description=(
-                "اختر من القوائم تحت لضبط البوت لسيرفرك في ثواني - كل اختيار بيتحفظ فوراً "
-                "من غير ما تحتاج تكتب أي أمر إضافي.\n\n"
-                "🌐 **اللغة** — تتحكم في كل ردود البوت الفعلية.\n"
-                "🏹 **قناة الصيد** — فين تتبعت تقارير وملخصات `/hunt_log` تلقائياً.\n"
-                "📣 **رتبة القيادة** — مين يتمنشن تلقائياً لو عضو اتأخر يرد على تنبيه `/shield`.\n"
-                "🩺 **فحص الإعدادات** — تأكد إن كل حاجة فعلاً شغالة (صلاحيات، Cohere، الصوت...) مش بس متسجلة."
-            ),
+            title=t("setup_embed_title", lang),
+            description=t("setup_embed_description", lang),
             color=GOLD,
             lang=lang,
         )
         current_role_id = get_leadership_role_id(interaction.guild_id)
         if current_role_id and interaction.guild and interaction.guild.get_role(current_role_id):
             embed.add_field(
-                name="📣 رتبة القيادة الحالية",
+                name=t("setup_current_role_field", lang),
                 value=interaction.guild.get_role(current_role_id).mention,
                 inline=False,
             )
-        await interaction.response.send_message(embed=embed, view=SetupView(), ephemeral=True)
+        await interaction.response.send_message(embed=embed, view=SetupView(lang), ephemeral=True)
 
     @setup_cmd.error
     async def setup_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            msg = "❌ الأمر ده يحتاج صلاحية Manage Server." if lang == "ar" else "❌ This command requires Manage Server."
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=True)
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
@@ -268,8 +267,7 @@ class SetupCog(commands.Cog):
     async def setup_check_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            msg = "❌ الأمر ده يحتاج صلاحية Manage Server." if lang == "ar" else "❌ This command requires Manage Server."
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=True)
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
