@@ -65,28 +65,87 @@ class MonsterView(discord.ui.View):
 # /info (يجمع بين info.json الجاهز + الإضافات اليدوية اللي ممكن تتضمن صور)
 # ---------------------------------------------------------------------------
 
-INFO_DEFAULT_EMOJI = "👑"
+INFO_CUSTOM_FALLBACK_EMOJI = "📝"
 
-def _info_emoji(value: dict) -> str:
-    """يعطي الأيقونات القديمة ℹ️ مظهرًا ذهبيًا موحدًا."""
+
+def _localized(value, lang: str) -> str:
+    if isinstance(value, dict):
+        return value.get(lang) or value.get("ar") or value.get("en") or ""
+    return value or ""
+
+
+def _info_emoji(value: dict, fallback: str = INFO_CUSTOM_FALLBACK_EMOJI) -> str:
     emoji = value.get("emoji")
-    return INFO_DEFAULT_EMOJI if not emoji or emoji in {"ℹ️", "ℹ"} else emoji
+    return fallback if not emoji or emoji in {"👑", "ℹ️", "ℹ"} else emoji
 
 
-class InfoSelect(discord.ui.Select):
-    def __init__(self, info_data: dict, lang: str):
-        self.info_data = info_data
+class InfoCategorySelect(discord.ui.Select):
+    def __init__(self, categories: list[dict], custom_info: dict, lang: str):
+        self.categories = {str(category["key"]): category for category in categories}
+        self.custom_info = custom_info
+        self.lang = lang
         options = [
-            discord.SelectOption(label=val["title"], value=key, emoji=_info_emoji(val))
-            for key, val in info_data.items()
+            discord.SelectOption(
+                label=_localized(category.get("title"), lang)[:100],
+                value=key,
+                emoji=_info_emoji(category, "📚"),
+            )
+            for key, category in self.categories.items()
         ]
+        if custom_info:
+            options.append(
+                discord.SelectOption(
+                    label=t("info_custom_category", lang),
+                    value="__custom__",
+                    emoji="📝",
+                )
+            )
         super().__init__(placeholder=t("info_select_placeholder", lang), options=options[:25])
 
     async def callback(self, interaction: discord.Interaction):
-        info = self.info_data[self.values[0]]
+        selected = self.values[0]
+        if selected == "__custom__":
+            await interaction.response.edit_message(
+                content=t("info_custom_prompt", self.lang),
+                view=InfoItemView(self.custom_info, self.lang, self.categories.values(), self.custom_info),
+            )
+            return
+        category = self.categories[selected]
+        await interaction.response.edit_message(
+            content=t(
+                "info_category_prompt",
+                self.lang,
+                category=_localized(category.get("title"), self.lang),
+            ),
+            view=InfoItemView(category.get("items", []), self.lang, self.categories.values(), self.custom_info),
+        )
+
+
+class InfoItemSelect(discord.ui.Select):
+    def __init__(self, items, lang: str):
+        self.lang = lang
+        if isinstance(items, dict):
+            item_pairs = list(items.items())
+            self.items = {key: value for key, value in item_pairs}
+        else:
+            self.items = {str(item.get("key", index)): item for index, item in enumerate(items)}
+        options = [
+            discord.SelectOption(
+                label=_localized(value.get("title", key), lang)[:100],
+                value=key,
+                emoji=_info_emoji(value, "📝"),
+            )
+            for key, value in self.items.items()
+        ]
+        super().__init__(placeholder=t("info_item_select_placeholder", lang), options=options[:25])
+
+    async def callback(self, interaction: discord.Interaction):
+        info = self.items[self.values[0]]
+        title = _localized(info.get("title", self.values[0]), self.lang)
+        description = _localized(info.get("desc", ""), self.lang)
         embed = discord.Embed(
-            title=f"{_info_emoji(info)} {info['title']}",
-            description=info.get("desc", ""),
+            title=f"{_info_emoji(info, '📝')} {title}",
+            description=description,
             color=discord.Color.gold(),
         )
         if info.get("image_url"):
@@ -97,9 +156,25 @@ class InfoSelect(discord.ui.Select):
 
 
 class InfoView(discord.ui.View):
-    def __init__(self, info_data: dict, lang: str):
-        super().__init__(timeout=60)
-        self.add_item(InfoSelect(info_data, lang))
+    def __init__(self, categories: list[dict], custom_info: dict, lang: str):
+        super().__init__(timeout=180)
+        self.add_item(InfoCategorySelect(list(categories), custom_info, lang))
+
+
+class InfoItemView(discord.ui.View):
+    def __init__(self, items, lang: str, categories, custom_info: dict):
+        super().__init__(timeout=180)
+        self.lang = lang
+        self.categories = list(categories)
+        self.custom_info = custom_info
+        self.add_item(InfoItemSelect(items, lang))
+
+    @discord.ui.button(label="↩️", style=discord.ButtonStyle.secondary, row=1)
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(
+            content=t("info_prompt", self.lang),
+            view=InfoView(self.categories, self.custom_info, self.lang),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -241,11 +316,12 @@ class GuidesCog(commands.Cog):
         return data.get(str(guild_id), {})
 
     def _get_info(self, guild_id: int) -> dict:
-        """يدمج شروحات info.json الجاهزة مع إضافات الإدارة الخاصة بالسيرفر ده."""
-        combined = dict(self.static_info_data)
+        """يرجع الأقسام الجاهزة وإضافات الإدارة الخاصة بالسيرفر ده."""
         data = load(CUSTOM_INFO_FILE)
-        combined.update(data.get(str(guild_id), {}))
-        return combined
+        return {
+            "categories": self.static_info_data.get("categories", []),
+            "custom": data.get(str(guild_id), {}),
+        }
 
     # -- /monster + /add_monster ----------------------------------------
 
@@ -376,11 +452,13 @@ class GuidesCog(commands.Cog):
     async def info(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         info_data = self._get_info(interaction.guild_id)
-        if not info_data:
+        if not info_data["categories"] and not info_data["custom"]:
             await interaction.response.send_message(t("info_empty", lang), ephemeral=True)
             return
         await interaction.response.send_message(
-            t("info_prompt", lang), view=InfoView(info_data, lang), ephemeral=True
+            t("info_prompt", lang),
+            view=InfoView(info_data["categories"], info_data["custom"], lang),
+            ephemeral=True,
         )
 
     @app_commands.command(name="add_info", description="ℹ️ [إدارة] أضف شرح جديد لأمر /info (مع إمكانية إرفاق صور)")
@@ -409,7 +487,7 @@ class GuidesCog(commands.Cog):
         gid = str(interaction.guild_id)
         data.setdefault(gid, {})
         key = title.strip().lower().replace(" ", "_")
-        entry = {"title": title.strip(), "desc": desc.strip(), "emoji": INFO_DEFAULT_EMOJI}
+        entry = {"title": title.strip(), "desc": desc.strip(), "emoji": INFO_CUSTOM_FALLBACK_EMOJI}
         if image:
             entry["image_url"] = image.url
         if image2:
