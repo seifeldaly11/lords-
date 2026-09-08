@@ -386,9 +386,22 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
             continue
         meta = CATEGORY_META[key]
         blurb = CATEGORY_BLURBS.get(key, {}).get(lang, "")
+        category_paths = [
+            path for path, _ in commands_list if command_category(path) == key
+        ]
+        # Show real command names on the landing page; the section view contains
+        # the full descriptions. Keep the preview compact for mobile screens.
+        preview = "\n".join(f"• `/{path}`" for path in category_paths[:6])
+        if len(category_paths) > 6:
+            remaining = len(category_paths) - 6
+            preview += (
+                f"\n• … و{remaining} كمان في القائمة"
+                if lang == "ar"
+                else f"\n• … and {remaining} more in the menu"
+            )
         embed.add_field(
             name=f"{meta['emoji']}  {meta[lang]}",
-            value=f"{blurb}\n\n**{counts[key]} {count_label}**",
+            value=f"{blurb}\n\n{preview}\n\n**{counts[key]} {count_label}**",
             inline=True,
         )
 
@@ -398,13 +411,28 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
 
 
 def build_category_embed(bot: commands.Bot, category: str, lang: str) -> discord.Embed:
-    meta = CATEGORY_META[category]
-    commands_in_category = [
-        (path, command)
-        for path, command in loaded_commands(bot)
-        if command_category(path) == category
-    ]
-    blurb = CATEGORY_BLURBS.get(category, {}).get(lang, "")
+    all_commands = loaded_commands(bot)
+    if category == "all":
+        meta = {
+            "emoji": "📚",
+            "ar": "كل الأوامر",
+            "en": "All Commands",
+            "color": discord.Color.blurple(),
+        }
+        commands_in_category = all_commands
+        blurb = (
+            "كل أوامر البوت مرتبة أبجديًا. استخدم الأقسام لو عايز شرحًا أكثر تركيزًا."
+            if lang == "ar"
+            else "Every loaded command, sorted alphabetically. Use a section for focused details."
+        )
+    else:
+        meta = CATEGORY_META[category]
+        commands_in_category = [
+            (path, command)
+            for path, command in all_commands
+            if command_category(path) == category
+        ]
+        blurb = CATEGORY_BLURBS.get(category, {}).get(lang, "")
     count_text = (
         f"{len(commands_in_category)} أمر متاح في هذا القسم."
         if lang == "ar"
@@ -466,7 +494,13 @@ class HelpCategorySelect(discord.ui.Select):
     def __init__(self, bot: commands.Bot, lang: str):
         self.bot = bot
         self.lang = lang
-        options = []
+        options = [
+            discord.SelectOption(
+                label="كل الأوامر" if lang == "ar" else "All Commands",
+                value="all",
+                emoji="📚",
+            )
+        ]
         available = {command_category(path) for path, _ in loaded_commands(bot)}
         for key in CATEGORY_ORDER:
             if key not in available:
