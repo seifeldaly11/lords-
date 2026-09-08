@@ -69,17 +69,7 @@ class CounterModal(discord.ui.Modal):
         embed.add_field(name=t("counter_formation_field", lang), value=formation, inline=False)
         embed.set_footer(text=t("counter_footer", lang))
 
-        from cogs.ai_cog import AIAdviceView  # استيراد وقت الطلب لتفادي أي تعارض ترتيب تحميل الكوجز
-
-        ai_context = (
-            f"{breakdown}\n"
-            f"{t('counter_dominant_field', lang)}: {dominant}\n"
-            f"{t('counter_suggestion_field', lang)}: {counter_troop}\n"
-            f"{t('counter_formation_field', lang)}: {formation}"
-        )
-        await interaction.response.send_message(
-            embed=embed, view=AIAdviceView(context=ai_context, lang=lang), ephemeral=True
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 class CounterView(discord.ui.View):
