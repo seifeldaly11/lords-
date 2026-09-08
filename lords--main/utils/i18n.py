@@ -196,6 +196,12 @@ TRANSLATIONS = {
         "en": "Nobody is registered with this troop type yet - use `/troop set` so you get pinged for these.",
     },
     "rally_open_app": {"ar": "📲 افتح التطبيق", "en": "📲 Open the app"},
+    "rally_join_button": {"ar": "✅ سجّل في الحشد", "en": "✅ Join rally"},
+    "rally_join_button_short": {"ar": "تم التسجيل", "en": "Joined"},
+    "rally_joiners_field": {"ar": "👥 المسجلون في الحشد", "en": "👥 Rally participants"},
+    "rally_no_joiners": {"ar": "لسه محدش سجّل", "en": "No one has joined yet"},
+    "rally_already_joined": {"ar": "✅ أنت مسجل بالفعل في الحشد.", "en": "✅ You are already registered for this rally."},
+    "rally_joined_success": {"ar": "✅ اتسجلت في الحشد بنجاح.", "en": "✅ You joined the rally successfully."},
     "rally_pinged": {"ar": "🔔 تم استدعاء", "en": "🔔 Pinged"},
 
     # rally_cog.py - /rally set (نسخة @everyone: هدف الحشد + صورة)
@@ -315,6 +321,9 @@ TRANSLATIONS = {
         "en": "🚀 Missing speedups needed to finish",
     },
     "event_footer": {"ar": "Lords Mobile Companion Bot", "en": "Lords Mobile Companion Bot"},
+    "event_time_not_provided": {"ar": "غير محدد (اختياري)", "en": "Not provided (optional)"},
+    "event_time_optional_note": {"ar": "ℹ️ الوقت اختياري", "en": "ℹ️ Time is optional"},
+    "event_time_optional_value": {"ar": "اكتب وقت الفعل لو عايز مقارنة اكتمال المرحلة.", "en": "Add time per action if you want a completion comparison."},
 
     # ------------------------------------------------------------------
     # events_cog.py - /shelter
@@ -580,6 +589,7 @@ TRANSLATIONS = {
 
     # /analyze
     "analyze_bad_image": {"ar": "❌ الملف المرفق لازم يكون صورة.", "en": "❌ The attached file must be an image."},
+    "analyze_need_input": {"ar": "📎 ارفع صورة أو اكتب الأرقام/سؤال التحليل عشان الـAI يقدر يساعدك.", "en": "📎 Attach an image or enter report numbers/a question so the AI can help."},
     "analyze_with_image_note": {
         "ar": "📎 تم إرفاق الصورة: {filename}\n"
               "ملحوظة: البوت لسه مش بيقرأ أرقام من الصور تلقائياً، فأدخل نسب/أعداد قوات الخصم "
@@ -1179,6 +1189,9 @@ TRANSLATIONS = {
         "ar": "✅ تم إضافة وحش **{name}** بنجاح. جرّب `/monster` عشان تشوفه.",
         "en": "✅ Monster **{name}** was added successfully. Try `/monster` to see it.",
     },
+    "delete_monster_not_found": {"ar": "❌ مش لاقي وحش مضاف باسم **{name}**.", "en": "❌ No custom monster named **{name}** was found."},
+    "delete_monster_success": {"ar": "✅ تم حذف الوحش **{name}**.", "en": "✅ Deleted monster **{name}**."},
+
     "add_monster_bad_image": {
         "ar": "❌ المرفق اللي حطيته مش صورة.",
         "en": "❌ The attachment you added isn't an image.",
@@ -1212,6 +1225,9 @@ TRANSLATIONS = {
         "ar": "✅ تم إضافة شرح **{title}** بنجاح. جرّب `/info` عشان تشوفه.",
         "en": "✅ Info entry **{title}** was added successfully. Try `/info` to see it.",
     },
+    "delete_info_not_found": {"ar": "❌ مش لاقي شرحًا مضافًا بعنوان **{title}**.", "en": "❌ No custom info entry titled **{title}** was found."},
+    "delete_info_success": {"ar": "✅ تم حذف الشرح **{title}**.", "en": "✅ Deleted info entry **{title}**."},
+
     "add_info_bad_image": {
         "ar": "❌ أحد المرفقات اللي حطيتها مش صورة.",
         "en": "❌ One of the attachments you added isn't an image.",
