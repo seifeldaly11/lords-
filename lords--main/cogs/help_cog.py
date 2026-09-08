@@ -467,6 +467,23 @@ class HelpCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    @commands.command(name="help")
+    async def text_help_cmd(self, ctx: commands.Context):
+        """Compatibility alias for servers that use the !help prefix command."""
+        lang = get_lang(ctx.guild.id if ctx.guild else None, ctx.author.id)
+        try:
+            embed = build_intro_embed(self.bot, lang)
+            view = HelpView(self.bot, lang)
+            await ctx.send(embed=embed, view=view)
+        except Exception:
+            log.exception("Failed to render !help")
+            fallback = (
+                "تعذر تحميل القائمة التفاعلية مؤقتًا. جرّب الأمر مرة أخرى بعد لحظات."
+                if lang == "ar"
+                else "The interactive help menu could not be loaded. Please try again in a moment."
+            )
+            await ctx.send(fallback)
+
     @app_commands.command(
         name="help",
         description="Open the live command center, organized by function, administration, war, and AI.",
