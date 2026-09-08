@@ -379,10 +379,40 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str) -> discord
         ),
         color=meta["color"],
     )
+
+    # Discord limits embeds to 25 fields and 6000 total characters. Grouping
+    # commands into short blocks prevents /help from silently failing as the
+    # command list grows.
+    chunks: list[str] = []
+    current: list[str] = []
+    current_size = 0
     for path, command in commands_in_category:
+        line = f"**/{path}**\n{command_description(path, command, lang)}"
+        if current and current_size + len(line) + 2 > 850:
+            chunks.append("\n\n".join(current))
+            current = []
+            current_size = 0
+        current.append(line)
+        current_size += len(line) + 2
+    if current:
+        chunks.append("\n\n".join(current))
+
+    visible_chunks = chunks[:5]
+    for index, chunk in enumerate(visible_chunks, start=1):
+        field_name = f"{meta['emoji']} {meta[lang]}"
+        if len(chunks) > 1:
+            field_name += f" • {index}/{len(chunks)}"
+        embed.add_field(name=field_name, value=chunk[:1024], inline=False)
+
+    if len(chunks) > len(visible_chunks):
+        remaining = len(commands_in_category) - sum(chunk.count("**/") for chunk in visible_chunks)
         embed.add_field(
-            name=f"`/{path}`",
-            value=command_description(path, command, lang),
+            name="📌 المزيد" if lang == "ar" else "📌 More",
+            value=(
+                f"يوجد {remaining} أمر إضافي في هذا القسم."
+                if lang == "ar"
+                else f"There are {remaining} more commands in this section."
+            ),
             inline=False,
         )
     embed.set_footer(
