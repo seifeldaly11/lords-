@@ -27,67 +27,67 @@ CATEGORY_META = {
     "ai": {
         "emoji": "🤖",
         "ar": "الذكاء الاصطناعي والمستشار",
-        "en": "AI Advisor",
+        "en": "𝑨𝑰 𝑨𝒅𝒗𝒊𝒔𝒐𝒓",
         "color": discord.Color.purple(),
     },
     "calculators": {
         "emoji": "🧮",
         "ar": "الحواسب والأدلة السريعة",
-        "en": "Calculators & Quick Guides",
+        "en": "𝑪𝒂𝒍𝒄𝒖𝒍𝒂𝒕𝒐𝒓𝒔 & 𝑸𝒖𝒊𝒄𝒌 𝑮𝒖𝒊𝒅𝒆𝒔",
         "color": discord.Color.gold(),
     },
     "war": {
         "emoji": "⚔️",
-        "ar": "الحرب والتكتيك",
-        "en": "War & Tactics",
+        "ar": "الحرب و 𝑲𝑽𝑲",
+        "en": "𝑲𝑽𝑲 & 𝑾𝒂𝒓",
         "color": discord.Color.red(),
     },
     "alliance": {
         "emoji": "🏯",
         "ar": "إدارة التحالف والتتبع",
-        "en": "Alliance Management",
+        "en": "𝑨𝒍𝒍𝒊𝒂𝒏𝒄𝒆 𝑴𝒂𝒏𝒂𝒈𝒆𝒎𝒆𝒏𝒕",
         "color": discord.Color.dark_gold(),
     },
     "market": {
         "emoji": "💱",
         "ar": "بورصة الموارد",
-        "en": "Resource Market",
+        "en": "𝑹𝒆𝒔𝒐𝒖𝒓𝒄𝒆 𝑴𝒂𝒓𝒌𝒆𝒕",
         "color": discord.Color.green(),
     },
     "hunt": {
         "emoji": "🐾",
         "ar": "متتبع الصيد",
-        "en": "Hunt Tracker",
+        "en": "𝑯𝒖𝒏𝒕 𝑻𝒓𝒂𝒄𝒌𝒆𝒓",
         "color": discord.Color.dark_green(),
     },
     "shield": {
         "emoji": "🔔",
         "ar": "منبه الدرع",
-        "en": "Shield Alarm",
+        "en": "𝑺𝒉𝒊𝒆𝒍𝒅 𝑨𝒍𝒂𝒓𝒎",
         "color": discord.Color.dark_orange(),
     },
     "settings": {
         "emoji": "⚙️",
         "ar": "الإعدادات واللغة",
-        "en": "Settings & Language",
+        "en": "𝑺𝒆𝒕𝒕𝒊𝒏𝒈𝒔 & 𝑳𝒂𝒏𝒈𝒖𝒂𝒈𝒆",
         "color": discord.Color.light_grey(),
     },
     "welcome": {
         "emoji": "👋",
         "ar": "الترحيب والقوانين والـ Embed",
-        "en": "Welcome, Rules & Embeds",
+        "en": "𝑾𝒆𝒍𝒄𝒐𝒎𝒆, 𝑹𝒖𝒍𝒆𝒔 & 𝑬𝒎𝒃𝒆𝒅𝒔",
         "color": discord.Color.blue(),
     },
     "games": {
         "emoji": "🎮",
         "ar": "الألعاب والتفاعل",
-        "en": "Games & Interaction",
+        "en": "𝑮𝒂𝒎𝒆𝒔 & 𝑰𝒏𝒕𝒆𝒓𝒂𝒄𝒕𝒊𝒐𝒏",
         "color": discord.Color.blurple(),
     },
     "general": {
         "emoji": "📚",
         "ar": "أوامر عامة",
-        "en": "General",
+        "en": "𝑮𝒆𝒏𝒆𝒓𝒂𝒍",
         "color": discord.Color.dark_teal(),
     },
 }
@@ -352,7 +352,7 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
 
     section_count = sum(1 for key in CATEGORY_ORDER if counts.get(key))
     if lang == "en":
-        title = "🏰 Lords Mobile Command Center"
+        title = "🏰 𝑳𝒐𝒓𝒅𝒔 𝑴𝒐𝒃𝒊𝒍𝒆 𝑪𝒐𝒎𝒎𝒂𝒏𝒅 𝑪𝒆𝒏𝒕𝒆𝒓"
         description = (
             f"Your alliance tools, organized and ready.\n"
             f"**{len(commands_list)} commands** across **{section_count} sections**.\n\n"
@@ -365,9 +365,9 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
             "to choose Arabic or English replies. Commands marked 🔒 need admin permissions."
         )
         footer = "SeifEldaly • Lords Mobile Alliance Suite • Live command catalog"
-        author = "SeifEldaly • Command Center"
+        author = "𝑺𝒆𝒊𝒇𝑬𝒍𝒅𝒂𝒍𝒚 • 𝑪𝒐𝒎𝒎𝒂𝒏𝒅 𝑪𝒆𝒏𝒕𝒆𝒓"
     else:
-        title = "🏰 مركز أوامر Lords Mobile"
+        title = "🏰 مركز أوامر 𝑳𝒐𝒓𝒅𝒔 𝑴𝒐𝒃𝒊𝒍𝒆"
         description = (
             f"كل أدوات تحالفك في مكان واحد، بشكل منظم وسهل.\n"
             f"**{len(commands_list)} أمر** في **{section_count} أقسام**.\n\n"
@@ -380,7 +380,7 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
             "الأوامر التي عليها 🔒 تحتاج صلاحية إدارية."
         )
         footer = "SeifEldaly • Lords Mobile Alliance Suite • كتالوج الأوامر الحي"
-        author = "SeifEldaly • مركز الأوامر"
+        author = "𝑺𝒆𝒊𝒇𝑬𝒍𝒅𝒂𝒍𝒚 • مركز الأوامر"
 
     embed = discord.Embed(
         title=title,
@@ -454,7 +454,7 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str, page: int 
         color=meta["color"],
     )
     if bot.user:
-        author = "SeifEldaly • مركز الأوامر" if lang == "ar" else "Lords Mobile • Command Center"
+        author = "𝑺𝒆𝒊𝒇𝑬𝒍𝒅𝒂𝒍𝒚 • مركز الأوامر" if lang == "ar" else "Lords Mobile • Command Center"
         embed.set_author(name=author, icon_url=bot.user.display_avatar.url)
         embed.set_thumbnail(url=bot.user.display_avatar.url)
 
