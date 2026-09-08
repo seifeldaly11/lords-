@@ -71,6 +71,31 @@ async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None 
 
 
 # ---------------------------------------------------------------------------
+# زرار "اسأل المستشار الذكي" - قابل لإعادة الاستخدام في أي حاسبة (حدث/تسريعات/
+# كاونتر/... إلخ). بيبعت للـ AI ملخص أرقام النتيجة اللي ظهرت ويرجع نصيحة.
+# ---------------------------------------------------------------------------
+
+class AIAdviceView(discord.ui.View):
+    def __init__(self, context: str, lang: str, question: str | None = None):
+        super().__init__(timeout=180)
+        self.context = context
+        self.lang = lang
+        self.question = question
+        self.ask_button.label = t("calc_ai_advice_button", lang)
+
+    @discord.ui.button(emoji="🤖", style=discord.ButtonStyle.primary)
+    async def ask_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(thinking=True, ephemeral=True)
+        question = self.question or t("calc_ai_advice_default_question", self.lang)
+        answer = await ask_ai(question, extra_context=self.context, lang=self.lang)
+        embed = styled_embed(
+            title=t("ai_header", self.lang), description=answer[:3500], color=ROYAL_BLUE, lang=self.lang
+        )
+        embed.set_footer(text=t("calc_ai_advice_footer", self.lang))
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+
+# ---------------------------------------------------------------------------
 # /ai - محادثة عامة عن اللعبة + تحليل صور عتاد/تقارير
 # ---------------------------------------------------------------------------
 
@@ -154,7 +179,7 @@ class GfOptimizeModal(discord.ui.Modal, title="🎉 مستشار مهرجان ا
         style=discord.TextStyle.paragraph,
     )
     resources = discord.ui.TextInput(
-        label="🎒 اللي معاك (تسريحات/جواهر/أي رقم)",
+        label="🎒 اللي معاك (تسريعات/جواهر/أي رقم)",
         placeholder="مثال: 5 ساعات تسريع تدريب، 300 جوهرة، 2 تسريع بناء عام",
         style=discord.TextStyle.paragraph,
     )
