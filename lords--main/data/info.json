@@ -1,26 +1,308 @@
 {
-  "dragon_arena": {
-    "emoji": "🐉",
-    "title": "ساحة التنين (Dragon Arena)",
-    "desc": "معارك بين النقابات مميزتها إن قواتك مش بتتفقد نهائياً - القوات المصابة بترجع مجاناً بعد المعركة. الحدث بيعتمد على سرعة احتلال الحصون داخل الساحة، فالتنسيق والتوقيت مع القيادة أهم من قوة الجيش نفسه."
-  },
-  "solo_event": {
-    "emoji": "🎯",
-    "title": "الحدث المنفرد (Solo Event)",
-    "desc": "حدث فردي (زي Hell Event أو Ghost Ship) بتجمع فيه نقاط بمفردك من أفعال معينة (بناء، بحث، تدريب، صيد وحوش) عشان توصل لمراحل مكافآت. استخدم /event عشان تحسب هل تقدر توصل للمرحلة اللي عايزها ولا لأ.",
-    "aliases": [
-      "hell",
-      "hell_event"
-    ]
-  },
-  "kvk": {
-    "emoji": "⚔️",
-    "title": "Kingdom vs Kingdom (KvK)",
-    "desc": "حرب طاحنة ومباشرة بين ممالك مختلفة، هدفها حصد النقاط عن طريق قتل قوات الأعداء، تدمير القلاع، والسيطرة على القواعد (Wonders). بيحتاج تنسيق عالي المستوى بين كل التحالفات جوه المملكة."
-  },
-  "guild_fest": {
-    "emoji": "🎉",
-    "title": "مهرجان التحالف (Guild Fest)",
-    "desc": "أهم حدث تعاوني في اللعبة - كل عضو بيختار مهام محددة (بناء/بحث/تدريب/إنفاق) لجمع نقاط، وتقدم كل الأعضاء بيرفع مستوى النقابة ويفتح هدايا ضخمة للجميع. استخدم /gf لإدارته، وممكن تستخدم /ai كمان يساعدك تختار أفضل مهمة حسب اللي معاك."
-  }
+  "categories": [
+    {
+      "key": "castle_basics",
+      "emoji": "🏰",
+      "title": {
+        "ar": "أساسيات القلعة والأبحاث",
+        "en": "Castle Basics & Research"
+      },
+      "items": [
+        {
+          "key": "hero_beginner",
+          "emoji": "📚",
+          "title": {
+            "ar": "شرح الأبطال للمبتدئين",
+            "en": "Hero Guide for Beginners"
+          },
+          "desc": {
+            "ar": "دليل مبسط لفهم أدوار الأبطال واختيار الأبطال المناسبين للتطوير والحرب.",
+            "en": "A simple guide to hero roles and choosing the right heroes for growth and war."
+          }
+        },
+        {
+          "key": "castle_research",
+          "emoji": "🔬",
+          "title": {
+            "ar": "أبحاث القلعة والتطوير",
+            "en": "Castle Research & Upgrades"
+          },
+          "desc": {
+            "ar": "ترتيب أولويات أبحاث القلعة والتطوير عشان تستفيد من الموارد والتسريعات بأفضل شكل.",
+            "en": "How to prioritize castle research and upgrades to get the most from resources and speed-ups."
+          }
+        },
+        {
+          "key": "archaic_tomes",
+          "emoji": "📜",
+          "title": {
+            "ar": "طرق الحصول على المجلدات العتيقة",
+            "en": "How to Get Archaic Tomes"
+          },
+          "desc": {
+            "ar": "أهم الطرق والأنشطة التي تساعدك على جمع المجلدات العتيقة لتطوير الأبحاث.",
+            "en": "The main activities and methods for collecting Archaic Tomes for research upgrades."
+          }
+        },
+        {
+          "key": "t4_requirements",
+          "emoji": "🏛️",
+          "title": {
+            "ar": "تطوير السجن والمذبح والبهو لفتح قوات T4",
+            "en": "Upgrading Prison, Altar & Battle Hall for T4"
+          },
+          "desc": {
+            "ar": "المتطلبات الأساسية لترقية السجن والمذبح والبهو والوصول إلى قوات T4.",
+            "en": "The core requirements for upgrading the Prison, Altar, and Battle Hall to unlock T4 troops."
+          }
+        },
+        {
+          "key": "castle_progression",
+          "emoji": "🧭",
+          "title": {
+            "ar": "خطة تطوير القلعة خطوة بخطوة",
+            "en": "Step-by-Step Castle Progression"
+          },
+          "desc": {
+            "ar": "ترتيب عملي للتطوير يساعدك تتقدم من غير ما تهدر الموارد على ترقيات قليلة الأولوية.",
+            "en": "A practical progression order that helps avoid wasting resources on low-priority upgrades."
+          }
+        }
+      ]
+    },
+    {
+      "key": "hero_troop_lineups",
+      "emoji": "⚔️",
+      "title": {
+        "ar": "تشكيلات الأبطال والقوات",
+        "en": "Hero & Troop Lineups"
+      },
+      "items": [
+        {
+          "key": "infantry_lineups",
+          "emoji": "🛡️",
+          "title": {
+            "ar": "أفضل تشكيلات الأبطال - مشاة",
+            "en": "Best Infantry Hero Lineups"
+          },
+          "desc": {
+            "ar": "تشكيلات أبطال مناسبة لهجمات المشاة والدفاعات التي تعتمد على المشاة.",
+            "en": "Hero lineups for infantry attacks and infantry-focused defenses."
+          }
+        },
+        {
+          "key": "cavalry_lineups",
+          "emoji": "🐎",
+          "title": {
+            "ar": "أفضل تشكيلات الأبطال - الفرسان",
+            "en": "Best Cavalry Hero Lineups"
+          },
+          "desc": {
+            "ar": "تشكيلات أبطال مناسبة لهجمات الفرسان واستخداماتهم في الحشود.",
+            "en": "Hero lineups for cavalry attacks and cavalry rallies."
+          }
+        },
+        {
+          "key": "ranged_lineups",
+          "emoji": "🏹",
+          "title": {
+            "ar": "أفضل تشكيلات الأبطال - الرماة",
+            "en": "Best Ranged Hero Lineups"
+          },
+          "desc": {
+            "ar": "تشكيلات أبطال مناسبة لهجمات الرماة والدعم من الصف الخلفي.",
+            "en": "Hero lineups for ranged attacks and back-line support."
+          }
+        },
+        {
+          "key": "mix_defense_lineups",
+          "emoji": "🔀",
+          "title": {
+            "ar": "أفضل تشكيلات الأبطال - ميكس للدفاع",
+            "en": "Best Mix Hero Lineups for Defense"
+          },
+          "desc": {
+            "ar": "تشكيلات ميكس متوازنة للدفاع واستقبال الهجمات والحشود.",
+            "en": "Balanced mix lineups for defense and receiving attacks or rallies."
+          }
+        }
+      ]
+    },
+    {
+      "key": "familiars_pacts",
+      "emoji": "🐾",
+      "title": {
+        "ar": "الوحوش واللفائف",
+        "en": "Familiars & Pacts"
+      },
+      "items": [
+        {
+          "key": "familiars_skills_1",
+          "emoji": "✨",
+          "title": {
+            "ar": "أفضل الوحوش من حيث المهارة - الجزء 1",
+            "en": "Best Familiars by Skills - Part 1"
+          },
+          "desc": {
+            "ar": "اختيارات مهمة من الوحوش حسب المهارات المفيدة للحرب والتطوير.",
+            "en": "Important familiar picks organized by useful war and progression skills."
+          }
+        },
+        {
+          "key": "familiars_skills_2",
+          "emoji": "🌟",
+          "title": {
+            "ar": "أفضل الوحوش من حيث المهارة - الجزء 2",
+            "en": "Best Familiars by Skills - Part 2"
+          },
+          "desc": {
+            "ar": "تكملة ترتيب الوحوش حسب المهارة والاستخدام المناسب لكل حساب.",
+            "en": "A continuation of familiar recommendations by skill and account needs."
+          }
+        },
+        {
+          "key": "pact_3_familiars",
+          "emoji": "🧾",
+          "title": {
+            "ar": "أهم وحوش اللفيفة 3",
+            "en": "Pact 3 Familiars Guide"
+          },
+          "desc": {
+            "ar": "دليل سريع لأهم وحوش اللفيفة 3 والمهارات التي تستحق الاستثمار.",
+            "en": "A quick guide to the most useful Pact 3 familiars and their valuable skills."
+          }
+        },
+        {
+          "key": "pact_4_hoarder",
+          "emoji": "👹",
+          "title": {
+            "ar": "أهم وحوش اللفيفة 4 ووحش المفترس",
+            "en": "Pact 4 Familiars & Hoarder Guide"
+          },
+          "desc": {
+            "ar": "أهم اختيارات اللفيفة 4 وملاحظات التعامل مع وحش المفترس.",
+            "en": "Key Pact 4 familiar choices plus practical notes for the Hoarder."
+          }
+        }
+      ]
+    },
+    {
+      "key": "gear_tactics_events",
+      "emoji": "⚙️",
+      "title": {
+        "ar": "المعدات والتكتيكات والفعاليات",
+        "en": "Gear, Tactics & Events"
+      },
+      "items": [
+        {
+          "key": "mix_gear_inlaying",
+          "emoji": "💎",
+          "title": {
+            "ar": "كيفية ترصيع معدات الميكس بشكل صحيح",
+            "en": "Proper Mix Gear Inlaying"
+          },
+          "desc": {
+            "ar": "طريقة اختيار وترصيع الجواهر في معدات الميكس حسب نوع الدفاع والاستخدام.",
+            "en": "How to choose and inlay jewels in mix gear based on defensive needs and use."
+          }
+        },
+        {
+          "key": "solo_trap",
+          "emoji": "🏰",
+          "title": {
+            "ar": "كيفية إنشاء فخ فردي وأنواعه",
+            "en": "Solo Trap Castle Setup & Types"
+          },
+          "desc": {
+            "ar": "أساسيات بناء فخ فردي وأنواعه واختيار التوزيع المناسب للقوات.",
+            "en": "The basics of building a solo trap, its types, and troop distribution choices."
+          }
+        },
+        {
+          "key": "kingdom_paragon",
+          "emoji": "🏆",
+          "title": {
+            "ar": "شرح حدث قدوة الممالك",
+            "en": "Kingdom Paragon Event Guide"
+          },
+          "desc": {
+            "ar": "شرح فكرة الحدث وكيفية التخطيط للمشاركة والاستفادة من مكافآته.",
+            "en": "How the event works and how to plan participation for its rewards."
+          }
+        },
+        {
+          "key": "farm_gems",
+          "emoji": "💰",
+          "title": {
+            "ar": "أفضل طرق جمع الجواهر السريعة",
+            "en": "Best Ways to Farm Gems"
+          },
+          "desc": {
+            "ar": "طرق عملية لجمع الجواهر بسرعة من الأنشطة اليومية والفعاليات.",
+            "en": "Practical ways to collect gems quickly through daily activities and events."
+          }
+        },
+        {
+          "key": "skins_ui_update",
+          "emoji": "🎨",
+          "title": {
+            "ar": "شرح تحديث زينات وواجهة اللعبة",
+            "en": "Game Skins & UI Update Guide"
+          },
+          "desc": {
+            "ar": "ملخص للتغييرات الخاصة بالزينات وواجهة اللعبة وكيفية الاستفادة منها.",
+            "en": "A summary of skin and game interface changes and how to use them."
+          }
+        },
+        {
+          "key": "dragon_arena",
+          "emoji": "🐉",
+          "title": {
+            "ar": "ساحة التنين (Dragon Arena)",
+            "en": "Dragon Arena"
+          },
+          "desc": {
+            "ar": "معارك بين النقابات تعتمد على احتلال الحصون داخل الساحة، وتحتاج لتنسيق وتوقيت جيد.",
+            "en": "Guild battles focused on capturing forts in the arena, requiring strong coordination and timing."
+          }
+        },
+        {
+          "key": "solo_event",
+          "emoji": "🧍",
+          "title": {
+            "ar": "الحدث المنفرد (Solo Event)",
+            "en": "Solo Event"
+          },
+          "desc": {
+            "ar": "حدث فردي تجمع فيه النقاط من البناء والبحث والتدريب والصيد للوصول إلى المكافآت.",
+            "en": "A solo event where points come from building, research, training, and hunting to unlock rewards."
+          }
+        },
+        {
+          "key": "kvk",
+          "emoji": "🌍",
+          "title": {
+            "ar": "حرب المملكة ضد المملكة (KvK)",
+            "en": "Kingdom vs Kingdom (KvK)"
+          },
+          "desc": {
+            "ar": "حرب بين ممالك مختلفة لجمع النقاط من هزيمة القوات والسيطرة على القواعد.",
+            "en": "A war between kingdoms where points come from defeating troops and controlling objectives."
+          }
+        },
+        {
+          "key": "guild_fest",
+          "emoji": "🎉",
+          "title": {
+            "ar": "مهرجان التحالف (Guild Fest)",
+            "en": "Guild Fest"
+          },
+          "desc": {
+            "ar": "حدث تعاوني يختار فيه أعضاء التحالف مهامًا لجمع النقاط ورفع مستوى المكافآت.",
+            "en": "A cooperative event where guild members complete tasks to earn points and improve rewards."
+          }
+        }
+      ]
+    }
+  ]
 }
