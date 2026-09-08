@@ -12,9 +12,8 @@
 ويتفاعل معاه فعلياً في 99% من الوقت.
 
 نطاق التغطية الحالي (بيتحترم فيه إعداد اللغة بالكامل في ردود البوت):
-/ai، /play، /rally، /troop، /language، /language me، /languageme، /set_game_link،
-/game_link، /jewel_calc، /darknest، /gear، /help.
-باقي الأوامر (market/games/intel/hunt/shield/guild/rally-remaining/events/wiki/monster/
+/ai، /play، /rally، /troop، /language، /language me، /languageme، /help.
+باقي الأوامر (market/intel/hunt/shield/guild/rally-remaining/events/wiki/monster/
 dict/info/heroes/geartiers/scout/counter/report/colo/analyze) لسه بواجهة عربية ثابتة
 حالياً - ترجمتها خطوة تالية.
 """
@@ -73,6 +72,27 @@ TRANSLATIONS = {
         "ar": "❌ الأمر ده يحتاج صلاحية Manage Server عشان محدش يغيّر لغة السيرفر عبطًا.",
         "en": "❌ This command requires the Manage Server permission.",
     },
+    # /bot_channel
+    "bot_channel_success": {
+        "ar": "✅ تم تحديد {channel} كقناة/ثريد تواصل البوت في السيرفر ده.",
+        "en": "✅ {channel} is now set as the bot's communication channel/thread in this server.",
+    },
+    "bot_channel_admin_only": {
+        "ar": "❌ الأمر ده يحتاج صلاحية Manage Server.",
+        "en": "❌ This command requires the Manage Server permission.",
+    },
+    "bot_channel_error": {
+        "ar": "⚠️ حصل خطأ أثناء حفظ القناة. حاول تاني.",
+        "en": "⚠️ Something went wrong while saving the channel. Please try again.",
+    },
+    "bot_channel_current_none": {
+        "ar": "ℹ️ مفيش قناة/ثريد تواصل محددة للبوت في السيرفر ده لسه.",
+        "en": "ℹ️ No bot communication channel/thread is set for this server yet.",
+    },
+    "bot_channel_current": {
+        "ar": "ℹ️ قناة/ثريد تواصل البوت الحالية: {channel}",
+        "en": "ℹ️ Current bot communication channel/thread: {channel}",
+    },
     # /ai
     "ai_need_input": {
         "ar": "❓ اكتب سؤال أو ارفق صورة عتاد/تقرير عشان أقدر أساعدك.",
@@ -109,6 +129,16 @@ TRANSLATIONS = {
     "ai_might_line": {
         "ar": "قوة الحساب (Might) اللي ذكرها اللاعب: {might}",
         "en": "Player-reported account Might: {might}",
+    },
+    # زرار "اسأل المستشار الذكي" - بيتضاف تحت نتيجة أي حاسبة (حدث/تسريعات/كاونتر...)
+    "calc_ai_advice_button": {"ar": "🤖 اسأل المستشار الذكي", "en": "🤖 Ask the AI advisor"},
+    "calc_ai_advice_default_question": {
+        "ar": "بناءً على الأرقام والنتيجة دي، إيه أفضل نصيحة أو استراتيجية تقترحها عليّ؟",
+        "en": "Based on these numbers and this result, what's your best advice or strategy?",
+    },
+    "calc_ai_advice_footer": {
+        "ar": "💡 نصيحة الذكاء الاصطناعي مكمّلة للحاسبة، مش بديل لقرارك",
+        "en": "💡 AI advice complements the calculator - it's not a substitute for your own call",
     },
     # /play
     "play_wrong_channel": {
@@ -155,7 +185,7 @@ TRANSLATIONS = {
         "ar": "\n(ℹ️ الأعضاء اللي لسه ما سجّلوش نوع قواتهم بـ `/troop set` مش هيوصلهم تنبيه مباشر.)",
         "en": "\n(ℹ️ Members who haven't registered their troop type with `/troop set` won't get a direct ping.)",
     },
-    "rally_title": {"ar": "📯 نداء حشد!", "en": "📯 Rally call!"},
+    "rally_title": {"ar": "🚨📯 نداء حشد!", "en": "🚨📯 Rally call!"},
     "rally_desc": {
         "ar": "{leader} فاتح حشد وعايز **{troop}** بالتحديد!\n⏰ هيتقفل تقريباً: {countdown}",
         "en": "{leader} opened a rally and needs **{troop}** specifically!\n⏰ Closing around: {countdown}",
@@ -167,6 +197,18 @@ TRANSLATIONS = {
     },
     "rally_open_app": {"ar": "📲 افتح التطبيق", "en": "📲 Open the app"},
     "rally_pinged": {"ar": "🔔 تم استدعاء", "en": "🔔 Pinged"},
+
+    # rally_cog.py - /rally set (نسخة @everyone: هدف الحشد + صورة)
+    "rally_desc_v2": {
+        "ar": "⚠️ {leader} فاتح حشد وعايز **{troop}**!\n⏰ هيتقفل تقريباً: {countdown}",
+        "en": "⚠️ {leader} opened a rally and needs **{troop}**!\n⏰ Closing around: {countdown}",
+    },
+    "rally_target_field": {"ar": "🎯 هدف الحشد (تحالف/شخص)", "en": "🎯 Rally target (alliance/player)"},
+    "rally_footer_v2": {"ar": "فتحه: {leader}", "en": "Opened by: {leader}"},
+    "rally_everyone_ping": {
+        "ar": "🚨🔔 حشد جديد اتفتح - يلا انضموا بسرعة! ⚠️",
+        "en": "🚨🔔 A new rally is open - join quickly! ⚠️",
+    },
 
     # ------------------------------------------------------------------
     # rally_cog.py - /rally_log + RallyLogView (جزء تصليح - كان ناقص بالكامل)
@@ -214,13 +256,19 @@ TRANSLATIONS = {
     "fmt_unit_hour": {"ar": "ساعة", "en": "hour"},
     "fmt_unit_minute": {"ar": "دقيقة", "en": "minute"},
     "fmt_joiner": {"ar": " و ", "en": ", "},
+    "rally_log_mentions_joiner": {"ar": "، ", "en": ", "},
 
     # ------------------------------------------------------------------
     # events_cog.py - /event
     # ------------------------------------------------------------------
+    "event_category_prompt": {
+        "ar": "اختر نوع الحدث الأول 👇",
+        "en": "First, choose the event type 👇",
+    },
+    "event_category_select_placeholder": {"ar": "اختر الحدث...", "en": "Choose the event..."},
     "event_prompt": {
-        "ar": "اختر نوع النشاط اللي عايز تحسبه من القائمة تحت 👇",
-        "en": "Choose the activity type you want to calculate from the list below 👇",
+        "ar": "📌 {category}\nدلوقتي اختر نوع النشاط اللي عايز تحسبه من القائمة تحت 👇",
+        "en": "📌 {category}\nNow choose the activity type you want to calculate from the list below 👇",
     },
     "event_select_placeholder": {"ar": "اختر نوع النشاط داخل الحدث...", "en": "Choose the activity within the event..."},
     "event_modal_title": {"ar": "🧮 حاسبة الحدث", "en": "🧮 Event calculator"},
@@ -231,9 +279,13 @@ TRANSLATIONS = {
         "en": "⏱️ Time needed per action (in minutes)",
     },
     "event_field_speedups": {
-        "ar": "🚀 إجمالي التسريحات المتاحة (بالدقائق)",
+        "ar": "🚀 إجمالي التسريعات المتاحة (بالدقائق)",
         "en": "🚀 Total speedups available (in minutes)",
     },
+    "event_placeholder_required_points": {"ar": "مثال: 500000", "en": "e.g.: 500000"},
+    "event_placeholder_points_per_action": {"ar": "مثال: 1000", "en": "e.g.: 1000"},
+    "event_placeholder_time_per_action": {"ar": "مثال: 30", "en": "e.g.: 30"},
+    "event_placeholder_speedups": {"ar": "مثال: 4320", "en": "e.g.: 4320"},
     "event_invalid_numbers": {
         "ar": "❌ من فضلك أدخل أرقام صحيحة وأكبر من صفر.",
         "en": "❌ Please enter valid numbers greater than zero.",
@@ -243,23 +295,23 @@ TRANSLATIONS = {
     "event_points_per_action_field": {"ar": "✨ نقاط/فعل", "en": "✨ Points/action"},
     "event_actions_needed_field": {"ar": "🔁 عدد الأفعال المطلوبة", "en": "🔁 Actions needed"},
     "event_total_time_field": {"ar": "⏱️ الوقت الكلي المطلوب", "en": "⏱️ Total time needed"},
-    "event_speedups_available_field": {"ar": "🚀 التسريحات المتاحة", "en": "🚀 Speedups available"},
+    "event_speedups_available_field": {"ar": "🚀 التسريعات المتاحة", "en": "🚀 Speedups available"},
     "event_can_complete_field": {"ar": "✅ النتيجة", "en": "✅ Result"},
     "event_can_complete_value": {"ar": "تقدر تكمل الحدث بالكامل!", "en": "You can complete the event fully!"},
     "event_remaining_speedups_field": {
-        "ar": "🎁 المتبقي من التسريحات بعد الإكمال",
+        "ar": "🎁 المتبقي من التسريعات بعد الإكمال",
         "en": "🎁 Speedups remaining after completion",
     },
     "event_cannot_complete_field": {"ar": "⚠️ النتيجة", "en": "⚠️ Result"},
     "event_cannot_complete_value": {
-        "ar": "لن تكمل المرحلة بالتسريحات الحالية وحدها.",
+        "ar": "لن تكمل المرحلة بالتسريعات الحالية وحدها.",
         "en": "You won't complete the stage with your current speedups alone.",
     },
     "event_percentage_field": {"ar": "📊 نسبة الإنجاز الممكنة حالياً", "en": "📊 Currently achievable progress"},
     "event_achievable_points_field": {"ar": "🏁 النقاط اللي هتوصلها", "en": "🏁 Points you'll reach"},
     "event_missing_points_field": {"ar": "❗ النقاط اللي هتفضل ناقصة", "en": "❗ Points you'll still be missing"},
     "event_extra_time_field": {
-        "ar": "⏳ وقت/تسريحات إضافية مطلوبة لإكمالها",
+        "ar": "⏳ وقت/تسريعات إضافية مطلوبة لإكمالها",
         "en": "⏳ Extra time/speedups needed to finish",
     },
     "event_footer": {"ar": "Lords Mobile Companion Bot", "en": "Lords Mobile Companion Bot"},
@@ -322,15 +374,19 @@ TRANSLATIONS = {
     # ------------------------------------------------------------------
     # events_cog.py - /speedup
     # ------------------------------------------------------------------
-    "speedup_modal_title": {"ar": "🚀 حاسبة التسريحات", "en": "🚀 Speedup calculator"},
-    "speedup_field_days": {"ar": "📅 إجمالي الأيام", "en": "📅 Total days"},    "speedup_field_hours": {"ar": "⏰ إجمالي الساعات", "en": "⏰ Total hours"},
-    "speedup_field_minutes": {"ar": "⏱️ إجمالي الدقائق", "en": "⏱️ Total minutes"},
-    "speedup_field_stacks": {
-        "ar": "📦 عدد الحزم المتشابهة (لو عندك أكتر من نسخة)",
-        "en": "📦 Number of identical stacks (if you have more than one)",
+    "speedup_modal_title": {"ar": "🚀 حاسبة التسريعات", "en": "🚀 Speedup calculator"},
+    "speedup_field_entries": {"ar": "🚀 التسريعات (مثال: 4h, 6h, 1d×3)", "en": "🚀 Speedups (e.g. 4h, 6h, 1d×3)"},
+    "speedup_field_entries_placeholder": {
+        "ar": "اكتب كل تسريعة وافصل بينهم بفاصلة، مثال: 4h, 6h, 1d×3 أو 24×4, 3d×2",
+        "en": "Write each speedup separated by commas, e.g. 4h, 6h, 1d×3 or 24×4, 3d×2",
     },
-    "speedup_invalid_numbers": {"ar": "❌ أدخل أرقام صحيحة فقط.", "en": "❌ Enter valid numbers only."},
-    "speedup_result_title": {"ar": "🚀 إجمالي التسريحات المتاحة", "en": "🚀 Total speedups available"},
+    "speedup_invalid_numbers": {
+        "ar": "❌ ما قدرتش أفهم أي رقم صحيح. اكتب بصيغة زي: 4h, 6h, 1d×3",
+        "en": "❌ Couldn't understand any valid entry. Use a format like: 4h, 6h, 1d×3",
+    },
+    "speedup_result_title": {"ar": "🚀 إجمالي التسريعات المتاحة", "en": "🚀 Total speedups available"},
+    "speedup_breakdown_field": {"ar": "📋 تفصيل كل بند", "en": "📋 Breakdown"},
+    "speedup_errors_field": {"ar": "⚠️ بنود ما اتفهمتش", "en": "⚠️ Entries not understood"},
     "speedup_in_minutes_field": {"ar": "🔢 بالدقائق", "en": "🔢 In minutes"},
     "speedup_in_hours_field": {"ar": "🕐 بالساعات", "en": "🕐 In hours"},
     "speedup_minutes_unit": {"ar": "دقيقة", "en": "minutes"},
@@ -1098,7 +1154,223 @@ TRANSLATIONS = {
         "ar": "بعد محاولات كتير من غير رد من {user}.",
         "en": "After many attempts with no response from {user}.",
     },
+
+    # ------------------------------------------------------------------
+    # guides_cog.py - /monster (بقى ديناميكي) و /add_monster
+    # ------------------------------------------------------------------
+    "monster_prompt": {"ar": "اختر الوحش:", "en": "Choose the monster:"},
+    "monster_select_placeholder": {"ar": "اختر اسم الوحش...", "en": "Choose the monster name..."},
+    "monster_damage_field": {"ar": "⚡ نوع الضرر المطلوب", "en": "⚡ Required damage type"},
+    "monster_defense_field": {"ar": "🛡️ ملاحظة الدفاع", "en": "🛡️ Defense note"},
+    "monster_heroes_field": {"ar": "🦸 الأبطال المقترحون", "en": "🦸 Suggested heroes"},
+    "monster_footer": {
+        "ar": "بيانات إرشادية عامة - قد تختلف حسب مستوى الوحش",
+        "en": "General reference info - may vary by monster level",
+    },
+    "monster_empty": {
+        "ar": "📭 لسه مفيش وحوش مضافة. اطلب من الإدارة تستخدم `/add_monster` عشان تضيف أول وحش.",
+        "en": "📭 No monsters added yet. Ask an admin to use `/add_monster` to add the first one.",
+    },
+    "add_monster_admin_only": {
+        "ar": "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).",
+        "en": "❌ This command is for admins only (requires Manage Server permission).",
+    },
+    "add_monster_success": {
+        "ar": "✅ تم إضافة وحش **{name}** بنجاح. جرّب `/monster` عشان تشوفه.",
+        "en": "✅ Monster **{name}** was added successfully. Try `/monster` to see it.",
+    },
+    "add_monster_bad_image": {
+        "ar": "❌ المرفق اللي حطيته مش صورة.",
+        "en": "❌ The attachment you added isn't an image.",
+    },
+    "dict_not_found_suggest": {
+        "ar": "❓ ما لقيتش '{term}' بالظبط. قصدك: {suggestions}؟",
+        "en": "❓ Couldn't find '{term}' exactly. Did you mean: {suggestions}?",
+    },
+    "dict_not_found": {
+        "ar": "❌ المصطلح '{term}' مش موجود في القاموس.",
+        "en": "❌ The term '{term}' isn't in the dictionary.",
+    },
+
+    # ------------------------------------------------------------------
+    # guides_cog.py - /info (بقى يدعم صور) و /add_info
+    # ------------------------------------------------------------------
+    "info_prompt": {"ar": "اختر الحدث:", "en": "Choose the event:"},
+    "info_select_placeholder": {
+        "ar": "اختر الحدث اللي عايز تعرف عنه...",
+        "en": "Choose the event you want to know about...",
+    },
+    "info_empty": {
+        "ar": "📭 لسه مفيش معلومات مضافة. اطلب من الإدارة تستخدم `/add_info` عشان تضيف أول شرح.",
+        "en": "📭 No info entries added yet. Ask an admin to use `/add_info` to add the first one.",
+    },
+    "add_info_admin_only": {
+        "ar": "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).",
+        "en": "❌ This command is for admins only (requires Manage Server permission).",
+    },
+    "add_info_success": {
+        "ar": "✅ تم إضافة شرح **{title}** بنجاح. جرّب `/info` عشان تشوفه.",
+        "en": "✅ Info entry **{title}** was added successfully. Try `/info` to see it.",
+    },
+    "add_info_bad_image": {
+        "ar": "❌ أحد المرفقات اللي حطيتها مش صورة.",
+        "en": "❌ One of the attachments you added isn't an image.",
+    },
+
+    # ------------------------------------------------------------------
+    # guild_cog.py - /gf calc
+    # ------------------------------------------------------------------
+    "gf_calc_prompt": {
+        "ar": "🧮 اكتب سؤالك أو حساب التسريعات (مثال: '4h, 6h, 1d×3' أو 'معايا 500 حجر وعايز أستبدلهم بخشب، ينفع؟')",
+        "en": "🧮 Type your question or speedup calculation (e.g. '4h, 6h, 1d×3' or "
+              "'I have 500 stone and want to swap it for wood, is that possible?')",
+    },
+    "gf_calc_field_query": {"ar": "🧮 سؤالك أو حساب التسريعات", "en": "🧮 Your question or speedup calc"},
+    "gf_calc_modal_title": {"ar": "🧮 حاسبة مهرجان التحالف", "en": "🧮 Alliance Festival calculator"},
+    "gf_calc_speedup_result_title": {"ar": "🚀 إجمالي التسريعات", "en": "🚀 Total speedups"},
+    "gf_calc_ai_result_title": {"ar": "🧮 إجابة الحاسبة", "en": "🧮 Calculator answer"},
+    "gf_calc_ai_footer": {
+        "ar": "إجابة تقريبية بالذكاء الاصطناعي - تأكد من التفاصيل داخل اللعبة",
+        "en": "Approximate AI-generated answer - verify the details in-game",
+    },
+
+    # ------------------------------------------------------------------
+    # setup_cog.py - /setup, /setup_check
+    # ------------------------------------------------------------------
+    "setup_hunt_channel_select_placeholder": {
+        "ar": "🏹 قناة تقارير الصيد اليومي (اختياري)",
+        "en": "🏹 Daily hunt reports channel (optional)",
+    },
+    "setup_leadership_role_select_placeholder": {
+        "ar": "📣 رتبة قادة التحالف (R4/R5) لتنبيهات الدرع (اختياري)",
+        "en": "📣 Alliance leadership role (R4/R5) for shield alerts (optional)",
+    },
+    "setup_hunt_channel_set_confirm": {
+        "ar": "✅ قناة الصيد اتضبطت: {channel}",
+        "en": "✅ Hunt channel set: {channel}",
+    },
+    "setup_leadership_role_set_confirm": {
+        "ar": "✅ رتبة القيادة اتضبطت: {role} — هتتمنشن تلقائياً لو حد اتأخر يرد على تنبيه درعه.",
+        "en": "✅ Leadership role set: {role} — it will be mentioned automatically if someone is late to respond to their shield alert.",
+    },
+    "setup_diagnostics_button_label": {
+        "ar": "🩺 فحص الإعدادات الحالية",
+        "en": "🩺 Check current settings",
+    },
+    "setup_diag_lang_line": {
+        "ar": "✅ اللغة مضبوطة: **{lang_label}**",
+        "en": "✅ Language set: **{lang_label}**",
+    },
+    "setup_diag_hunt_channel_not_set": {
+        "ar": "⚠️ قناة تقارير الصيد لسه ماتحددتش (اختياري - `/hunt_log` هيرد في نفس القناة اللي بتنفّذ فيها الأمر)",
+        "en": "⚠️ Hunt reports channel isn't set yet (optional - `/hunt_log` will reply in whichever channel it's run from)",
+    },
+    "setup_diag_hunt_channel_deleted": {
+        "ar": "❌ قناة الصيد المحددة اتمسحت أو البوت طرد منها - اضبطها تاني من `/setup`",
+        "en": "❌ The configured hunt channel was deleted or the bot was removed from it - set it again from `/setup`",
+    },
+    "setup_diag_hunt_channel_ok": {
+        "ar": "✅ قناة الصيد شغالة: {channel}",
+        "en": "✅ Hunt channel is working: {channel}",
+    },
+    "setup_diag_hunt_channel_perms_missing": {
+        "ar": "❌ البوت ناقصه صلاحية Send Messages/Embed Links في {channel}",
+        "en": "❌ The bot is missing the Send Messages/Embed Links permission in {channel}",
+    },
+    "setup_diag_role_not_set": {
+        "ar": "⚠️ رتبة القيادة لسه ماتحددتش (اختياري - تنبيه `/shield` مش هيمنشن حد لو الدرع خلص من غير رد)",
+        "en": "⚠️ Leadership role isn't set yet (optional - `/shield` alerts won't mention anyone if a shield expires with no response)",
+    },
+    "setup_diag_role_deleted": {
+        "ar": "❌ رتبة القيادة المحددة اتمسحت - اضبط رتبة تانية من `/setup`",
+        "en": "❌ The configured leadership role was deleted - set another role from `/setup`",
+    },
+    "setup_diag_role_ok": {
+        "ar": "✅ رتبة القيادة هتتمنشن فعلياً: {role}",
+        "en": "✅ Leadership role will actually be mentioned: {role}",
+    },
+    "setup_diag_role_warn": {
+        "ar": "⚠️ رتبة القيادة {role} مضبوطة، بس الرتبة مش Mentionable والبوت مالوش صلاحية "
+              "Mention Everyone - يعني المنشنة ممكن متوصلش تنبيه فعلي. فعّل \"Allow anyone to mention\" "
+              "في إعدادات الرتبة، أو ادّي البوت صلاحية Mention Everyone.",
+        "en": "⚠️ Leadership role {role} is set, but the role isn't mentionable and the bot lacks the "
+              "Mention Everyone permission - so the mention might not actually notify anyone. Enable "
+              "\"Allow anyone to mention\" in the role's settings, or grant the bot the Mention Everyone permission.",
+    },
+    "setup_diag_link_default": {
+        "ar": "⚠️ رابط اللعبة لسه بالقيمة الافتراضية (تقدر تخصصه لاحقاً لو حبيت)",
+        "en": "⚠️ Game link is still the default value (you can customize it later if you'd like)",
+    },
+    "setup_diag_link_custom": {
+        "ar": "✅ رابط اللعبة مخصص: {link}",
+        "en": "✅ Game link is customized: {link}",
+    },
+    "setup_diag_cohere_ok": {
+        "ar": "✅ مفتاح Cohere موجود - `/ai` وتحليل صور الصيد شغالين",
+        "en": "✅ Cohere key is present - `/ai` and hunt image analysis are working",
+    },
+    "setup_diag_cohere_missing": {
+        "ar": "❌ مفيش COHERE_API_KEY في `.env` - `/ai` وتحليل الصور بالكامل معطّلين حالياً",
+        "en": "❌ No COHERE_API_KEY in `.env` - `/ai` and image analysis are fully disabled right now",
+    },
+    "setup_diag_nacl_ok": {
+        "ar": "✅ PyNaCl متثبتة - تصعيد `/shield` الصوتي هيشتغل",
+        "en": "✅ PyNaCl is installed - `/shield` voice escalation will work",
+    },
+    "setup_diag_nacl_missing": {
+        "ar": "❌ PyNaCl مش متثبتة - تصعيد `/shield` الصوتي مش هيشتغل (`pip install PyNaCl`)",
+        "en": "❌ PyNaCl isn't installed - `/shield` voice escalation won't work (`pip install PyNaCl`)",
+    },
+    "setup_diag_intent_ok": {
+        "ar": "✅ Server Members Intent مفعّل",
+        "en": "✅ Server Members Intent is enabled",
+    },
+    "setup_diag_intent_missing": {
+        "ar": "❌ Server Members Intent مقفول من Discord Developer Portal - أوامر زي `/stats_event` "
+              "و`/log_activity` ممكن ما تشتغلش صح",
+        "en": "❌ Server Members Intent is disabled from the Discord Developer Portal - commands like "
+              "`/stats_event` and `/log_activity` might not work correctly",
+    },
+    "setup_diag_base_perms_ok": {
+        "ar": "صلاحيات الرسائل الأساسية (Send Messages/Embed Links) سليمة",
+        "en": "Basic message permissions (Send Messages/Embed Links) are fine",
+    },
+    "setup_diag_base_perms_bad": {
+        "ar": "ناقص صلاحية Send Messages أو Embed Links في السيرفر",
+        "en": "Missing the Send Messages or Embed Links permission in the server",
+    },
+    "setup_diag_voice_perms_ok": {
+        "ar": "صلاحيات الصوت (Connect/Speak) سليمة لتصعيد الدرع",
+        "en": "Voice permissions (Connect/Speak) are fine for shield escalation",
+    },
+    "setup_diag_voice_perms_bad": {
+        "ar": "ناقص صلاحية Connect أو Speak - تصعيد `/shield` الصوتي مش هيقدر يدخل الروم",
+        "en": "Missing the Connect or Speak permission - `/shield` voice escalation won't be able to join the room",
+    },
+    "setup_diag_title": {"ar": "🩺 فحص حالة إعدادات البوت", "en": "🩺 Bot settings health check"},
+    "setup_diag_summary_field": {"ar": "📋 الخلاصة", "en": "📋 Summary"},
+    "setup_diag_summary_value": {
+        "ar": "✅ سليم: {healthy}  •  ⚠️ تنبيه: {warnings}  •  ❌ معطّل: {broken}",
+        "en": "✅ Healthy: {healthy}  •  ⚠️ Warning: {warnings}  •  ❌ Broken: {broken}",
+    },
+    "setup_embed_title": {"ar": "⚙️ دليل التثبيت السريع", "en": "⚙️ Quick setup guide"},
+    "setup_embed_description": {
+        "ar": "اختر من القوائم تحت لضبط البوت لسيرفرك في ثواني - كل اختيار بيتحفظ فوراً "
+              "من غير ما تحتاج تكتب أي أمر إضافي.\n\n"
+              "🌐 **اللغة** — تتحكم في كل ردود البوت الفعلية.\n"
+              "🏹 **قناة الصيد** — فين تتبعت تقارير وملخصات `/hunt_log` تلقائياً.\n"
+              "📣 **رتبة القيادة** — مين يتمنشن تلقائياً لو عضو اتأخر يرد على تنبيه `/shield`.\n"
+              "🩺 **فحص الإعدادات** — تأكد إن كل حاجة فعلاً شغالة (صلاحيات، Cohere، الصوت...) مش بس متسجلة.",
+        "en": "Choose from the menus below to configure the bot for your server in seconds - each choice "
+              "is saved instantly, no extra commands needed.\n\n"
+              "🌐 **Language** — controls all of the bot's actual replies.\n"
+              "🏹 **Hunt channel** — where `/hunt_log` reports and summaries are sent automatically.\n"
+              "📣 **Leadership role** — who gets mentioned automatically if a member is late to respond to a `/shield` alert.\n"
+              "🩺 **Settings check** — confirm everything is actually working (permissions, Cohere, voice...) not just saved.",
+    },
+    "setup_current_role_field": {"ar": "📣 رتبة القيادة الحالية", "en": "📣 Current leadership role"},
 }
+
 
 ACTIVITY_TYPE_LABELS_I18N = {
     "rally": {"ar": "👥 حشود (Rally)", "en": "👥 Rallies"},
@@ -1118,6 +1390,11 @@ RALLY_RESULT_LABELS_I18N = {
     "draw": {"ar": "🤝 تعادل", "en": "🤝 Draw"},
 }
 
+EVENT_CATEGORY_LABELS_I18N = {
+    "hell": {"ar": "🔥 حدث الجحيم", "en": "🔥 Hell Event"},
+    "solo": {"ar": "🧍 الحدث الفردي", "en": "🧍 Individual Event"},
+}
+
 EVENT_TYPE_LABELS_I18N = {
     "research": {"ar": "🔬 أبحاث", "en": "🔬 Research"},
     "building": {"ar": "🏗️ بناء", "en": "🏗️ Building"},
@@ -1130,7 +1407,7 @@ EVENT_TYPE_LABELS_I18N = {
     "hunting": {"ar": "🐾 صيد وحوش", "en": "🐾 Monster hunting"},
     "tycoon": {"ar": "🎩 تايكون", "en": "🎩 Tycoon"},
     "ghosts": {"ar": "👻 أشباح", "en": "👻 Ghosts"},
-    "spending": {"ar": "💎 إنفاق جواهر/تسريحات", "en": "💎 Gem/speedup spending"},
+    "spending": {"ar": "💎 إنفاق جواهر/تسريعات", "en": "💎 Gem/speedup spending"},
 }
 
 TROOP_LABELS_I18N = {
