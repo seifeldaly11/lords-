@@ -1208,11 +1208,21 @@ TRANSLATIONS = {
     # ------------------------------------------------------------------
     # guides_cog.py - /info (بقى يدعم صور) و /add_info
     # ------------------------------------------------------------------
-    "info_prompt": {"ar": "اختر الحدث:", "en": "Choose the event:"},
+    "info_prompt": {"ar": "اختر القسم:", "en": "Choose a category:"},
     "info_select_placeholder": {
-        "ar": "اختر الحدث اللي عايز تعرف عنه...",
-        "en": "Choose the event you want to know about...",
+        "ar": "اختار القسم اللي عايز تعرف عنه...",
+        "en": "Choose the category you want to explore...",
     },
+    "info_category_prompt": {
+        "ar": "اختار موضوع من قسم **{category}**:",
+        "en": "Choose a topic from **{category}**:",
+    },
+    "info_item_select_placeholder": {
+        "ar": "اختار الموضوع اللي عايز تعرف عنه...",
+        "en": "Choose the topic you want to learn about...",
+    },
+    "info_custom_category": {"ar": "شروحات الإدارة", "en": "Admin guides"},
+    "info_custom_prompt": {"ar": "اختار شرحًا من شروحات الإدارة:", "en": "Choose an admin guide:"},
     "info_empty": {
         "ar": "📭 لسه مفيش معلومات مضافة. اطلب من الإدارة تستخدم `/add_info` عشان تضيف أول شرح.",
         "en": "📭 No info entries added yet. Ask an admin to use `/add_info` to add the first one.",
