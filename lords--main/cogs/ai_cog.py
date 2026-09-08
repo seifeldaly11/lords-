@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import re
 
 import discord
 from discord import app_commands
@@ -17,6 +18,14 @@ log = logging.getLogger("lordsbot.ai")
 # command-a-03-2025 is an active chat model.
 TEXT_MODEL = "command-a-03-2025"
 VISION_MODEL = "command-a-vision-07-2025"  # موديل Cohere اللي بيقدر يفهم صور (عتاد/تقارير)
+
+
+def _tidy_ai_reply(answer: str) -> str:
+    """يمنع الضحك المتكرر من ابتلاع الرد، مع الإبقاء على لمسة الهزار."""
+    answer = (answer or "").strip()
+    answer = re.sub(r"ه{4,}", "هههه", answer)
+    answer = re.sub(r"(?:ha){4,}", "haha", answer, flags=re.IGNORECASE)
+    return answer[:3500]
 
 
 def _get_cohere_client():
@@ -67,7 +76,7 @@ async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None 
             return str(response)
 
     try:
-        return await asyncio.to_thread(_call)
+        return _tidy_ai_reply(await asyncio.to_thread(_call))
     except Exception as e:
         # Keep the user-facing message safe while logging enough detail for hosting diagnostics.
         log.exception(
