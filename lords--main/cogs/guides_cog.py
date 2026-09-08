@@ -65,11 +65,19 @@ class MonsterView(discord.ui.View):
 # /info (يجمع بين info.json الجاهز + الإضافات اليدوية اللي ممكن تتضمن صور)
 # ---------------------------------------------------------------------------
 
+INFO_DEFAULT_EMOJI = "👑"
+
+def _info_emoji(value: dict) -> str:
+    """يعطي الأيقونات القديمة ℹ️ مظهرًا ذهبيًا موحدًا."""
+    emoji = value.get("emoji")
+    return INFO_DEFAULT_EMOJI if not emoji or emoji in {"ℹ️", "ℹ"} else emoji
+
+
 class InfoSelect(discord.ui.Select):
     def __init__(self, info_data: dict, lang: str):
         self.info_data = info_data
         options = [
-            discord.SelectOption(label=val["title"], value=key, emoji=val.get("emoji") or "👑")
+            discord.SelectOption(label=val["title"], value=key, emoji=_info_emoji(val))
             for key, val in info_data.items()
         ]
         super().__init__(placeholder=t("info_select_placeholder", lang), options=options[:25])
@@ -77,9 +85,9 @@ class InfoSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         info = self.info_data[self.values[0]]
         embed = discord.Embed(
-            title=f"{info.get('emoji') or '👑'} {info['title']}",
+            title=f"{_info_emoji(info)} {info['title']}",
             description=info.get("desc", ""),
-            color=discord.Color.magenta(),
+            color=discord.Color.gold(),
         )
         if info.get("image_url"):
             embed.set_image(url=info["image_url"])
@@ -102,7 +110,7 @@ class InfoDeleteSelect(discord.ui.Select):
     def __init__(self, entries: dict, lang: str):
         self.lang = lang
         options = [
-            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=value.get("emoji") or "👑")
+            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=_info_emoji(value))
             for key, value in entries.items()
         ]
         super().__init__(placeholder=t("delete_info_select_placeholder", lang), options=options[:25])
@@ -155,7 +163,7 @@ class InfoEditSelect(discord.ui.Select):
         self.image = image
         self.image2 = image2
         options = [
-            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=value.get("emoji") or "👑")
+            discord.SelectOption(label=value.get("title", key)[:100], value=key, emoji=_info_emoji(value))
             for key, value in entries.items()
         ]
         super().__init__(placeholder=t("edit_info_select_placeholder", lang), options=options[:25])
@@ -401,7 +409,7 @@ class GuidesCog(commands.Cog):
         gid = str(interaction.guild_id)
         data.setdefault(gid, {})
         key = title.strip().lower().replace(" ", "_")
-        entry = {"title": title.strip(), "desc": desc.strip(), "emoji": "👑"}
+        entry = {"title": title.strip(), "desc": desc.strip(), "emoji": INFO_DEFAULT_EMOJI}
         if image:
             entry["image_url"] = image.url
         if image2:
