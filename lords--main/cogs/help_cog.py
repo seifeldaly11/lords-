@@ -354,8 +354,8 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
             "Start with **/setup** to configure the bot, then use **/language** "
             "to choose Arabic or English replies. Commands marked 🔒 need admin permissions."
         )
-        footer = "Lords Mobile Alliance Suite • Live command catalog"
-        author = "Lords Mobile • Command Center"
+        footer = "SeifEldaly • Lords Mobile Alliance Suite • Live command catalog"
+        author = "SeifEldaly • Command Center"
     else:
         title = "🏰 مركز أوامر Lords Mobile"
         description = (
@@ -369,8 +369,8 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
             "ابدأ بـ **/setup** لضبط البوت، وبعدها استخدم **/language** لاختيار العربي أو الإنجليزي. "
             "الأوامر التي عليها 🔒 تحتاج صلاحية إدارية."
         )
-        footer = "Lords Mobile Alliance Suite • كتالوج الأوامر الحي"
-        author = "Lords Mobile • مركز الأوامر"
+        footer = "SeifEldaly • Lords Mobile Alliance Suite • كتالوج الأوامر الحي"
+        author = "SeifEldaly • مركز الأوامر"
 
     embed = discord.Embed(
         title=title,
@@ -444,7 +444,7 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str, page: int 
         color=meta["color"],
     )
     if bot.user:
-        author = "Lords Mobile • مركز الأوامر" if lang == "ar" else "Lords Mobile • Command Center"
+        author = "SeifEldaly • مركز الأوامر" if lang == "ar" else "Lords Mobile • Command Center"
         embed.set_author(name=author, icon_url=bot.user.display_avatar.url)
         embed.set_thumbnail(url=bot.user.display_avatar.url)
 
@@ -484,9 +484,9 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str, page: int 
             inline=False,
         )
     footer = (
-        "استخدم القائمة والأزرار للتنقل بين كل الأوامر"
+        "SeifEldaly • استخدم القائمة والأزرار للتنقل بين كل الأوامر"
         if lang == "ar"
-        else "Use the menu and buttons to browse every command"
+        else "SeifEldaly • Use the menu and buttons to browse every command"
     )
     if page_count > 1:
         footer += f" • {page + 1}/{page_count}"
