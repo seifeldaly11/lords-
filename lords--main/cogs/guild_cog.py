@@ -332,41 +332,31 @@ async def gf_board(interaction: discord.Interaction):
     name="calc",
     description="🧮 حاسبة مهرجان التحالف: احسب إجمالي تسريعات (4h,6h,1d×3) أو اسأل عن استبدال موارد",
 )
-@app_commands.describe(query="اكتب حساب تسريعات (مثال: 8h×3) أو سؤالك عن استبدال الموارد")
+@app_commands.describe(query="Enter speedups (e.g. 8h×3)")
 async def gf_calc(interaction: discord.Interaction, query: str):
     lang = get_lang(interaction.guild_id, interaction.user.id)
 
     # نستورد هنا (مش فوق الملف) عشان نتفادى Circular Import: ai_cog.py بيستورد
     # gf_group من الملف ده، فلو استوردنا ai_cog فوق هيحصل تعارض دائري وقت التحميل.
     from cogs.events_cog import parse_speedup_text, fmt_minutes
-    from cogs.ai_cog import ask_ai
 
     total_minutes, breakdown, errors = parse_speedup_text(query, lang)
-    if breakdown and not errors:
-        # اتفهم كحساب تسريعات بالكامل -> نحسبه مباشرة من غير أي استدعاء للذكاء الاصطناعي
-        embed = discord.Embed(
-            title=t("gf_calc_speedup_result_title", lang),
-            description=f"**{fmt_minutes(total_minutes, lang)}**",
-            color=discord.Color.purple(),
-        )
-        embed.add_field(
-            name=t("speedup_breakdown_field", lang),
-            value="\n".join(f"• {line}" for line in breakdown)[:1024],
-            inline=False,
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+    if not breakdown:
+        await interaction.response.send_message(t("speedup_invalid_numbers", lang), ephemeral=True)
         return
 
-    # مش حساب تسريعات واضح -> سؤال حر (زي استبدال موارد) نحوّله للذكاء الاصطناعي
-    await interaction.response.defer(thinking=True, ephemeral=True)
-    context = (
-        "سؤال من عضو تحالف في لعبة Lords Mobile عن مهرجان التحالف أو استبدال/حساب موارد وتسريعات. "
-        "جاوب بإيجاز ودقة عملية."
+    embed = discord.Embed(
+        title=t("gf_calc_speedup_result_title", lang),
+        description=f"**{fmt_minutes(total_minutes, lang)}**",
+        color=discord.Color.purple(),
     )
-    answer = await ask_ai(query, extra_context=context, lang=lang)
-    embed = discord.Embed(title=t("gf_calc_ai_result_title", lang), description=answer[:3500], color=discord.Color.purple())
-    embed.set_footer(text=t("gf_calc_ai_footer", lang))
-    await interaction.followup.send(embed=embed, ephemeral=True)
+    if errors:
+        embed.add_field(
+            name=t("speedup_errors_field", lang),
+            value=", ".join(errors)[:1024],
+            inline=False,
+        )
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 # ---------------------------------------------------------------------------
@@ -543,7 +533,7 @@ class GuildCog(commands.Cog):
         name="information",
         description="🪪 استعلام ملف عضو: إحصائيات شاملة (مشاركات الحشود، التزام الحروب، والفعاليات)",
     )
-    @app_commands.describe(member="العضو المطلوب استعلام ملفه (افتراضياً نفسك)")
+    @app_commands.describe(member="Member to view (defaults to yourself)")
     async def information(self, interaction: discord.Interaction, member: Optional[discord.Member] = None):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         target = member or interaction.user
@@ -652,14 +642,14 @@ class GuildCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="event_stats", description="📊 تقرير شامل عن نسبة مشاركة أعضاء التحالف في فعالية معينة")
-    @app_commands.describe(event_type="الفعالية المطلوب عمل تقرير عنها")
+    @app_commands.describe(event_type="Event to report on")
     @app_commands.choices(
         event_type=[
-            app_commands.Choice(name="👥 حشود (Rally)", value="rally"),
-            app_commands.Choice(name="🎉 مهرجان التحالف", value="guild_fest"),
-            app_commands.Choice(name="🐉 ساحة التنين", value="dragon_arena"),
+            app_commands.Choice(name="👥 Rally", value="rally"),
+            app_commands.Choice(name="🎉 Guild Festival", value="guild_fest"),
+            app_commands.Choice(name="🐉 Dragon Arena", value="dragon_arena"),
             app_commands.Choice(name="⚔️ KvK", value="kvk"),
-            app_commands.Choice(name="📊 الكل مجتمعين", value="all"),
+            app_commands.Choice(name="📊 All events", value="all"),
         ]
     )
     async def event_stats(self, interaction: discord.Interaction, event_type: app_commands.Choice[str]):
