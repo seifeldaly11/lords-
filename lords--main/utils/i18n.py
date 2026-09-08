@@ -310,9 +310,9 @@ TRANSLATIONS = {
     "event_percentage_field": {"ar": "📊 نسبة الإنجاز الممكنة حالياً", "en": "📊 Currently achievable progress"},
     "event_achievable_points_field": {"ar": "🏁 النقاط اللي هتوصلها", "en": "🏁 Points you'll reach"},
     "event_missing_points_field": {"ar": "❗ النقاط اللي هتفضل ناقصة", "en": "❗ Points you'll still be missing"},
-    "event_extra_time_field": {
-        "ar": "⏳ وقت/تسريعات إضافية مطلوبة لإكمالها",
-        "en": "⏳ Extra time/speedups needed to finish",
+    "event_missing_speedups_field": {
+        "ar": "🚀 التسريعات الناقصة المطلوبة للإكمال",
+        "en": "🚀 Missing speedups needed to finish",
     },
     "event_footer": {"ar": "Lords Mobile Companion Bot", "en": "Lords Mobile Companion Bot"},
 
@@ -1221,9 +1221,8 @@ TRANSLATIONS = {
     # guild_cog.py - /gf calc
     # ------------------------------------------------------------------
     "gf_calc_prompt": {
-        "ar": "🧮 اكتب سؤالك أو حساب التسريعات (مثال: '4h, 6h, 1d×3' أو 'معايا 500 حجر وعايز أستبدلهم بخشب، ينفع؟')",
-        "en": "🧮 Type your question or speedup calculation (e.g. '4h, 6h, 1d×3' or "
-              "'I have 500 stone and want to swap it for wood, is that possible?')",
+        "ar": "🧮 اكتب التسريعات لحساب مجموعها (مثال: '4h, 6h, 1d×3')",
+        "en": "🧮 Enter speedups to calculate the total (e.g. '4h, 6h, 1d×3')", #
     },
     "gf_calc_field_query": {"ar": "🧮 سؤالك أو حساب التسريعات", "en": "🧮 Your question or speedup calc"},
     "gf_calc_modal_title": {"ar": "🧮 حاسبة مهرجان التحالف", "en": "🧮 Alliance Festival calculator"},
