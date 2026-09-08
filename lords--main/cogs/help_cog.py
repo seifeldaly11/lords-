@@ -472,7 +472,7 @@ class HelpCategorySelect(discord.ui.Select):
             if key not in available:
                 continue
             meta = CATEGORY_META[key]
-            options.append(discord.SelectOption(label=meta[lang][:100], value=key, emoji=meta["emoji"], description=CATEGORY_BLURBS.get(key, {}).get(lang, "")[:100]))
+            options.append(discord.SelectOption(label=meta[lang][:100], value=key, emoji=meta["emoji"]))
         super().__init__(
             placeholder="اختار قسم الأوامر" if lang == "ar" else "Choose a command section",
             options=options[:25],
@@ -485,29 +485,11 @@ class HelpCategorySelect(discord.ui.Select):
         )
 
 
-class HelpHomeButton(discord.ui.Button):
-    def __init__(self, bot: commands.Bot, lang: str):
-        self.bot = bot
-        self.lang = lang
-        super().__init__(
-            label="الرئيسية" if lang == "ar" else "Home",
-            emoji="🏠",
-            style=discord.ButtonStyle.secondary,
-            row=1,
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.edit_message(
-            embed=build_intro_embed(self.bot, self.lang),
-            view=self.view,
-        )
-
 
 class HelpView(discord.ui.View):
     def __init__(self, bot: commands.Bot, lang: str):
         super().__init__(timeout=600)
         self.add_item(HelpCategorySelect(bot, lang))
-        self.add_item(HelpHomeButton(bot, lang))
 
 
 class HelpCog(commands.Cog):
