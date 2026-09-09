@@ -29,27 +29,57 @@ CUSTOM_INFO_FILE = "custom_info"
 # /monster (ديناميكي بالكامل - يبدأ فاضي)
 # ---------------------------------------------------------------------------
 
+def _monster_name(entry: dict, key: str, lang: str) -> str:
+    names = entry.get("name")
+    if isinstance(names, dict):
+        return names.get(lang) or names.get("ar") or names.get("en") or key
+    return entry.get(f"name_{lang}") or names or key
+
+
+def _monster_text(value, lang: str) -> str:
+    if isinstance(value, dict):
+        return str(value.get(lang) or value.get("ar") or value.get("en") or "")
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value)
+    return str(value or "")
+
+
 class MonsterSelect(discord.ui.Select):
     def __init__(self, monster_data: dict, lang: str):
         self.monster_data = monster_data
         self.lang = lang
         options = [
-            discord.SelectOption(label=val.get("name", key), value=key, emoji=val.get("emoji") or "🐾")
-            for key, val in monster_data.items()
+            discord.SelectOption(
+                label=_monster_name(value, key, lang)[:100],
+                value=key,
+                emoji="🐾",
+            )
+            for key, value in monster_data.items()
         ]
         super().__init__(placeholder=t("monster_select_placeholder", lang), options=options[:25])
 
     async def callback(self, interaction: discord.Interaction):
         lang = self.lang
-        info = self.monster_data[self.values[0]]
+        key = self.values[0]
+        info = self.monster_data[key]
+        title = _monster_name(info, key, lang)
         embed = discord.Embed(
-            title=f"{info.get('emoji') or '🐾'} {info.get('name', self.values[0])}",
+            title=f"🐾 {title}",
             color=discord.Color.dark_green(),
         )
+        damage_type = _monster_text(info.get("damage_type"), lang)
+        heroes = _monster_text(info.get("heroes"), lang)
+        defense_note = _monster_text(info.get("defense_note"), lang)
+        if damage_type:
+            embed.add_field(name=t("monster_damage_field", lang), value=damage_type[:1024], inline=False)
+        if heroes:
+            embed.add_field(name=t("monster_heroes_field", lang), value=heroes[:1024], inline=False)
+        if defense_note:
+            embed.add_field(name=t("monster_defense_field", lang), value=defense_note[:1024], inline=False)
         if info.get("image_url"):
             embed.set_image(url=info["image_url"])
         embed.set_footer(text=t("monster_footer", lang))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
 
 class MonsterView(discord.ui.View):
@@ -64,7 +94,7 @@ class MonsterDeleteSelect(discord.ui.Select):
         self.lang = lang
         options = [
             discord.SelectOption(
-                label=value.get("name", key)[:100],
+                label=_monster_name(value, key, lang)[:100],
                 value=key,
                 emoji=value.get("emoji") or "🐾",
             )
@@ -78,7 +108,7 @@ class MonsterDeleteSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         self.view.selected_key = self.values[0]
         selected = self.entries[self.view.selected_key]
-        name = selected.get("name", self.view.selected_key)
+        name = _monster_name(selected, self.view.selected_key, self.lang)
         await interaction.response.send_message(
             t("delete_monster_selected", self.lang, name=name),
             ephemeral=True,
@@ -121,7 +151,7 @@ class MonsterDeleteView(discord.ui.View):
 
         for child in self.children:
             child.disabled = True
-        removed_name = removed.get("name", self.selected_key)
+        removed_name = _monster_name(removed, self.selected_key, self.lang)
         await interaction.response.edit_message(
             content=t("delete_monster_success", self.lang, name=removed_name),
             embed=None,
@@ -292,7 +322,7 @@ class InfoItemSelect(discord.ui.Select):
             embed.set_image(url=info["image_url"])
         if info.get("image_url_2"):
             embed.add_field(name="\u200b", value=f"[🖼️]({info['image_url_2']})", inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
 
 class InfoView(discord.ui.View):
@@ -500,45 +530,75 @@ class GuidesCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         monsters = self._get_monsters(interaction.guild_id)
         if not monsters:
-            await interaction.response.send_message(t("monster_empty", lang), ephemeral=True)
+            await interaction.response.send_message(t("monster_empty", lang))
             return
         await interaction.response.send_message(
-            t("monster_prompt", lang), view=MonsterView(monsters, lang), ephemeral=True
+            t("monster_prompt", lang), view=MonsterView(monsters, lang)
         )
 
     @app_commands.command(
         name="add_monster",
-        description="🐾 [إدارة/Admin] أضف وحشًا بالاسم والصورة | Add a monster with its name and image",
+        description="🐾 [إدارة/Admin] أضف وحشًا ببيانات عربية وإنجليزية | Add a bilingual monster",
     )
     @app_commands.describe(
-        name="اسم الوحش | Monster name",
+        name_ar="اسم الوحش بالعربي | Arabic monster name",
+        name_en="اسم الوحش بالإنجليزي | English monster name",
         image="صورة الوحش | Monster image",
+        damage_ar="نوع الضرر بالعربي (اختياري) | Damage type in Arabic (optional)",
+        damage_en="نوع الضرر بالإنجليزي (اختياري) | Damage type in English (optional)",
+        heroes_ar="الأبطال المقترحون بالعربي، افصل بينهم بفاصلة | Suggested heroes in Arabic, comma-separated",
+        heroes_en="الأبطال المقترحون بالإنجليزي، افصل بينهم بفاصلة | Suggested heroes in English, comma-separated",
+        note_ar="ملاحظة الدفاع بالعربي (اختياري) | Arabic defense note (optional)",
+        note_en="ملاحظة الدفاع بالإنجليزي (اختياري) | English defense note (optional)",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def add_monster(
         self,
         interaction: discord.Interaction,
-        name: str,
+        name_ar: str,
+        name_en: str,
         image: discord.Attachment,
+        damage_ar: Optional[str] = None,
+        damage_en: Optional[str] = None,
+        heroes_ar: Optional[str] = None,
+        heroes_en: Optional[str] = None,
+        note_ar: Optional[str] = None,
+        note_en: Optional[str] = None,
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if not (image.content_type or "").startswith("image/"):
             await interaction.response.send_message(t("add_monster_bad_image", lang), ephemeral=True)
             return
 
+        name_ar = name_ar.strip()
+        name_en = name_en.strip()
+        if not name_ar or not name_en:
+            await interaction.response.send_message(t("add_monster_names_required", lang), ephemeral=True)
+            return
+
         data = load(CUSTOM_MONSTERS_FILE)
         gid = str(interaction.guild_id)
         data.setdefault(gid, {})
-        key = name.strip().lower().replace(" ", "_")
+        key = name_en.lower().replace(" ", "_")
         entry = {
-            "name": name.strip(),
+            "name": {"ar": name_ar, "en": name_en},
             "emoji": "🐾",
             "image_url": image.url,
         }
+        if damage_ar or damage_en:
+            entry["damage_type"] = {"ar": (damage_ar or damage_en or "").strip(), "en": (damage_en or damage_ar or "").strip()}
+        if heroes_ar or heroes_en:
+            entry["heroes"] = {
+                "ar": [item.strip() for item in (heroes_ar or heroes_en or "").split(",") if item.strip()],
+                "en": [item.strip() for item in (heroes_en or heroes_ar or "").split(",") if item.strip()],
+            }
+        if note_ar or note_en:
+            entry["defense_note"] = {"ar": (note_ar or note_en or "").strip(), "en": (note_en or note_ar or "").strip()}
         data[gid][key] = entry
         save(CUSTOM_MONSTERS_FILE, data)
 
-        await interaction.response.send_message(t("add_monster_success", lang, name=name.strip()), ephemeral=True)
+        shown_name = name_en if lang == "en" else name_ar
+        await interaction.response.send_message(t("add_monster_success", lang, name=shown_name), ephemeral=True)
 
     @add_monster.error
     async def add_monster_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -606,12 +666,11 @@ class GuidesCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         info_data = self._get_info(interaction.guild_id)
         if not info_data["categories"] and not info_data["custom"]:
-            await interaction.response.send_message(t("info_empty", lang), ephemeral=True)
+            await interaction.response.send_message(t("info_empty", lang))
             return
         await interaction.response.send_message(
             t("info_prompt", lang),
             view=InfoView(info_data["categories"], info_data["custom"], lang),
-            ephemeral=True,
         )
 
     @app_commands.command(
