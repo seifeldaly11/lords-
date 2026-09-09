@@ -83,6 +83,7 @@ class EventCalcModal(discord.ui.Modal):
                     question,
                     extra_context=f"الحدث المختار: {self.event_label}. البيانات التي أدخلها المستخدم غير مكتملة أو غير صحيحة.",
                     lang=lang,
+                    guild_id=interaction.guild_id,
                 )
                 await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة الحدث", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
             else:
@@ -151,6 +152,7 @@ class EventCalcModal(discord.ui.Modal):
                 question,
                 extra_context=f"نتيجة حاسبة الحدث: {actions_needed} أفعال، التسريعات المتاحة: {fmt_minutes(speedups, lang)}.",
                 lang=lang,
+                guild_id=interaction.guild_id,
             )
             embed.add_field(name="🤖 مساعدة الـAI", value=answer[:1024], inline=False)
 
@@ -325,7 +327,7 @@ class SpeedupModal(discord.ui.Modal):
         if not breakdown:
             if question:
                 from cogs.ai_cog import ask_ai
-                answer = await ask_ai(question, extra_context=f"المدخلات التي كتبها المستخدم للتسريعات: {self.entries.value}", lang=lang)
+                answer = await ask_ai(question, extra_context=f"المدخلات التي كتبها المستخدم للتسريعات: {self.entries.value}", lang=lang, guild_id=interaction.guild_id)
                 await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة التسريعات", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
             else:
                 await (interaction.followup.send if question else interaction.response.send_message)(t("speedup_invalid_numbers", lang), ephemeral=True)
@@ -343,7 +345,7 @@ class SpeedupModal(discord.ui.Modal):
             embed.add_field(name=t("speedup_errors_field", lang), value=", ".join(errors)[:1024], inline=False)
         if question:
             from cogs.ai_cog import ask_ai
-            answer = await ask_ai(question, extra_context=f"إجمالي التسريعات المحسوب: {fmt_minutes(total_minutes, lang)}. التفاصيل: {', '.join(breakdown)}", lang=lang)
+            answer = await ask_ai(question, extra_context=f"إجمالي التسريعات المحسوب: {fmt_minutes(total_minutes, lang)}. التفاصيل: {', '.join(breakdown)}", lang=lang, guild_id=interaction.guild_id)
             embed.add_field(name="🤖 مساعدة الـAI", value=answer[:1024], inline=False)
 
         await (interaction.followup.send if question else interaction.response.send_message)(embed=embed, ephemeral=True)
