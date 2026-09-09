@@ -1191,6 +1191,12 @@ TRANSLATIONS = {
     },
     "delete_monster_not_found": {"ar": "❌ مش لاقي وحش مضاف باسم **{name}**.", "en": "❌ No custom monster named **{name}** was found."},
     "delete_monster_success": {"ar": "✅ تم حذف الوحش **{name}**.", "en": "✅ Deleted monster **{name}**."},
+    "delete_monster_prompt": {"ar": "🗑️ اختار الوحش اللي عايز تحذفه، وبعدها اضغط زر الحذف للتأكيد.", "en": "🗑️ Choose the monster to delete, then press the delete button to confirm."},
+    "delete_monster_select_placeholder": {"ar": "اختار الوحش للحذف...", "en": "Choose a monster to delete..."},
+    "delete_monster_selected": {"ar": "اخترت **{name}**. لو متأكد اضغط زر الحذف.", "en": "Selected **{name}**. Press delete if you are sure."},
+    "delete_monster_selection_needed": {"ar": "⚠️ اختار وحشًا من القائمة الأول.", "en": "⚠️ Choose a monster first."},
+    "delete_monster_confirm": {"ar": "🗑️ تأكيد الحذف", "en": "🗑️ Confirm delete"},
+    "delete_monster_empty": {"ar": "📭 مفيش وحوش مضافة للسيرفر ده حاليًا.", "en": "📭 This server has no custom monsters yet."},
 
     "add_monster_bad_image": {
         "ar": "❌ المرفق اللي حطيته مش صورة.",
