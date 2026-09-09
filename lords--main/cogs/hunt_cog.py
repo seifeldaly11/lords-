@@ -80,7 +80,7 @@ def parse_bulk_list(text: str) -> list[tuple[str, int]]:
     return results
 
 
-async def extract_from_image(image_url: str, lang: str) -> list[tuple[str, int]]:
+async def extract_from_image(image_url: str, lang: str, guild_id: int | None = None) -> list[tuple[str, int]]:
     """يستخدم موديل الرؤية (نفس بنية /ai) عشان يقرأ جدول/تقرير صيد من صورة ويرجعه كقائمة (اسم، عدد)."""
     # استيراد كسول يمنع تسجيل أمر /gf optimize مرتين أثناء تحميل الـ cogs:
     # hunt_cog يحتاج الدالة فقط وقت تنفيذ تحليل الصورة.
@@ -92,7 +92,7 @@ async def extract_from_image(image_url: str, lang: str) -> list[tuple[str, int]]
         "رجّعلي **JSON فقط** بدون أي نص تاني ولا Markdown، بالشكل ده بالظبط: "
         '[{"name": "اسم اللاعب", "hunted": 123}, ...]'
     )
-    raw = await ask_ai(prompt, image_url=image_url, lang=lang)
+    raw = await ask_ai(prompt, image_url=image_url, lang=lang, guild_id=guild_id)
     cleaned = raw.strip()
     if cleaned.startswith("```"):
         cleaned = cleaned.strip("`")
@@ -233,7 +233,7 @@ class HuntCog(commands.Cog):
                 await interaction.response.send_message(t("hunt_image_not_image", lang), ephemeral=True)
                 return
             await interaction.response.defer(thinking=True)
-            entries = await extract_from_image(image.url, lang=lang)
+            entries = await extract_from_image(image.url, lang=lang, guild_id=interaction.guild_id)
             if not entries:
                 await interaction.followup.send(t("hunt_image_extract_failed", lang))
                 return
