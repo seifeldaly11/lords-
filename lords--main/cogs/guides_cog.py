@@ -58,6 +58,77 @@ class MonsterView(discord.ui.View):
         self.add_item(MonsterSelect(monster_data, lang))
 
 
+class MonsterDeleteSelect(discord.ui.Select):
+    def __init__(self, entries: dict, lang: str):
+        self.entries = entries
+        self.lang = lang
+        options = [
+            discord.SelectOption(
+                label=value.get("name", key)[:100],
+                value=key,
+                emoji=value.get("emoji") or "🐾",
+            )
+            for key, value in entries.items()
+        ]
+        super().__init__(
+            placeholder=t("delete_monster_select_placeholder", lang),
+            options=options[:25],
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        self.view.selected_key = self.values[0]
+        selected = self.entries[self.view.selected_key]
+        name = selected.get("name", self.view.selected_key)
+        await interaction.response.send_message(
+            t("delete_monster_selected", self.lang, name=name),
+            ephemeral=True,
+        )
+
+
+class MonsterDeleteView(discord.ui.View):
+    def __init__(self, entries: dict, lang: str):
+        super().__init__(timeout=180)
+        self.entries = entries
+        self.lang = lang
+        self.selected_key = None
+        self.add_item(MonsterDeleteSelect(entries, lang))
+        self.confirm.label = t("delete_monster_confirm", lang)
+
+    @discord.ui.button(label="🗑️", style=discord.ButtonStyle.danger, row=1)
+    async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.selected_key:
+            await interaction.response.send_message(
+                t("delete_monster_selection_needed", self.lang),
+                ephemeral=True,
+            )
+            return
+
+        data = load(CUSTOM_MONSTERS_FILE)
+        gid = str(interaction.guild_id)
+        bucket = data.get(gid, {})
+        removed = bucket.pop(self.selected_key, None)
+        if removed is None:
+            await interaction.response.send_message(
+                t("delete_monster_not_found", self.lang, name=self.selected_key),
+                ephemeral=True,
+            )
+            return
+        if bucket:
+            data[gid] = bucket
+        else:
+            data.pop(gid, None)
+        save(CUSTOM_MONSTERS_FILE, data)
+
+        for child in self.children:
+            child.disabled = True
+        removed_name = removed.get("name", self.selected_key)
+        await interaction.response.edit_message(
+            content=t("delete_monster_success", self.lang, name=removed_name),
+            embed=None,
+            view=self,
+        )
+
+
 # ---------------------------------------------------------------------------
 # /info (يجمع بين info.json الجاهز + الإضافات اليدوية اللي ممكن تتضمن صور)
 # ---------------------------------------------------------------------------
@@ -477,26 +548,19 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
 
-    @app_commands.command(name="delete_monster", description="🗑️ [إدارة] احذف وحشًا مضافًا من قائمة /monster")
-    @app_commands.describe(name="Monster name or key to delete")
+    @app_commands.command(name="delete_monster", description="🗑️ [إدارة/Admin] اختر وحشًا لحذفه من قائمة /monster")
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def delete_monster(self, interaction: discord.Interaction, name: str):
+    async def delete_monster(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
-        data = load(CUSTOM_MONSTERS_FILE)
-        gid = str(interaction.guild_id)
-        bucket = data.get(gid, {})
-        normalized = name.strip().lower().replace(" ", "_")
-        key = next((k for k, value in bucket.items() if k == normalized or value.get("name", "").strip().lower() == name.strip().lower()), None)
-        if key is None:
-            await interaction.response.send_message(t("delete_monster_not_found", lang, name=name), ephemeral=True)
+        custom = self._get_monsters(interaction.guild_id)
+        if not custom:
+            await interaction.response.send_message(t("delete_monster_empty", lang), ephemeral=True)
             return
-        removed = bucket.pop(key)
-        if bucket:
-            data[gid] = bucket
-        else:
-            data.pop(gid, None)
-        save(CUSTOM_MONSTERS_FILE, data)
-        await interaction.response.send_message(t("delete_monster_success", lang, name=removed.get("name", name)), ephemeral=True)
+        await interaction.response.send_message(
+            t("delete_monster_prompt", lang),
+            view=MonsterDeleteView(custom, lang),
+            ephemeral=True,
+        )
 
     @delete_monster.error
     async def delete_monster_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
