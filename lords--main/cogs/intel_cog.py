@@ -106,7 +106,7 @@ class IntelCog(commands.Cog):
         )
         loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang), ephemeral=True)
 
-        answer = await ask_ai(_scout_prompt(lang), image_url=image.url, lang=lang)
+        answer = await ask_ai(_scout_prompt(lang), image_url=image.url, lang=lang, guild_id=interaction.guild_id)
 
         embed = styled_embed(title=t("scout_result_title", lang), description=answer[:3500], color=ROYAL_BLUE, lang=lang)
         embed.set_thumbnail(url=image.url)
