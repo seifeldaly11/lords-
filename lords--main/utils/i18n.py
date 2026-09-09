@@ -1189,6 +1189,7 @@ TRANSLATIONS = {
         "ar": "✅ تم إضافة وحش **{name}** بنجاح. جرّب `/monster` عشان تشوفه.",
         "en": "✅ Monster **{name}** was added successfully. Try `/monster` to see it.",
     },
+    "add_monster_names_required": {"ar": "❌ لازم تكتب اسم الوحش بالعربي والإنجليزي.", "en": "❌ Arabic and English monster names are required."},
     "delete_monster_not_found": {"ar": "❌ مش لاقي وحش مضاف باسم **{name}**.", "en": "❌ No custom monster named **{name}** was found."},
     "delete_monster_success": {"ar": "✅ تم حذف الوحش **{name}**.", "en": "✅ Deleted monster **{name}**."},
     "delete_monster_prompt": {"ar": "🗑️ اختار الوحش اللي عايز تحذفه، وبعدها اضغط زر الحذف للتأكيد.", "en": "🗑️ Choose the monster to delete, then press the delete button to confirm."},
