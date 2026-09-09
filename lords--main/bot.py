@@ -116,6 +116,7 @@ async def on_message(message: discord.Message):
                 prompt,
                 image_url=image.url if image else None,
                 lang=lang,
+                guild_id=message.guild.id if message.guild else None,
             )
         await message.reply(
             answer[:1900],
