@@ -25,6 +25,8 @@ def _tidy_ai_reply(answer: str) -> str:
     answer = (answer or "").strip()
     answer = re.sub(r"ه{4,}", "هههه", answer)
     answer = re.sub(r"(?:ha){4,}", "haha", answer, flags=re.IGNORECASE)
+    answer = re.sub(r"(?:ه{2,}[\s!،,.-]*){3,}", "هههه ", answer)
+    answer = re.sub(r"(?:(?:ha){1,2}[\s!,.؟?-]*){3,}", "haha ", answer, flags=re.IGNORECASE)
     return answer[:3500]
 
 
