@@ -69,7 +69,7 @@ async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None 
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
-            ],
+            ]
         )
         # cohere ClientV2 response: response.message.content هي قائمة أجزاء نصية
         try:
@@ -85,7 +85,7 @@ async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None 
             "Cohere request failed (model=%s, has_image=%s, error=%s)",
             model,
             bool(image_url),
-            type(e).__name__,
+            type(e).__name__
         )
         return t("ai_error", lang, err=type(e).__name__)
 
@@ -102,12 +102,12 @@ class AICog(commands.Cog):
 
     @app_commands.command(
         name="ai",
-        description="🤖 اسأل مستشار لوردس أو أرفق صورة عتاد/تقرير لتحليلها",
+        description="🤖 اسأل مستشار لوردس أو أرفق صورة عتاد/تقرير لتحليلها"
     )
     @app_commands.describe(
         question="Your question (optional if attaching an image)",
         image="A gear or battle report screenshot to analyze",
-        might="Your account Might, if you want it in context",
+        might="Your account Might, if you want it in context"
     )
     @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
     async def ai(
@@ -115,7 +115,7 @@ class AICog(commands.Cog):
         interaction: discord.Interaction,
         question: str = None,
         image: discord.Attachment = None,
-        might: int = None,
+        might: int = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
 
@@ -124,15 +124,15 @@ class AICog(commands.Cog):
             return
 
         if image and not (image.content_type or "").startswith("image/"):
-            await interaction.response.send_message(t("ai_bad_image", lang), ephemeral=True)
+            await interaction.response.send_message(t("ai_bad_image", lang))
             return
 
-        await interaction.response.defer(thinking=True, ephemeral=True)
+        await interaction.response.defer(thinking=True)
 
         loading_text = (
             "جارٍ فحص التشكيلة والتكتيكات... ⏳" if lang == "ar" else "Analyzing tactics and formations... ⏳"
         )
-        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang), ephemeral=True)
+        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang))
 
         extra_context = ""
         if might is not None:
@@ -143,7 +143,7 @@ class AICog(commands.Cog):
             extra_context=extra_context,
             image_url=image.url if image else None,
             lang=lang,
-            guild_id=interaction.guild_id,
+            guild_id=interaction.guild_id
         )
 
         header = t("ai_header", lang)
@@ -172,26 +172,26 @@ class GfOptimizeModal(discord.ui.Modal, title="🎉 مستشار مهرجان ا
     task = discord.ui.TextInput(
         label="📌 المهمة اللي عايز تعملها",
         placeholder="مثال: مهمة تدريب جنود / بناء / بحث",
-        style=discord.TextStyle.paragraph,
+        style=discord.TextStyle.paragraph
     )
     resources = discord.ui.TextInput(
         label="🎒 اللي معاك (تسريعات/جواهر/أي رقم)",
         placeholder="مثال: 5 ساعات تسريع تدريب، 300 جوهرة، 2 تسريع بناء عام",
-        style=discord.TextStyle.paragraph,
+        style=discord.TextStyle.paragraph
     )
     goal = discord.ui.TextInput(
         label="🎯 هدفك (اختياري)",
         placeholder="مثال: أعلى نقاط ممكنة بأقل تكلفة",
-        required=False,
+        required=False
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True, ephemeral=True)
+        await interaction.response.defer(thinking=True)
         lang = get_lang(interaction.guild_id, interaction.user.id)
         loading_text = (
             "جارٍ تحليل مهمة مهرجان النقابة... ⏳" if lang == "ar" else "Analyzing your Guild Festival task... ⏳"
         )
-        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang), ephemeral=True)
+        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang))
 
         context = (
             f"المهمة المطلوبة: {self.task.value}\n"
@@ -204,14 +204,14 @@ class GfOptimizeModal(discord.ui.Modal, title="🎉 مستشار مهرجان ا
             "اقترح عليّ أفضل طريقة أنفذ بيها مهمة مهرجان النقابة دي بالموارد اللي معايا.",
             extra_context=context,
             lang=lang,
-            guild_id=interaction.guild_id,
+            guild_id=interaction.guild_id
         )
         header = t("ai_header", lang)
         embed = styled_embed(title=f"🎉 {header}", description=answer[:3500], color=ROYAL_BLUE, lang=lang)
         try:
             await loading_msg.edit(embed=embed)
         except discord.HTTPException:
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed)
 
 
 @gf_group.command(name="optimize", description="🤖 مستشار AI يقترح أفضل طريقة لتنفيذ مهمة مهرجان النقابة بمواردك")

@@ -113,7 +113,7 @@ class ShieldTimer:
         lang: str,
         repeat_interval_seconds: Optional[float] = None,
         fallback_voice_channel: Optional[discord.VoiceChannel] = None,
-        leadership_role: Optional[discord.Role] = None,
+        leadership_role: Optional[discord.Role] = None
     ):
         self.guild_id = guild_id
         self.user_id = user_id
@@ -203,7 +203,7 @@ class ShieldCog(commands.Cog):
         unit: app_commands.Choice[str],
         repeat_every_hours: Optional[int],
         voice_channel: Optional[discord.VoiceChannel],
-        leadership_role: Optional[discord.Role] = None,
+        leadership_role: Optional[discord.Role] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
 
@@ -237,15 +237,15 @@ class ShieldCog(commands.Cog):
             lang=lang,
             repeat_interval_seconds=repeat_seconds,
             fallback_voice_channel=voice_channel,
-            leadership_role=leadership_role,
+            leadership_role=leadership_role
         )
         self.active[key] = timer
         timer.task = asyncio.create_task(self._run_cycle(timer))
 
         await interaction.response.send_message(
             embed=self._build_start_embed(amount, unit, duration_seconds, repeat_every_hours, leadership_role, lang),
-            view=self._build_link_view(interaction.guild_id, lang),
-            ephemeral=True,
+            view=self._build_link_view(interaction.guild_id, lang)
+            
         )
 
     def _build_link_view(self, guild_id: int, lang: str) -> discord.ui.View:
@@ -261,14 +261,14 @@ class ShieldCog(commands.Cog):
         duration_seconds: float,
         repeat_every_hours: Optional[int],
         leadership_role: Optional[discord.Role],
-        lang: str,
+        lang: str
     ) -> discord.Embed:
         end_time = datetime.now(timezone.utc) + timedelta(seconds=duration_seconds)
         unit_label = t(UNIT_LABEL_KEYS[unit.value], lang)
         embed = styled_embed(
             title=t("shield_started_title", lang),
             description=t("shield_duration_desc", lang, amount=amount, unit=unit_label),
-            color=GOLD,
+            color=GOLD
         )
         embed.add_field(name=t("shield_end_time_field", lang), value=f"`{end_time.strftime('%H:%M UTC')}`", inline=True)
         embed.add_field(name=t("shield_first_alert_field", lang), value=t("shield_first_alert_value", lang), inline=True)
@@ -280,7 +280,7 @@ class ShieldCog(commands.Cog):
             embed.add_field(
                 name=t("shield_repeat_field", lang),
                 value=t("shield_repeat_value", lang, hours=repeat_every_hours),
-                inline=False,
+                inline=False
             )
         return embed
 
@@ -299,7 +299,7 @@ class ShieldCog(commands.Cog):
             lang=lang,
             repeat_interval_seconds=old_timer.repeat_interval_seconds,
             fallback_voice_channel=old_timer.fallback_voice_channel,
-            leadership_role=old_timer.leadership_role,
+            leadership_role=old_timer.leadership_role
         )
         self.active[key] = new_timer
         new_timer.task = asyncio.create_task(self._run_cycle(new_timer))
@@ -307,20 +307,20 @@ class ShieldCog(commands.Cog):
         embed = styled_embed(
             title=t("shield_renewed_title", lang),
             description=t("shield_renewed_desc", lang, duration=fmt_seconds(old_timer.duration_seconds, lang)),
-            color=EMERALD,
+            color=EMERALD
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
     @app_commands.command(
         name="shield",
-        description="🛡️ منبه الدرع الذكي: تنبيه قبل 15 دقيقة، ولو محدش رد يدخل الروم الصوتية وينبّه بصوت إنذار",
+        description="🛡️ منبه الدرع الذكي: تنبيه قبل 15 دقيقة، ولو محدش رد يدخل الروم الصوتية وينبّه بصوت إنذار"
     )
     @app_commands.describe(
         amount="Duration amount",
         unit="Duration unit",
         repeat_every_hours="Optional repeat interval in hours",
         voice_channel="Optional fallback voice channel",
-        leadership_role="Optional leadership role to ping if unanswered",
+        leadership_role="Optional leadership role to ping if unanswered"
     )
     @app_commands.choices(
         unit=[
@@ -336,20 +336,20 @@ class ShieldCog(commands.Cog):
         unit: app_commands.Choice[str],
         repeat_every_hours: Optional[int] = None,
         voice_channel: Optional[discord.VoiceChannel] = None,
-        leadership_role: Optional[discord.Role] = None,
+        leadership_role: Optional[discord.Role] = None
     ):
         await self._handle_start(interaction, amount, unit, repeat_every_hours, voice_channel, leadership_role)
 
     @app_commands.command(
         name="voice_rescue",
-        description="🔊 نفس أمر /shield بالظبط - منبه درع مع تصعيد صوتي لو محدش رد",
+        description="🔊 نفس أمر /shield بالظبط - منبه درع مع تصعيد صوتي لو محدش رد"
     )
     @app_commands.describe(
         amount="Duration amount",
         unit="Duration unit",
         repeat_every_hours="Optional repeat interval in hours",
         voice_channel="Optional fallback voice channel",
-        leadership_role="Optional leadership role to ping if unanswered",
+        leadership_role="Optional leadership role to ping if unanswered"
     )
     @app_commands.choices(
         unit=[
@@ -365,7 +365,7 @@ class ShieldCog(commands.Cog):
         unit: app_commands.Choice[str],
         repeat_every_hours: Optional[int] = None,
         voice_channel: Optional[discord.VoiceChannel] = None,
-        leadership_role: Optional[discord.Role] = None,
+        leadership_role: Optional[discord.Role] = None
     ):
         await self._handle_start(interaction, amount, unit, repeat_every_hours, voice_channel, leadership_role)
 
@@ -373,7 +373,7 @@ class ShieldCog(commands.Cog):
 
     @app_commands.command(
         name="shelter_done",
-        description="✅ أوقف منبه الدرع الحالي (وأخرج البوت من الروم الصوتية لو داخل يرن)",
+        description="✅ أوقف منبه الدرع الحالي (وأخرج البوت من الروم الصوتية لو داخل يرن)"
     )
     @app_commands.describe(stop_repeat="Also cancel any scheduled repeat? (default: No)")
     async def shelter_done(self, interaction: discord.Interaction, stop_repeat: bool = False):
@@ -381,14 +381,14 @@ class ShieldCog(commands.Cog):
         key = timer_key(interaction.guild_id, interaction.user.id)
         timer = self.active.get(key)
         if not timer:
-            await interaction.response.send_message(t("shield_done_no_active", lang), ephemeral=True)
+            await interaction.response.send_message(t("shield_done_no_active", lang))
             return
         timer.ack_event.set()
         if stop_repeat:
             timer.cancelled = True
         await interaction.response.send_message(
-            t("shield_done_stopped_and_repeat", lang) if stop_repeat else t("shield_done_stopped_plain", lang),
-            ephemeral=True,
+            t("shield_done_stopped_and_repeat", lang) if stop_repeat else t("shield_done_stopped_plain", lang)
+            
         )
 
     # -- دورة التشغيل (بتتكرر لو فيه repeat_interval_seconds) -----------
@@ -410,7 +410,7 @@ class ShieldCog(commands.Cog):
                         t(
                             "shield_repeat_auto_notice", lang,
                             user=timer.user.mention,
-                            time=fmt_seconds(timer.repeat_interval_seconds, lang),
+                            time=fmt_seconds(timer.repeat_interval_seconds, lang)
                         )
                     )
                 except discord.HTTPException:
@@ -460,12 +460,12 @@ class ShieldCog(commands.Cog):
         embed = styled_embed(
             title=t("shield_pre_alert_title", lang),
             description=t("shield_pre_alert_desc", lang),
-            color=CRIMSON,
+            color=CRIMSON
         )
         embed.add_field(
             name=t("shield_progress_field", lang),
             value=progress_bar(elapsed, timer.duration_seconds),
-            inline=False,
+            inline=False
         )
         view = ShieldAckView(self, timer_key(timer.guild_id, timer.user_id), timer.user_id, lang)
         try:
@@ -473,9 +473,15 @@ class ShieldCog(commands.Cog):
                 await timer.channel.send(content=timer.user.mention, embed=embed, view=view)
         except discord.HTTPException:
             pass
+        # 🔔 رنّة خاصة: منشن للشخص في الـ DM + زر تأكيد
+        dm_view = ShieldAckView(self, timer_key(timer.guild_id, timer.user_id), timer.user_id, lang)
         try:
-            await timer.user.send(embed=embed)
-        except discord.Forbidden:
+            await timer.user.send(
+                content=f"{timer.user.mention} 🔔🛡️ {t('shield_dm_ring', lang)}",
+                embed=embed,
+                view=dm_view,
+            )
+        except (discord.Forbidden, discord.HTTPException):
             pass  # المستخدم مقفل الـ DMs
 
     async def _try_soundboard(self, voice_channel: discord.VoiceChannel):
@@ -529,7 +535,7 @@ class ShieldCog(commands.Cog):
             embed = styled_embed(
                 title=t("shield_escalated_title", lang),
                 description=desc,
-                color=CRIMSON,
+                color=CRIMSON
             )
             mentions = timer.user.mention
             if timer.leadership_role:
@@ -568,7 +574,7 @@ class ShieldCog(commands.Cog):
                 embed = styled_embed(
                     title=t("shield_ack_done_title", lang),
                     description=t("shield_ack_done_desc", lang, user=timer.user.mention),
-                    color=EMERALD,
+                    color=EMERALD
                 )
                 renew_view = discord.ui.View(timeout=300)
                 renew_button = discord.ui.Button(
@@ -590,7 +596,7 @@ class ShieldCog(commands.Cog):
                 embed = styled_embed(
                     title=t("shield_gave_up_title", lang),
                     description=t("shield_gave_up_desc", lang, user=timer.user.mention),
-                    color=CRIMSON,
+                    color=CRIMSON
                 )
                 await timer.channel.send(embed=embed)
         except discord.HTTPException:

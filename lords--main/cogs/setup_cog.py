@@ -46,7 +46,7 @@ class SetupLanguageSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         set_lang(interaction.guild_id, self.values[0])
         confirm = "✅ اتضبطت اللغة: العربية" if self.values[0] == "ar" else "✅ Language set: English"
-        await interaction.response.send_message(confirm, ephemeral=True)
+        await interaction.response.send_message(confirm)
 
 
 class SetupHuntChannelSelect(discord.ui.ChannelSelect):
@@ -56,7 +56,7 @@ class SetupHuntChannelSelect(discord.ui.ChannelSelect):
             placeholder=t("setup_hunt_channel_select_placeholder", lang),
             channel_types=[discord.ChannelType.text],
             min_values=1,
-            max_values=1,
+            max_values=1
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -68,7 +68,7 @@ class SetupHuntChannelSelect(discord.ui.ChannelSelect):
         bucket["channel_id"] = channel.id
         save(HUNT_FILE, data)
         await interaction.response.send_message(
-            t("setup_hunt_channel_set_confirm", lang, channel=channel.mention), ephemeral=True
+            t("setup_hunt_channel_set_confirm", lang, channel=channel.mention)
         )
 
 
@@ -78,7 +78,7 @@ class SetupLeadershipRoleSelect(discord.ui.RoleSelect):
         super().__init__(
             placeholder=t("setup_leadership_role_select_placeholder", lang),
             min_values=1,
-            max_values=1,
+            max_values=1
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -86,8 +86,8 @@ class SetupLeadershipRoleSelect(discord.ui.RoleSelect):
         role = self.values[0]
         set_leadership_role_id(interaction.guild_id, role.id)
         await interaction.response.send_message(
-            t("setup_leadership_role_set_confirm", lang, role=role.mention),
-            ephemeral=True,
+            t("setup_leadership_role_set_confirm", lang, role=role.mention)
+            
         )
 
 
@@ -108,7 +108,7 @@ class SetupDiagnosticsButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         embed = build_diagnostics_embed(interaction)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
 
 def _check_line(ok: bool, ok_text: str, bad_text: str, warn: bool = False) -> str:
@@ -191,12 +191,12 @@ def build_diagnostics_embed(interaction: discord.Interaction) -> discord.Embed:
         lines.append(_check_line(
             base_ok,
             t("setup_diag_base_perms_ok", lang),
-            t("setup_diag_base_perms_bad", lang),
+            t("setup_diag_base_perms_bad", lang)
         ))
         lines.append(_check_line(
             voice_ok,
             t("setup_diag_voice_perms_ok", lang),
-            t("setup_diag_voice_perms_bad", lang),
+            t("setup_diag_voice_perms_bad", lang)
         ))
 
     healthy = sum(1 for l in lines if l.startswith("✅"))
@@ -208,12 +208,12 @@ def build_diagnostics_embed(interaction: discord.Interaction) -> discord.Embed:
         title=t("setup_diag_title", lang),
         description="\n".join(lines),
         color=color,
-        lang=lang,
+        lang=lang
     )
     embed.add_field(
         name=t("setup_diag_summary_field", lang),
         value=t("setup_diag_summary_value", lang, healthy=healthy, warnings=warnings, broken=broken),
-        inline=False,
+        inline=False
     )
     return embed
 
@@ -226,7 +226,7 @@ class SetupCog(commands.Cog):
 
     @app_commands.command(
         name="setup",
-        description="⚙️ (إدارة) دليل التثبيت السريع: اللغة، قناة الصيد، رتبة القيادة - كله بضغطة زر",
+        description="⚙️ (إدارة) دليل التثبيت السريع: اللغة، قناة الصيد، رتبة القيادة - كله بضغطة زر"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setup_cmd(self, interaction: discord.Interaction):
@@ -235,14 +235,14 @@ class SetupCog(commands.Cog):
             title=t("setup_embed_title", lang),
             description=t("setup_embed_description", lang),
             color=GOLD,
-            lang=lang,
+            lang=lang
         )
         current_role_id = get_leadership_role_id(interaction.guild_id)
         if current_role_id and interaction.guild and interaction.guild.get_role(current_role_id):
             embed.add_field(
                 name=t("setup_current_role_field", lang),
                 value=interaction.guild.get_role(current_role_id).mention,
-                inline=False,
+                inline=False
             )
         await interaction.response.send_message(embed=embed, view=SetupView(lang), ephemeral=True)
 
@@ -256,7 +256,7 @@ class SetupCog(commands.Cog):
 
     @app_commands.command(
         name="setup_check",
-        description="🩺 (إدارة) فحص سريع: هل إعدادات البوت (قناة الصيد، رتبة القيادة، الصوت، الـAI...) شغالة فعلاً؟",
+        description="🩺 (إدارة) فحص سريع: هل إعدادات البوت (قناة الصيد، رتبة القيادة، الصوت، الـAI...) شغالة فعلاً؟"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setup_check(self, interaction: discord.Interaction):

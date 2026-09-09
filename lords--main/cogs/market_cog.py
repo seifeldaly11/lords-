@@ -29,7 +29,7 @@ market_group = app_commands.Group(name="market", description="💱 بورصة ت
     give_resource="نوع المورد اللي هتديه",
     give_amount="الكمية اللي هتديها",
     want_resource="نوع المورد اللي عايزه",
-    want_amount="الكمية اللي عايزها",
+    want_amount="الكمية اللي عايزها"
 )
 @app_commands.choices(give_resource=RESOURCE_CHOICES, want_resource=RESOURCE_CHOICES)
 async def market_offer(
@@ -37,12 +37,12 @@ async def market_offer(
     give_resource: app_commands.Choice[str],
     give_amount: app_commands.Range[float, 1, None],
     want_resource: app_commands.Choice[str],
-    want_amount: app_commands.Range[float, 1, None],
+    want_amount: app_commands.Range[float, 1, None]
 ):
     lang = get_lang(interaction.guild_id, interaction.user.id)
 
     if give_resource.value == want_resource.value:
-        await interaction.response.send_message(t("market_same_resource", lang), ephemeral=True)
+        await interaction.response.send_message(t("market_same_resource", lang))
         return
 
     data = load(MARKET_FILE)
@@ -69,7 +69,7 @@ async def market_offer(
     embed = discord.Embed(title=t("market_offer_added_title", lang), color=discord.Color.blue())
     embed.add_field(name=t("market_have_field", lang), value=f"{give_amount:,.0f} {give_label}")
     embed.add_field(name=t("market_want_field", lang), value=f"{want_amount:,.0f} {want_label}")
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
 
     # البحث عن تطابق تلقائي: حد تاني عرضه (يديه ما إنت عايزه) و(عايز اللي إنت عندك) بكميات كافية
     matches = [
@@ -95,7 +95,7 @@ async def market_offer(
             amount2=f"{m['give_amount']:,.0f}",
             res3=RESOURCE_LABELS_I18N[m["give"]][lang],
             want2=f"{m['want_amount']:,.0f}",
-            res4=RESOURCE_LABELS_I18N[m["want"]][lang],
+            res4=RESOURCE_LABELS_I18N[m["want"]][lang]
         )
         try:
             await interaction.channel.send(notify)
@@ -109,7 +109,7 @@ async def market_list(interaction: discord.Interaction):
     data = load(MARKET_FILE)
     offers = [o for o in data.get(str(interaction.guild_id), []) if o["active"]]
     if not offers:
-        await interaction.response.send_message(t("market_list_empty", lang), ephemeral=True)
+        await interaction.response.send_message(t("market_list_empty", lang))
         return
 
     embed = discord.Embed(title=t("market_list_title", lang), color=discord.Color.blue())
@@ -121,11 +121,11 @@ async def market_list(interaction: discord.Interaction):
                 give_amount=f"{o['give_amount']:,.0f}",
                 give_res=RESOURCE_LABELS_I18N[o["give"]][lang],
                 want_amount=f"{o['want_amount']:,.0f}",
-                want_res=RESOURCE_LABELS_I18N[o["want"]][lang],
+                want_res=RESOURCE_LABELS_I18N[o["want"]][lang]
             ),
-            inline=False,
+            inline=False
         )
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
 
 
 @market_group.command(name="cancel", description="🗑️ ألغِ آخر عرض تبادل قمت بإضافته")
@@ -136,11 +136,11 @@ async def market_cancel(interaction: discord.Interaction):
     offers = data.get(gid, [])
     mine = [o for o in offers if o["user_id"] == interaction.user.id and o["active"]]
     if not mine:
-        await interaction.response.send_message(t("market_cancel_none", lang), ephemeral=True)
+        await interaction.response.send_message(t("market_cancel_none", lang))
         return
     mine[-1]["active"] = False
     save(MARKET_FILE, data)
-    await interaction.response.send_message(t("market_cancel_success", lang), ephemeral=True)
+    await interaction.response.send_message(t("market_cancel_success", lang))
 
 
 class MarketCog(commands.Cog):

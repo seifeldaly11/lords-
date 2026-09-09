@@ -54,7 +54,7 @@ class CounterModal(discord.ui.Modal):
             cavalry_label: (ranged_label, "Wedge"),
             siege_label: (
                 ("🏹 Ranged or fast Cavalry" if lang == "en" else "🏹 رماة أو فرسان سريعة"),
-                "Wedge",
+                "Wedge"
             ),
         }
         counter_troop, formation = counter_map.get(dominant, (t("counter_mixed", lang), "Phalanx"))
@@ -62,7 +62,7 @@ class CounterModal(discord.ui.Modal):
         embed = discord.Embed(
             title=t("counter_title", lang),
             color=discord.Color.red(),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.utcnow()
         )
         breakdown = "\n".join(f"{k}: **{v:g}**" for k, v in comp.items())
         embed.add_field(name=t("counter_input_field", lang), value=breakdown, inline=False)
@@ -71,7 +71,7 @@ class CounterModal(discord.ui.Modal):
         embed.add_field(name=t("counter_formation_field", lang), value=formation, inline=False)
         embed.set_footer(text=t("counter_footer", lang))
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
 
 class CounterView(discord.ui.View):
@@ -121,10 +121,10 @@ class ReportModal(discord.ui.Modal):
         embed.add_field(name=t("report_opponent_field", lang), value=entry["opponent"], inline=True)
         embed.add_field(name=t("report_result_field", lang), value=entry["result"], inline=True)
         embed.add_field(name=t("report_notes_field", lang), value=entry["notes"], inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
 
-report_group = app_commands.Group(name="report", description="📝 تسجيل واستدعاء سجل المعارك")
+report_group = app_commands.Group(name="battlelog", description="📝 تسجيل واستدعاء سجل المعارك")
 
 
 @report_group.command(name="add", description="📝 سجّل معركة جديدة في السجل")
@@ -155,7 +155,7 @@ async def report_list(interaction: discord.Interaction, count: app_commands.Rang
     data = load(REPORTS_FILE)
     entries = data.get(str(interaction.guild_id), [])
     if not entries:
-        await interaction.response.send_message(t("report_none_yet", lang), ephemeral=True)
+        await interaction.response.send_message(t("report_none_yet", lang))
         return
 
     embed = discord.Embed(title=t("report_list_title", lang), color=discord.Color.dark_gold())
@@ -167,11 +167,11 @@ async def report_list(interaction: discord.Interaction, count: app_commands.Rang
                 lang,
                 author=e["author_name"],
                 notes=e["notes"],
-                time=e["timestamp"][:16].replace("T", " "),
+                time=e["timestamp"][:16].replace("T", " ")
             ),
-            inline=False,
+            inline=False
         )
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
 
 
 @report_group.command(name="user", description="🔍 استدعاء سجل معارك عضو معيّن")
@@ -181,7 +181,7 @@ async def report_user(interaction: discord.Interaction, member: discord.Member):
     entries = [e for e in data.get(str(interaction.guild_id), []) if e["author_id"] == member.id]
     if not entries:
         await interaction.response.send_message(
-            t("report_none_for_user", lang, member=member.mention), ephemeral=True
+            t("report_none_for_user", lang, member=member.mention)
         )
         return
 
@@ -190,9 +190,9 @@ async def report_user(interaction: discord.Interaction, member: discord.Member):
         embed.add_field(
             name=t("report_vs", lang, result=e["result"], opponent=e["opponent"]),
             value=t("report_notes_line", lang, notes=e["notes"], time=e["timestamp"][:16].replace("T", " ")),
-            inline=False,
+            inline=False
         )
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed)
 
 
 # ---------------------------------------------------------------------------
@@ -209,14 +209,14 @@ class WarCog(commands.Cog):
     async def counter(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
-            t("counter_prompt", lang), view=CounterView(lang), ephemeral=True
+            t("counter_prompt", lang), view=CounterView(lang)
         )
 
     @app_commands.command(name="analyze", description="🖼️ حلّل صورة تقرير المعركة والأرقام بالذكاء الاصطناعي")
     @app_commands.describe(
         screenshot="Battle report screenshot",
         numbers="Optional numbers from the report (troops, losses, percentages, etc.)",
-        question="Optional question for the AI",
+        question="Optional question for the AI"
     )
     @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
     async def analyze(
@@ -224,19 +224,19 @@ class WarCog(commands.Cog):
         interaction: discord.Interaction,
         screenshot: Optional[discord.Attachment] = None,
         numbers: Optional[str] = None,
-        question: Optional[str] = None,
+        question: Optional[str] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if not screenshot and not numbers and not question:
             await interaction.response.send_message(t("analyze_need_input", lang), ephemeral=True)
             return
         if screenshot and not (screenshot.content_type or "").lower().startswith("image/"):
-            await interaction.response.send_message(t("analyze_bad_image", lang), ephemeral=True)
+            await interaction.response.send_message(t("analyze_bad_image", lang))
             return
 
-        await interaction.response.defer(thinking=True, ephemeral=True)
+        await interaction.response.defer(thinking=True)
         loading_text = "جارٍ تحليل الصورة والأرقام بالذكاء الاصطناعي... ⏳" if lang == "ar" else "Analyzing the image and numbers with AI... ⏳"
-        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang), ephemeral=True)
+        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang))
         prompt = question or (
             "حلل تقرير المعركة في الصورة واستخرج الأرقام المهمة، ثم اشرح النتيجة ونقاط القوة والضعف والتوصية."
             if screenshot else "حلل أرقام تقرير المعركة واشرح النتيجة والتوصية."
@@ -251,7 +251,7 @@ class WarCog(commands.Cog):
         try:
             await loading_msg.edit(embed=embed)
         except discord.HTTPException:
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed)
 
 
 async def setup(bot: commands.Bot):

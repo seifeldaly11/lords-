@@ -113,7 +113,7 @@ class LogActivityModal(discord.ui.Modal):
         embed.add_field(name=t("log_activity_member_field", lang), value=self.member.mention, inline=True)
         embed.add_field(name=t("log_activity_type_field", lang), value=self.activity_label, inline=True)
         embed.add_field(name=t("log_activity_details_field", lang), value=self.details.value, inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
 
 class ActivityTypeSelect(discord.ui.Select):
@@ -162,14 +162,14 @@ class StatsEventView(discord.ui.View):
         bucket = self._get_bucket()
         ranked = sorted(bucket.items(), key=lambda kv: len(kv[1]["logs"]), reverse=True)[:10]
         if not ranked:
-            await interaction.response.send_message(t("stats_no_data", lang), ephemeral=True)
+            await interaction.response.send_message(t("stats_no_data", lang))
             return
         desc = "\n".join(
             t("stats_top_line", lang, rank=i + 1, name=v["name"], count=len(v["logs"]))
             for i, (uid, v) in enumerate(ranked)
         )
         embed = discord.Embed(title=t("stats_top_title", lang), description=desc, color=discord.Color.gold())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
     @discord.ui.button(label="✅ المشاركون النشطون", style=discord.ButtonStyle.primary)
     async def active(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -177,11 +177,11 @@ class StatsEventView(discord.ui.View):
         bucket = self._get_bucket()
         active_members = [v["name"] for v in bucket.values() if len(v["logs"]) >= 1]
         if not active_members:
-            await interaction.response.send_message(t("stats_no_active", lang), ephemeral=True)
+            await interaction.response.send_message(t("stats_no_active", lang))
             return
         desc = "\n".join(f"• {name}" for name in active_members[:40])
         embed = discord.Embed(title=t("stats_active_title", lang), description=desc, color=discord.Color.blue())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
     @discord.ui.button(label="😴 غير المشاركين", style=discord.ButtonStyle.danger)
     async def inactive(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -192,17 +192,17 @@ class StatsEventView(discord.ui.View):
             m for m in self.guild.members if not m.bot and str(m.id) not in active_ids
         ]
         if not inactive_members:
-            await interaction.response.send_message(t("stats_all_participated", lang), ephemeral=True)
+            await interaction.response.send_message(t("stats_all_participated", lang))
             return
         desc = "\n".join(f"• {m.mention}" for m in inactive_members[:40])
         embed = discord.Embed(
             title=t("stats_inactive_title", lang),
             description=desc,
-            color=discord.Color.dark_grey(),
+            color=discord.Color.dark_grey()
         )
         if len(inactive_members) > 40:
             embed.set_footer(text=t("stats_inactive_extra_footer", lang, count=len(inactive_members) - 40))
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
 
 # ---------------------------------------------------------------------------
@@ -254,8 +254,8 @@ class GfTaskModal(discord.ui.Modal):
         save(GF_FILE, data)
 
         await interaction.response.send_message(
-            t("gf_task_added", lang, task=self.task_name.value, member=self.member.mention, minutes=minutes),
-            ephemeral=True,
+            t("gf_task_added", lang, task=self.task_name.value, member=self.member.mention, minutes=minutes)
+            
         )
 
         channel = interaction.channel
@@ -293,7 +293,7 @@ async def gf_done(interaction: discord.Interaction, member: discord.Member):
     tasks = data.get(gid, {}).get("tasks", [])
     pending = [task for task in tasks if task["member_id"] == member.id and not task["done"]]
     if not pending:
-        await interaction.response.send_message(t("gf_no_pending_task", lang), ephemeral=True)
+        await interaction.response.send_message(t("gf_no_pending_task", lang))
         return
     pending[-1]["done"] = True
     data.setdefault(gid, {}).setdefault("completed", {})
@@ -330,7 +330,7 @@ async def gf_board(interaction: discord.Interaction):
 
 @gf_group.command(
     name="calc",
-    description="🧮 حاسبة مهرجان التحالف: احسب إجمالي تسريعات (4h,6h,1d×3) أو اسأل عن استبدال موارد",
+    description="🧮 حاسبة مهرجان التحالف: احسب إجمالي تسريعات (4h,6h,1d×3) أو اسأل عن استبدال موارد"
 )
 @app_commands.describe(query="Enter speedups (e.g. 8h×3)")
 async def gf_calc(interaction: discord.Interaction, query: str):
@@ -348,13 +348,13 @@ async def gf_calc(interaction: discord.Interaction, query: str):
     embed = discord.Embed(
         title=t("gf_calc_speedup_result_title", lang),
         description=f"**{fmt_minutes(total_minutes, lang)}**",
-        color=discord.Color.purple(),
+        color=discord.Color.purple()
     )
     if errors:
         embed.add_field(
             name=t("speedup_errors_field", lang),
             value=", ".join(errors)[:1024],
-            inline=False,
+            inline=False
         )
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -383,7 +383,7 @@ class QuizView(discord.ui.View):
         async def callback(self, interaction: discord.Interaction):
             lang = get_lang(interaction.guild_id, interaction.user.id)
             if interaction.user.id in self.parent_view.answered_users:
-                await interaction.response.send_message(t("quiz_already_answered", lang), ephemeral=True)
+                await interaction.response.send_message(t("quiz_already_answered", lang))
                 return
             self.parent_view.answered_users.add(interaction.user.id)
 
@@ -401,7 +401,7 @@ class QuizView(discord.ui.View):
             rank = get_rank(points, lang)
             msg = t("quiz_correct", lang) if correct else t("quiz_wrong", lang)
             await interaction.response.send_message(
-                t("quiz_result_footer", lang, msg=msg, points=points, rank=rank), ephemeral=True
+                t("quiz_result_footer", lang, msg=msg, points=points, rank=rank)
             )
 
 
@@ -423,7 +423,7 @@ def build_admin_dashboard_embed(member: discord.Member, stats: dict, lang: str) 
     embed = discord.Embed(
         title=t("admin_dashboard_title", lang, name=member.display_name),
         color=discord.Color.dark_teal(),
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.utcnow()
     )
     embed.set_thumbnail(url=member.display_avatar.url)
     embed.add_field(
@@ -435,9 +435,9 @@ def build_admin_dashboard_embed(member: discord.Member, stats: dict, lang: str) 
             guild_fest=counts["guild_fest"],
             gf_completed=gf_completed,
             dragon_arena=counts["dragon_arena"],
-            kvk=counts["kvk"],
+            kvk=counts["kvk"]
         ),
-        inline=True,
+        inline=True
     )
     embed.add_field(
         name=t("admin_dashboard_rally_field", lang),
@@ -445,9 +445,9 @@ def build_admin_dashboard_embed(member: discord.Member, stats: dict, lang: str) 
             "admin_dashboard_rally_value",
             lang,
             total=len(rally_entries),
-            wins=sum(1 for e in rally_entries if e.get("result") == "win"),
+            wins=sum(1 for e in rally_entries if e.get("result") == "win")
         ),
-        inline=True,
+        inline=True
     )
     embed.add_field(name=t("admin_dashboard_reports_field", lang), value=str(len(reports)), inline=True)
 
@@ -508,7 +508,7 @@ class GuildCog(commands.Cog):
         await interaction.response.send_message(
             t("log_activity_prompt", lang, member=member.mention),
             view=ActivityTypeView(member, lang),
-            ephemeral=True,
+            ephemeral=True
         )
 
     @log_activity.error
@@ -517,7 +517,7 @@ class GuildCog(commands.Cog):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
                 t("log_activity_admin_only", lang),
-                ephemeral=True,
+                ephemeral=True
             )
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
@@ -531,7 +531,7 @@ class GuildCog(commands.Cog):
 
     @app_commands.command(
         name="information",
-        description="🪪 استعلام ملف عضو: إحصائيات شاملة (مشاركات الحشود، التزام الحروب، والفعاليات)",
+        description="🪪 استعلام ملف عضو: إحصائيات شاملة (مشاركات الحشود، التزام الحروب، والفعاليات)"
     )
     @app_commands.describe(member="Member to view (defaults to yourself)")
     async def information(self, interaction: discord.Interaction, member: Optional[discord.Member] = None):
@@ -560,7 +560,7 @@ class GuildCog(commands.Cog):
         embed = discord.Embed(
             title=t("info_profile_title", lang, name=target.display_name),
             color=discord.Color.blurple(),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.utcnow()
         )
         embed.set_thumbnail(url=target.display_avatar.url)
         embed.add_field(
@@ -574,31 +574,31 @@ class GuildCog(commands.Cog):
                 defense_label=rally_type_label("defense", lang),
                 defense=rally_defense,
                 win_label=rally_result_label("win", lang),
-                wins=rally_wins,
+                wins=rally_wins
             ),
-            inline=True,
+            inline=True
         )
         embed.add_field(
             name=t("info_war_field", lang),
             value=t("info_war_value", lang, kvk=kvk_count, reports=reports_count),
-            inline=True,
+            inline=True
         )
         embed.add_field(
             name=t("info_events_field", lang),
             value=t("info_events_value", lang, fest=fest_count, gf_completed=gf_completed, dragon=dragon_count),
-            inline=True,
+            inline=True
         )
         embed.add_field(
             name=t("info_rank_field", lang),
             value=t("info_rank_value", lang, rank=rank, points=total_points),
-            inline=False,
+            inline=False
         )
         embed.set_footer(text=t("info_footer", lang, user=interaction.user.display_name))
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(
         name="user_admin_check",
-        description="🛡️ (إدارة) لوحة متابعة شاملة: اختر عضو من قائمة واستعرض سجل مشاركته في كل الأحداث",
+        description="🛡️ (إدارة) لوحة متابعة شاملة: اختر عضو من قائمة واستعرض سجل مشاركته في كل الأحداث"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def user_admin_check(self, interaction: discord.Interaction):
@@ -636,7 +636,7 @@ class GuildCog(commands.Cog):
         embed = discord.Embed(
             title=t("top5_title", lang),
             description="\n".join(lines),
-            color=discord.Color.gold(),
+            color=discord.Color.gold()
         )
         embed.set_footer(text=t("top5_footer", lang))
         await interaction.response.send_message(embed=embed)
@@ -680,12 +680,12 @@ class GuildCog(commands.Cog):
         embed = discord.Embed(
             title=t("event_stats_title", lang, name=event_type.name),
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.utcnow()
         )
         embed.add_field(
             name=t("event_stats_participated_field", lang),
             value=t("event_stats_participated_value", lang, count=len(participants), total=total_count),
-            inline=True,
+            inline=True
         )
         embed.add_field(
             name=t("event_stats_percentage_field", lang), value=f"{percentage:.1f}%", inline=True
@@ -697,7 +697,7 @@ class GuildCog(commands.Cog):
             embed.add_field(
                 name=t("event_stats_non_participants_field", lang, count=len(non_participants)),
                 value=preview,
-                inline=False,
+                inline=False
             )
         await interaction.response.send_message(embed=embed)
 
@@ -727,7 +727,7 @@ class GuildCog(commands.Cog):
         embed = discord.Embed(
             title=t("quiz_embed_title", lang),
             description=question["question"],
-            color=discord.Color.blurple(),
+            color=discord.Color.blurple()
         )
         embed.set_footer(text=t("quiz_embed_footer", lang))
         await interaction.response.send_message(embed=embed, view=view)
@@ -739,7 +739,7 @@ class GuildCog(commands.Cog):
         await interaction.response.send_message(
             t("reset_confirm_prompt", lang),
             view=ResetConfirmView(lang),
-            ephemeral=True,
+            ephemeral=True
         )
 
     @reset_stats.error

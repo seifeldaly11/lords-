@@ -159,13 +159,13 @@ class HuntCog(commands.Cog):
 
     @app_commands.command(
         name="hunt_log",
-        description="🐾 سجّل صيد: يدوي لعضو، أو صورة جدول/تقرير صيد، أو قائمة مجمّعة (اسم + رقم بكل سطر)",
+        description="🐾 سجّل صيد: يدوي لعضو، أو صورة جدول/تقرير صيد، أو قائمة مجمّعة (اسم + رقم بكل سطر)"
     )
     @app_commands.describe(
         member="Member to log for (defaults to yourself)",
         hunted="Number of monsters hunted",
         image="Hunt table or report image for automatic analysis",
-        bulk_list="Bulk list: one member and count per line",
+        bulk_list="Bulk list: one member and count per line"
     )
     async def hunt_log(
         self,
@@ -173,15 +173,15 @@ class HuntCog(commands.Cog):
         member: Optional[discord.Member] = None,
         hunted: Optional[int] = None,
         image: Optional[discord.Attachment] = None,
-        bulk_list: Optional[str] = None,
+        bulk_list: Optional[str] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         modes_used = sum(x is not None for x in (hunted, image, bulk_list))
         if modes_used == 0:
-            await interaction.response.send_message(t("hunt_need_one_mode", lang), ephemeral=True)
+            await interaction.response.send_message(t("hunt_need_one_mode", lang))
             return
         if modes_used > 1:
-            await interaction.response.send_message(t("hunt_only_one_mode", lang), ephemeral=True)
+            await interaction.response.send_message(t("hunt_only_one_mode", lang))
             return
 
         data = load(HUNT_FILE)
@@ -206,9 +206,9 @@ class HuntCog(commands.Cog):
                 description=t(
                     "hunt_manual_log_desc", lang,
                     member=target_member.mention, hunted=hunted, total=total_today,
-                    target=daily_target, status=status,
+                    target=daily_target, status=status
                 ),
-                color=discord.Color.green(),
+                color=discord.Color.green()
             )
             await interaction.response.send_message(embed=embed)
             await self._mirror_to_hunt_channel(interaction, channel_id, embed)
@@ -218,7 +218,7 @@ class HuntCog(commands.Cog):
         if bulk_list is not None:
             entries = parse_bulk_list(bulk_list)
             if not entries:
-                await interaction.response.send_message(t("hunt_bulk_parse_failed", lang), ephemeral=True)
+                await interaction.response.send_message(t("hunt_bulk_parse_failed", lang))
                 return
             await interaction.response.defer(thinking=True)
             matched, unmatched, daily_target, _ = self._apply_bulk(interaction.guild, entries)
@@ -230,7 +230,7 @@ class HuntCog(commands.Cog):
         # -- وضع الصورة ------------------------------------------------------
         if image is not None:
             if not (image.content_type or "").startswith("image/"):
-                await interaction.response.send_message(t("hunt_image_not_image", lang), ephemeral=True)
+                await interaction.response.send_message(t("hunt_image_not_image", lang))
                 return
             await interaction.response.defer(thinking=True)
             entries = await extract_from_image(image.url, lang=lang, guild_id=interaction.guild_id)
@@ -249,12 +249,12 @@ class HuntCog(commands.Cog):
         unmatched: list[tuple[str, int]],
         daily_target: int,
         lang: str,
-        from_image: bool = False,
+        from_image: bool = False
     ) -> discord.Embed:
         suffix = t("hunt_report_title_image_suffix", lang) if from_image else t("hunt_report_title_bulk_suffix", lang)
         embed = discord.Embed(
             title=t("hunt_report_title", lang) + suffix,
-            color=discord.Color.green() if matched else discord.Color.orange(),
+            color=discord.Color.green() if matched else discord.Color.orange()
         )
         if matched:
             lines = []
@@ -269,7 +269,7 @@ class HuntCog(commands.Cog):
             embed.add_field(
                 name=t("hunt_report_unmatched_field", lang, count=len(unmatched)),
                 value="\n".join(lines) + "\n" + t("hunt_report_unmatched_hint", lang),
-                inline=False,
+                inline=False
             )
         embed.set_footer(text=t("hunt_report_footer", lang, target=daily_target))
         return embed
@@ -278,18 +278,18 @@ class HuntCog(commands.Cog):
 
     @app_commands.command(
         name="hunt_channel",
-        description="📍 (إدارة) حدد قناة إرسال تقارير وقوائم الصيد، وحدّث التارجت اليومي لو حبيت",
+        description="📍 (إدارة) حدد قناة إرسال تقارير وقوائم الصيد، وحدّث التارجت اليومي لو حبيت"
     )
     @app_commands.describe(
         channel="Channel for hunt reports and summaries",
-        daily_target="Optional daily target per member",
+        daily_target="Optional daily target per member"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def hunt_channel(
         self,
         interaction: discord.Interaction,
         channel: discord.TextChannel,
-        daily_target: Optional[int] = None,
+        daily_target: Optional[int] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if daily_target is not None and daily_target <= 0:
@@ -327,7 +327,7 @@ class HuntCog(commands.Cog):
         today = today_str()
 
         if not members_data:
-            await interaction.response.send_message(t("hunt_list_empty", lang), ephemeral=True)
+            await interaction.response.send_message(t("hunt_list_empty", lang))
             return
 
         done_lines, pending_lines = [], []
@@ -341,7 +341,7 @@ class HuntCog(commands.Cog):
                 remaining = daily_target - hunted
                 pending_lines.append((
                     remaining,
-                    t("hunt_pending_line", lang, name=name, bar=bar, hunted=hunted, target=daily_target, remaining=remaining),
+                    t("hunt_pending_line", lang, name=name, bar=bar, hunted=hunted, target=daily_target, remaining=remaining)
                 ))
 
         done_lines.sort(key=lambda x: x[0], reverse=True)
@@ -350,19 +350,19 @@ class HuntCog(commands.Cog):
         embed = discord.Embed(
             title=t("hunt_list_title", lang),
             color=GOLD,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(timezone.utc)
         )
         if pending_lines:
             embed.add_field(
                 name=t("hunt_list_pending_field", lang, count=len(pending_lines)),
                 value="\n".join(l for _, l in pending_lines[:20]) or "-",
-                inline=False,
+                inline=False
             )
         if done_lines:
             embed.add_field(
                 name=t("hunt_list_done_field", lang, count=len(done_lines)),
                 value="\n".join(l for _, l in done_lines[:20]) or "-",
-                inline=False,
+                inline=False
             )
         embed.set_footer(text=t("hunt_list_footer", lang, target=daily_target, count=len(members_data)))
         await interaction.response.send_message(embed=embed)

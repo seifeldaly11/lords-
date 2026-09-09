@@ -52,7 +52,7 @@ class MonsterSelect(discord.ui.Select):
             discord.SelectOption(
                 label=_monster_name(value, key, lang)[:100],
                 value=key,
-                emoji="🐾",
+                emoji="🐲"
             )
             for key, value in monster_data.items()
         ]
@@ -64,8 +64,8 @@ class MonsterSelect(discord.ui.Select):
         info = self.monster_data[key]
         title = _monster_name(info, key, lang)
         embed = discord.Embed(
-            title=f"🐾 {title}",
-            color=discord.Color.dark_green(),
+            title=f"🐲 {title}",
+            color=discord.Color.dark_green()
         )
         damage_type = _monster_text(info.get("damage_type"), lang)
         heroes = _monster_text(info.get("heroes"), lang)
@@ -96,13 +96,13 @@ class MonsterDeleteSelect(discord.ui.Select):
             discord.SelectOption(
                 label=_monster_name(value, key, lang)[:100],
                 value=key,
-                emoji=value.get("emoji") or "🐾",
+                emoji=value.get("emoji") or "🐲"
             )
             for key, value in entries.items()
         ]
         super().__init__(
             placeholder=t("delete_monster_select_placeholder", lang),
-            options=options[:25],
+            options=options[:25]
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -110,8 +110,8 @@ class MonsterDeleteSelect(discord.ui.Select):
         selected = self.entries[self.view.selected_key]
         name = _monster_name(selected, self.view.selected_key, self.lang)
         await interaction.response.send_message(
-            t("delete_monster_selected", self.lang, name=name),
-            ephemeral=True,
+            t("delete_monster_selected", self.lang, name=name)
+            
         )
 
 
@@ -128,8 +128,8 @@ class MonsterDeleteView(discord.ui.View):
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.selected_key:
             await interaction.response.send_message(
-                t("delete_monster_selection_needed", self.lang),
-                ephemeral=True,
+                t("delete_monster_selection_needed", self.lang)
+                
             )
             return
 
@@ -139,8 +139,8 @@ class MonsterDeleteView(discord.ui.View):
         removed = bucket.pop(self.selected_key, None)
         if removed is None:
             await interaction.response.send_message(
-                t("delete_monster_not_found", self.lang, name=self.selected_key),
-                ephemeral=True,
+                t("delete_monster_not_found", self.lang, name=self.selected_key)
+                
             )
             return
         if bucket:
@@ -155,7 +155,7 @@ class MonsterDeleteView(discord.ui.View):
         await interaction.response.edit_message(
             content=t("delete_monster_success", self.lang, name=removed_name),
             embed=None,
-            view=self,
+            view=self
         )
 
 
@@ -183,7 +183,7 @@ LEGACY_INFO_TRANSLATIONS = (
     (("cavalry", "الفرسان", "فرسان"), "Best Cavalry Hero Lineups", "Cavalry lineups are designed for fast, high-impact attacks and cavalry rallies. Pick cavalry attack heroes with suitable support heroes, then choose the wedge or phalanx that matches the target. Check the enemy report before committing, because the best cavalry lineup changes with the target formation, gear quality, and troop balance."),
     (("familiar", "الوحوش", "المهارة"), "Best Familiars by Skills", "Choose familiars by the skill that supports your current goal: troop training, research, construction, gathering, monster hunting, or war. Prioritize skills that affect your daily bottleneck, level the familiars consistently, and avoid investing all resources into a familiar whose skill does not match your account plan."),
     (("pact 3", "لفيفة 3", "اللفيفة 3"), "Pact 3 Familiars Guide", "Pact 3 familiars can provide useful boosts for growth, training, gathering, and early war preparation. Compare each familiar by its active and passive skills, focus on the bonuses your account uses most, and spend merging and leveling materials gradually instead of spreading them across every option."),
-    (("paragon", "قدوة الممالك", "حدث قدوة"), "Kingdom Paragon Event Guide", "Kingdom Paragon is a limited event where kingdoms compete through scheduled challenges and score opportunities. Check the event tasks before spending resources, coordinate with your guild, and save speed-ups, troops, or items for the stages that give the best return. Track the event timer and claim every available reward before it ends."),
+    (("paragon", "قدوة الممالك", "حدث قدوة"), "Kingdom Paragon Event Guide", "Kingdom Paragon is a limited event where kingdoms compete through scheduled challenges and score opportunities. Check the event tasks before spending resources, coordinate with your guild, and save speed-ups, troops, or items for the stages that give the best return. Track the event timer and claim every available reward before it ends.")
 )
 
 
@@ -258,7 +258,7 @@ class InfoCategorySelect(discord.ui.Select):
             discord.SelectOption(
                 label=_localized(category.get("title"), lang)[:100],
                 value=key,
-                emoji=_info_emoji(category, "📚"),
+                emoji=_info_emoji(category, "📚")
             )
             for key, category in self.categories.items()
         ]
@@ -267,7 +267,7 @@ class InfoCategorySelect(discord.ui.Select):
                 discord.SelectOption(
                     label=t("info_custom_category", lang),
                     value="__custom__",
-                    emoji="📝",
+                    emoji="📝"
                 )
             )
         super().__init__(placeholder=t("info_select_placeholder", lang), options=options[:25])
@@ -277,7 +277,7 @@ class InfoCategorySelect(discord.ui.Select):
         if selected == "__custom__":
             await interaction.response.edit_message(
                 content=t("info_custom_prompt", self.lang),
-                view=InfoItemView(self.custom_info, self.lang, self.categories.values(), self.custom_info),
+                view=InfoItemView(self.custom_info, self.lang, self.categories.values(), self.custom_info)
             )
             return
         category = self.categories[selected]
@@ -285,9 +285,9 @@ class InfoCategorySelect(discord.ui.Select):
             content=t(
                 "info_category_prompt",
                 self.lang,
-                category=_localized(category.get("title"), self.lang),
+                category=_localized(category.get("title"), self.lang)
             ),
-            view=InfoItemView(category.get("items", []), self.lang, self.categories.values(), self.custom_info),
+            view=InfoItemView(category.get("items", []), self.lang, self.categories.values(), self.custom_info)
         )
 
 
@@ -303,7 +303,7 @@ class InfoItemSelect(discord.ui.Select):
             discord.SelectOption(
                 label=_localized(value.get("title", key), lang)[:100],
                 value=key,
-                emoji=_info_emoji(value, "📝"),
+                emoji=_info_emoji(value, "📝")
             )
             for key, value in self.items.items()
         ]
@@ -316,7 +316,7 @@ class InfoItemSelect(discord.ui.Select):
         embed = discord.Embed(
             title=f"{_info_emoji(info, '📝')} {title}",
             description=description,
-            color=discord.Color.gold(),
+            color=discord.Color.gold()
         )
         if info.get("image_url"):
             embed.set_image(url=info["image_url"])
@@ -343,7 +343,7 @@ class InfoItemView(discord.ui.View):
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(
             content=t("info_prompt", self.lang),
-            view=InfoView(self.categories, self.custom_info, self.lang),
+            view=InfoView(self.categories, self.custom_info, self.lang)
         )
 
 
@@ -358,7 +358,7 @@ class InfoDeleteSelect(discord.ui.Select):
             discord.SelectOption(
                 label=_localized(value.get("title", key), lang)[:100],
                 value=key,
-                emoji=_info_emoji(value),
+                emoji=_info_emoji(value)
             )
             for key, value in entries.items()
         ]
@@ -368,7 +368,7 @@ class InfoDeleteSelect(discord.ui.Select):
         self.view.selected_key = self.values[0]
         entry = self.view.entries[self.view.selected_key]
         title = _localized(entry.get("title", self.view.selected_key), self.lang)
-        await interaction.response.send_message(t("delete_info_selected", self.lang, title=title), ephemeral=True)
+        await interaction.response.send_message(t("delete_info_selected", self.lang, title=title))
 
 
 class InfoDeleteView(discord.ui.View):
@@ -383,14 +383,14 @@ class InfoDeleteView(discord.ui.View):
     @discord.ui.button(label="🗑️", style=discord.ButtonStyle.danger, row=1)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not self.selected_key:
-            await interaction.response.send_message(t("delete_info_selection_needed", self.lang), ephemeral=True)
+            await interaction.response.send_message(t("delete_info_selection_needed", self.lang))
             return
         data = load(CUSTOM_INFO_FILE)
         gid = str(interaction.guild_id)
         bucket = data.get(gid, {})
         removed = bucket.pop(self.selected_key, None)
         if removed is None:
-            await interaction.response.send_message(t("delete_info_not_found", self.lang, title=self.selected_key), ephemeral=True)
+            await interaction.response.send_message(t("delete_info_not_found", self.lang, title=self.selected_key))
             return
         if bucket:
             data[gid] = bucket
@@ -403,7 +403,7 @@ class InfoDeleteView(discord.ui.View):
         await interaction.response.edit_message(
             content=t("delete_info_success", self.lang, title=removed_title),
             embed=None,
-            view=self,
+            view=self
         )
 
 
@@ -417,7 +417,7 @@ class InfoEditSelect(discord.ui.Select):
             discord.SelectOption(
                 label=_localized(value.get("title", key), lang)[:100],
                 value=key,
-                emoji=_info_emoji(value),
+                emoji=_info_emoji(value)
             )
             for key, value in entries.items()
         ]
@@ -448,27 +448,27 @@ class InfoEditModal(discord.ui.Modal):
             label=t("info_title_ar_field", lang)[:45],
             default=_localized(entry.get("title", ""), "ar")[:100],
             required=True,
-            max_length=100,
+            max_length=100
         )
         self.title_en_input = discord.ui.TextInput(
             label=t("info_title_en_field", lang)[:45],
             default=_localized(entry.get("title", ""), "en")[:100],
             required=True,
-            max_length=100,
+            max_length=100
         )
         self.desc_ar_input = discord.ui.TextInput(
             label=t("info_desc_ar_field", lang)[:45],
             default=_localized(entry.get("desc", ""), "ar")[:4000],
             style=discord.TextStyle.paragraph,
             required=True,
-            max_length=4000,
+            max_length=4000
         )
         self.desc_en_input = discord.ui.TextInput(
             label=t("info_desc_en_field", lang)[:45],
             default=_localized(entry.get("desc", ""), "en")[:4000],
             style=discord.TextStyle.paragraph,
             required=True,
-            max_length=4000,
+            max_length=4000
         )
         self.add_item(self.title_ar_input)
         self.add_item(self.title_en_input)
@@ -481,7 +481,7 @@ class InfoEditModal(discord.ui.Modal):
         bucket = data.get(gid, {})
         entry = bucket.get(self.key)
         if entry is None:
-            await interaction.response.send_message(t("delete_info_not_found", self.lang, title=self.key), ephemeral=True)
+            await interaction.response.send_message(t("delete_info_not_found", self.lang, title=self.key))
             return
         entry["title"] = {
             "ar": self.title_ar_input.value.strip(),
@@ -498,8 +498,8 @@ class InfoEditModal(discord.ui.Modal):
         save(CUSTOM_INFO_FILE, data)
         saved_title = _localized(entry["title"], self.lang)
         await interaction.response.send_message(
-            t("edit_info_success", self.lang, title=saved_title),
-            ephemeral=True,
+            t("edit_info_success", self.lang, title=saved_title)
+            
         )
 
 class GuidesCog(commands.Cog):
@@ -525,7 +525,7 @@ class GuidesCog(commands.Cog):
 
     # -- /monster + /add_monster ----------------------------------------
 
-    @app_commands.command(name="monster", description="🐾 أفضل أبطال الصيد حسب اسم الوحش")
+    @app_commands.command(name="monster", description="🐲 أفضل أبطال الصيد حسب اسم الوحش")
     async def monster(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         monsters = self._get_monsters(interaction.guild_id)
@@ -538,7 +538,7 @@ class GuidesCog(commands.Cog):
 
     @app_commands.command(
         name="add_monster",
-        description="🐾 [إدارة/Admin] أضف وحشًا ببيانات عربية وإنجليزية | Add a bilingual monster",
+        description="🐲 [إدارة/Admin] أضف وحشًا ببيانات عربية وإنجليزية | Add a bilingual monster"
     )
     @app_commands.describe(
         name_ar="اسم الوحش بالعربي | Arabic monster name",
@@ -549,7 +549,7 @@ class GuidesCog(commands.Cog):
         heroes_ar="الأبطال المقترحون بالعربي، افصل بينهم بفاصلة | Suggested heroes in Arabic, comma-separated",
         heroes_en="الأبطال المقترحون بالإنجليزي، افصل بينهم بفاصلة | Suggested heroes in English, comma-separated",
         note_ar="ملاحظة الدفاع بالعربي (اختياري) | Arabic defense note (optional)",
-        note_en="ملاحظة الدفاع بالإنجليزي (اختياري) | English defense note (optional)",
+        note_en="ملاحظة الدفاع بالإنجليزي (اختياري) | English defense note (optional)"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def add_monster(
@@ -563,17 +563,17 @@ class GuidesCog(commands.Cog):
         heroes_ar: Optional[str] = None,
         heroes_en: Optional[str] = None,
         note_ar: Optional[str] = None,
-        note_en: Optional[str] = None,
+        note_en: Optional[str] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if not (image.content_type or "").startswith("image/"):
-            await interaction.response.send_message(t("add_monster_bad_image", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_monster_bad_image", lang))
             return
 
         name_ar = name_ar.strip()
         name_en = name_en.strip()
         if not name_ar or not name_en:
-            await interaction.response.send_message(t("add_monster_names_required", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_monster_names_required", lang))
             return
 
         data = load(CUSTOM_MONSTERS_FILE)
@@ -582,7 +582,7 @@ class GuidesCog(commands.Cog):
         key = name_en.lower().replace(" ", "_")
         entry = {
             "name": {"ar": name_ar, "en": name_en},
-            "emoji": "🐾",
+            "emoji": "🐲",
             "image_url": image.url,
         }
         if damage_ar or damage_en:
@@ -614,12 +614,12 @@ class GuidesCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         custom = self._get_monsters(interaction.guild_id)
         if not custom:
-            await interaction.response.send_message(t("delete_monster_empty", lang), ephemeral=True)
+            await interaction.response.send_message(t("delete_monster_empty", lang))
             return
         await interaction.response.send_message(
             t("delete_monster_prompt", lang),
             view=MonsterDeleteView(custom, lang),
-            ephemeral=True,
+            ephemeral=True
         )
 
     @delete_monster.error
@@ -641,14 +641,14 @@ class GuidesCog(commands.Cog):
             close = [k for k in self.dict_data if term.lower() in k.lower()]
             if close:
                 await interaction.response.send_message(
-                    t("dict_not_found_suggest", lang, term=term, suggestions=", ".join(close[:5])),
-                    ephemeral=True,
+                    t("dict_not_found_suggest", lang, term=term, suggestions=", ".join(close[:5]))
+                    
                 )
             else:
-                await interaction.response.send_message(t("dict_not_found", lang, term=term), ephemeral=True)
+                await interaction.response.send_message(t("dict_not_found", lang, term=term))
             return
         embed = discord.Embed(title=f"📖 {term.upper()}", description=match, color=discord.Color.light_grey())
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
     @dict_cmd.autocomplete("term")
     async def dict_autocomplete(self, interaction: discord.Interaction, current: str):
@@ -660,7 +660,7 @@ class GuidesCog(commands.Cog):
 
     @app_commands.command(
         name="info",
-        description="ℹ️ شرح الأدلة والفعاليات | Lords guides and events",
+        description="ℹ️ شرح الأدلة والفعاليات | Lords guides and events"
     )
     async def info(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -670,12 +670,12 @@ class GuidesCog(commands.Cog):
             return
         await interaction.response.send_message(
             t("info_prompt", lang),
-            view=InfoView(info_data["categories"], info_data["custom"], lang),
+            view=InfoView(info_data["categories"], info_data["custom"], lang)
         )
 
     @app_commands.command(
         name="add_info",
-        description="ℹ️ [إدارة/Admin] أضف شرحًا ثنائي اللغة | Add a bilingual Lords guide",
+        description="ℹ️ [إدارة/Admin] أضف شرحًا ثنائي اللغة | Add a bilingual Lords guide"
     )
     @app_commands.describe(
         title="عنوان الشرح بالعربي | Arabic guide title",
@@ -683,7 +683,7 @@ class GuidesCog(commands.Cog):
         title_en="عنوان الشرح بالإنجليزي | English guide title",
         desc_en="نص الشرح بالإنجليزي | English guide text",
         image="صورة اختيارية | Optional reference image",
-        image2="صورة ثانية اختيارية | Optional second image",
+        image2="صورة ثانية اختيارية | Optional second image"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def add_info(
@@ -694,12 +694,12 @@ class GuidesCog(commands.Cog):
         title_en: str,
         desc_en: str,
         image: Optional[discord.Attachment] = None,
-        image2: Optional[discord.Attachment] = None,
+        image2: Optional[discord.Attachment] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         for att in (image, image2):
             if att and not (att.content_type or "").startswith("image/"):
-                await interaction.response.send_message(t("add_info_bad_image", lang), ephemeral=True)
+                await interaction.response.send_message(t("add_info_bad_image", lang))
                 return
 
         data = load(CUSTOM_INFO_FILE)
@@ -735,12 +735,12 @@ class GuidesCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         custom = load(CUSTOM_INFO_FILE).get(str(interaction.guild_id), {})
         if not custom:
-            await interaction.response.send_message(t("edit_info_empty", lang), ephemeral=True)
+            await interaction.response.send_message(t("edit_info_empty", lang))
             return
         await interaction.response.send_message(
             t("delete_info_prompt", lang),
             view=InfoDeleteView(custom, lang),
-            ephemeral=True,
+            ephemeral=True
         )
 
     @delete_info.error
@@ -754,29 +754,29 @@ class GuidesCog(commands.Cog):
     @app_commands.command(name="edit_info", description="✏️ [إدارة/Admin] عدّل شرحًا ثنائي اللغة | Edit a bilingual Lords guide")
     @app_commands.describe(
         image="صورة جديدة اختيارية | Optional replacement image",
-        image2="صورة ثانية جديدة اختيارية | Optional second replacement image",
+        image2="صورة ثانية جديدة اختيارية | Optional second replacement image"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def edit_info(
         self,
         interaction: discord.Interaction,
         image: Optional[discord.Attachment] = None,
-        image2: Optional[discord.Attachment] = None,
+        image2: Optional[discord.Attachment] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         for att in (image, image2):
             if att and not (att.content_type or "").lower().startswith("image/"):
-                await interaction.response.send_message(t("add_info_bad_image", lang), ephemeral=True)
+                await interaction.response.send_message(t("add_info_bad_image", lang))
                 return
 
         custom = load(CUSTOM_INFO_FILE).get(str(interaction.guild_id), {})
         if not custom:
-            await interaction.response.send_message(t("edit_info_empty", lang), ephemeral=True)
+            await interaction.response.send_message(t("edit_info_empty", lang))
             return
         await interaction.response.send_message(
             t("edit_info_prompt", lang),
             view=InfoEditView(custom, lang, image, image2),
-            ephemeral=True,
+            ephemeral=True
         )
 
     @edit_info.error

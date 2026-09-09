@@ -62,7 +62,7 @@ async def troop_set(interaction: discord.Interaction, troop: app_commands.Choice
     data[gid][str(interaction.user.id)] = {"troop": troop.value, "name": str(interaction.user)}
     save(TROOP_FILE, data)
     await interaction.response.send_message(
-        t("troop_set_success", lang, troop=troop_label(troop.value, lang)), ephemeral=True
+        t("troop_set_success", lang, troop=troop_label(troop.value, lang))
     )
 
 
@@ -72,14 +72,14 @@ async def troop_set(interaction: discord.Interaction, troop: app_commands.Choice
 
 @app_commands.command(
     name="rallyset",
-    description="📯 افتح نداء حشد وينبّه كل أعضاء السيرفر (@everyone) | Open a rally call and ping everyone",
+    description="📯 افتح نداء حشد وينبّه كل أعضاء السيرفر (@everyone) | Open a rally call and ping everyone"
 )
 @app_commands.describe(
     troop="Troop type needed",
     target="Target alliance or player name",
     image="Optional rally screenshot",
     minutes="Minutes until rally closes (default: 5)",
-    note="Optional note",
+    note="Optional note"
 )
 @app_commands.choices(
     troop=[app_commands.Choice(name=TROOP_LABELS[k]["ar"] + " / " + TROOP_LABELS[k]["en"], value=k) for k in TROOP_LABELS]
@@ -90,7 +90,7 @@ async def rally_set(
     target: str,
     image: discord.Attachment = None,
     minutes: int = 5,
-    note: str = None,
+    note: str = None
 ):
     lang = get_lang(interaction.guild_id, interaction.user.id)
 
@@ -104,10 +104,10 @@ async def rally_set(
             lang,
             leader=interaction.user.mention,
             troop=troop_label(troop.value, lang),
-            countdown=countdown,
+            countdown=countdown
         ),
         color=discord.Color.orange(),
-        timestamp=datetime.now(timezone.utc),
+        timestamp=datetime.now(timezone.utc)
     )
     embed.add_field(name=t("rally_target_field", lang), value=target, inline=True)
     if note:
@@ -117,7 +117,7 @@ async def rally_set(
     embed.add_field(
         name=t("rally_joiners_field", lang),
         value=t("rally_no_joiners", lang),
-        inline=False,
+        inline=False
     )
     embed.set_footer(text=t("rally_footer_v2", lang, leader=str(interaction.user)))
 
@@ -129,7 +129,7 @@ async def rally_set(
         content=f"@everyone {t('rally_everyone_ping', lang)}",
         embed=embed,
         view=view,
-        allowed_mentions=discord.AllowedMentions(everyone=True),
+        allowed_mentions=discord.AllowedMentions(everyone=True)
     )
 
 
@@ -146,7 +146,7 @@ class RallyJoinView(discord.ui.View):
     @discord.ui.button(label="✅ سجّل في الحشد", style=discord.ButtonStyle.success)
     async def join_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id in self.participant_ids:
-            await interaction.response.send_message(t("rally_already_joined", self.lang), ephemeral=True)
+            await interaction.response.send_message(t("rally_already_joined", self.lang))
             return
 
         self.participant_ids.append(interaction.user.id)
@@ -157,7 +157,7 @@ class RallyJoinView(discord.ui.View):
                 break
         button.label = f"✅ {t('rally_join_button_short', self.lang)} ({len(self.participant_ids)})"
         await interaction.response.edit_message(embed=self.embed, view=self)
-        await interaction.followup.send(t("rally_joined_success", self.lang), ephemeral=True)
+        await interaction.followup.send(t("rally_joined_success", self.lang))
 
 
 class RallyCog(commands.Cog):
@@ -168,12 +168,12 @@ class RallyCog(commands.Cog):
 
     @app_commands.command(
         name="rally_log",
-        description="👥 (إدارة) سجّل حضور حشد: الأعضاء المشاركين ونوعه (هجوم/دفاع) ونتيجته",
+        description="👥 (إدارة) سجّل حضور حشد: الأعضاء المشاركين ونوعه (هجوم/دفاع) ونتيجته"
     )
     @app_commands.describe(
         rally_type="Rally type",
         result="Rally result",
-        note="Optional note (e.g. rally target)",
+        note="Optional note (e.g. rally target)"
     )
     @app_commands.choices(
         rally_type=[
@@ -184,7 +184,7 @@ class RallyCog(commands.Cog):
             app_commands.Choice(name="🏆 Win", value="win"),
             app_commands.Choice(name="❌ Loss", value="loss"),
             app_commands.Choice(name="🤝 Draw", value="draw"),
-        ],
+        ]
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def rally_log(
@@ -192,14 +192,14 @@ class RallyCog(commands.Cog):
         interaction: discord.Interaction,
         rally_type: app_commands.Choice[str],
         result: app_commands.Choice[str],
-        note: Optional[str] = None,
+        note: Optional[str] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         view = RallyLogView(rally_type.value, result.value, note, str(interaction.user), lang)
         await interaction.response.send_message(
             t("rally_log_prompt", lang),
             view=view,
-            ephemeral=True,
+            ephemeral=True
         )
 
     @rally_log.error
@@ -236,15 +236,15 @@ class RallyLogView(discord.ui.View):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         self.selected_ids = [u.id for u in self.user_select.values]
         await interaction.response.send_message(
-            t("rally_select_confirm_hint", lang, count=len(self.selected_ids)),
-            ephemeral=True,
+            t("rally_select_confirm_hint", lang, count=len(self.selected_ids))
+            
         )
 
     @discord.ui.button(label="✅ تأكيد التسجيل", style=discord.ButtonStyle.success, row=1)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if not self.selected_ids:
-            await interaction.response.send_message(t("rally_log_need_member", lang), ephemeral=True)
+            await interaction.response.send_message(t("rally_log_need_member", lang))
             return
 
         data = load(RALLY_LOG_FILE)

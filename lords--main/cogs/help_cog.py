@@ -137,7 +137,7 @@ ADMIN_HINTS = (
     "إدارة",
     "administrator",
     "manage server",
-    "admin",
+    "admin"
 )
 
 # English copy used by /help when the user selects English.
@@ -189,7 +189,12 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "language": "[Admin] Set the bot reply language for this server.",
     "languageme": "Choose your personal bot reply language.",
     "bot_channel": "[Admin] Set the channel or thread where the bot can respond.",
-    "report": "Record and review alliance battle reports.",
+    "shop": "Browse every account currently listed for sale in the shop.",
+    "sell": "List your account for sale inside the shop.",
+    "view": "View the full details of a listing by its ID.",
+    "report": "Report a purchase issue, a violating account, or reach support.",
+    "middleman": "Request a trusted middleman to secure a trade.",
+    "battlelog": "Record and review alliance battle reports.",
     "add": "Record a new battle in the server log.",
     "user": "View the battle history of a selected member.",
     "تحديد-روم-الترحيب": "[Admin] Set the channel for new-member welcome messages.",
@@ -206,6 +211,12 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
 
 
 ARABIC_COMMAND_DESCRIPTIONS = {
+    "shop": "🛍️ عرض جميع الحسابات والعروض المتاحة حالياً في المتجر",
+    "sell": "🏷️ تقديم طلب إدراج وعرض حساب للبيع داخل المتجر",
+    "view": "🔍 استعراض تفاصيل حساب معين برقم المعرف (ID)",
+    "report": "🚨 الإبلاغ عن مشكلة شراء أو حساب مخالف أو التواصل مع الدعم",
+    "middleman": "🛡️ طلب وسيط معتمد لتأمين عملية التبادل والبيع",
+    "battlelog": "📝 تسجيل واستدعاء سجل معارك التحالف",
     "help": "📖 مركز أوامر البوت، منظم حسب الوظيفة والإدارة والحرب والـ AI",
     "ai": "🤖 اسأل مستشار لوردس أو أرفق صورة عتاد أو تقرير لتحليلها",
     "optimize": "🤖 مستشار AI يقترح أفضل طريقة لتنفيذ مهمة مهرجان التحالف",
@@ -299,7 +310,9 @@ def command_category(path: str) -> str:
         return "ai"
     if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "delete_info", "edit_info", "delete_monster", "geartiers"}:
         return "calculators"
-    if root in {"counter", "analyze", "report", "rallyset"}:
+    if root in {"shop", "sell", "view", "report", "middleman"}:
+        return "market"
+    if root in {"counter", "analyze", "battlelog", "rallyset"}:
         return "war"
     if root in {"log_activity", "information", "user_admin_check", "top5", "event_stats", "stats_event", "gf"}:
         return "alliance"
@@ -393,7 +406,7 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
     embed = discord.Embed(
         title=title,
         description=description,
-        color=discord.Color.from_rgb(88, 101, 242),
+        color=discord.Color.from_rgb(88, 101, 242)
     )
     if bot.user:
         embed.set_author(name=author, icon_url=bot.user.display_avatar.url)
@@ -420,7 +433,7 @@ def build_intro_embed(bot: commands.Bot, lang: str) -> discord.Embed:
         embed.add_field(
             name=f"{meta['emoji']}  {meta[lang]}",
             value=f"{blurb}\n\n{preview}\n\n**{counts[key]} {count_label}**",
-            inline=True,
+            inline=True
         )
 
     embed.add_field(name=quick_title, value=quick_text, inline=False)
@@ -459,7 +472,7 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str, page: int 
     embed = discord.Embed(
         title=f"{meta['emoji']}  {meta[lang]}",
         description=f"{blurb}\n\n**{count_text}**",
-        color=meta["color"],
+        color=meta["color"]
     )
     if bot.user:
         author = "𝑺𝒆𝒊𝒇𝑬𝒍𝒅𝒂𝒍𝒚 • مركز الأوامر" if lang == "ar" else "Lords Mobile • Command Center"
@@ -499,7 +512,7 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str, page: int 
                 if lang == "ar"
                 else f"Page {page + 1} of {page_count} — use the buttons below to browse."
             ),
-            inline=False,
+            inline=False
         )
     footer = (
         "SeifEldaly • استخدم القائمة والأزرار للتنقل بين كل الأوامر"
@@ -520,7 +533,7 @@ class HelpCategorySelect(discord.ui.Select):
             discord.SelectOption(
                 label="كل الأوامر" if lang == "ar" else "All Commands",
                 value="all",
-                emoji="📚",
+                emoji="📚"
             )
         ]
         available = {command_category(path) for path, _ in loaded_commands(bot)}
@@ -531,14 +544,14 @@ class HelpCategorySelect(discord.ui.Select):
             options.append(discord.SelectOption(label=meta[lang][:100], value=key, emoji=meta["emoji"]))
         super().__init__(
             placeholder="اختار قسم الأوامر" if lang == "ar" else "Choose a command section",
-            options=options[:25],
+            options=options[:25]
         )
 
     async def callback(self, interaction: discord.Interaction):
         category = self.values[0]
         await interaction.response.edit_message(
             embed=build_category_embed(self.bot, category, self.lang, page=0),
-            view=HelpSectionView(self.bot, self.lang, category, page=0),
+            view=HelpSectionView(self.bot, self.lang, category, page=0)
         )
 
 
@@ -551,13 +564,13 @@ class HelpHomeButton(discord.ui.Button):
             label="الرئيسية" if lang == "ar" else "Home",
             emoji="🏠",
             style=discord.ButtonStyle.secondary,
-            row=1,
+            row=1
         )
 
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.edit_message(
             embed=build_intro_embed(self.bot, self.lang),
-            view=HelpView(self.bot, self.lang),
+            view=HelpView(self.bot, self.lang)
         )
 
 
@@ -595,14 +608,14 @@ class HelpPageButton(discord.ui.Button):
             label=("التالي" if lang == "ar" else "Next") if is_next else ("السابق" if lang == "ar" else "Back"),
             emoji="▶️" if is_next else "◀️",
             style=discord.ButtonStyle.primary,
-            row=1,
+            row=1
         )
 
     async def callback(self, interaction: discord.Interaction):
         next_page = self.page + self.direction
         await interaction.response.edit_message(
             embed=build_category_embed(self.bot, self.category, self.lang, page=next_page),
-            view=HelpSectionView(self.bot, self.lang, self.category, page=next_page),
+            view=HelpSectionView(self.bot, self.lang, self.category, page=next_page)
         )
 
 
@@ -658,7 +671,7 @@ class HelpCog(commands.Cog):
 
     @app_commands.command(
         name="help",
-        description="Open the live command center, organized by function, administration, war, and AI.",
+        description="Open the live command center, organized by function, administration, war, and AI."
     )
     async def help_cmd(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)

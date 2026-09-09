@@ -1483,3 +1483,53 @@ def t(key: str, lang: str, **kwargs) -> str:
         return key
     text = entry.get(lang, entry.get(DEFAULT_LANG, key))
     return text.format(**kwargs) if kwargs else text
+
+
+# ---------------------------------------------------------------------------
+# متجر الحسابات + البلاغات + الوسيط (ثنائي اللغة بالكامل)
+# ---------------------------------------------------------------------------
+TRANSLATIONS.update({
+    # /shop
+    "shop_title": {"ar": "🛍️ متجر الحسابات — العروض المتاحة", "en": "🛍️ Accounts Shop — Available Listings"},
+    "shop_empty": {"ar": "🕳️ مفيش أي حسابات معروضة للبيع حالياً. استخدم `/sell` عشان تعرض حسابك.", "en": "🕳️ No accounts are listed for sale right now. Use `/sell` to list yours."},
+    "shop_footer": {"ar": "استخدم /view مع رقم المعرف عشان تشوف التفاصيل • {count} عرض", "en": "Use /view with the ID for full details • {count} listing(s)"},
+    "shop_entry_value": {"ar": "💰 السعر: **{price}**\n👤 البائع: {seller}\n🔎 التفاصيل: `/view {id}`", "en": "💰 Price: **{price}**\n👤 Seller: {seller}\n🔎 Details: `/view {id}`"},
+    # /sell
+    "sell_added_title": {"ar": "🏷️ تم إدراج الحساب في المتجر", "en": "🏷️ Account listed in the shop"},
+    "sell_added_desc": {"ar": "معرف العرض: **`{id}`**\nأي حد يقدر يشوف التفاصيل بالأمر `/view {id}`", "en": "Listing ID: **`{id}`**\nAnyone can see the details with `/view {id}`"},
+    "sell_field_title": {"ar": "📛 عنوان الحساب", "en": "📛 Account title"},
+    "sell_field_price": {"ar": "💰 السعر", "en": "💰 Price"},
+    "sell_field_details": {"ar": "📄 التفاصيل", "en": "📄 Details"},
+    "sell_field_seller": {"ar": "👤 البائع", "en": "👤 Seller"},
+    "sell_field_contact": {"ar": "📬 التواصل", "en": "📬 Contact"},
+    "sell_bad_image": {"ar": "⚠️ لازم المرفق يكون صورة صالحة.", "en": "⚠️ The attachment must be a valid image."},
+    "sell_safety_note": {"ar": "🛡️ للأمان: استخدم `/middleman` لطلب وسيط معتمد قبل أي تحويل.", "en": "🛡️ For safety: use `/middleman` to request a trusted middleman before any transfer."},
+    # /view
+    "view_not_found": {"ar": "🔍 مفيش عرض بالمعرف `{id}`. شوف القائمة بالأمر `/shop`.", "en": "🔍 No listing with ID `{id}`. Check `/shop` for the list."},
+    "view_title": {"ar": "🔍 تفاصيل العرض `{id}`", "en": "🔍 Listing details `{id}`"},
+    "view_status_open": {"ar": "🟢 متاح", "en": "🟢 Available"},
+    "view_status_closed": {"ar": "🔴 مغلق/مباع", "en": "🔴 Closed / sold"},
+    "view_field_status": {"ar": "📊 الحالة", "en": "📊 Status"},
+    # /report
+    "report_title": {"ar": "🚨 بلاغ جديد", "en": "🚨 New report"},
+    "report_thanks": {"ar": "✅ تم تسجيل البلاغ ورقمه **`{id}`** — القيادة/الدعم هتتابعه.", "en": "✅ Report registered with ID **`{id}`** — leadership/support will follow up."},
+    "report_field_type": {"ar": "🗂️ نوع البلاغ", "en": "🗂️ Report type"},
+    "report_field_details": {"ar": "📝 التفاصيل", "en": "📝 Details"},
+    "report_field_reporter": {"ar": "👤 مقدم البلاغ", "en": "👤 Reported by"},
+    "report_field_target": {"ar": "🎯 الطرف المبلّغ عنه", "en": "🎯 Reported party"},
+    "report_field_listing": {"ar": "🏷️ العرض المرتبط", "en": "🏷️ Related listing"},
+    "report_type_purchase": {"ar": "🛒 مشكلة في عملية شراء", "en": "🛒 Purchase issue"},
+    "report_type_scam": {"ar": "⚠️ حساب/عضو مخالف", "en": "⚠️ Violating account/member"},
+    "report_type_support": {"ar": "🎧 تواصل مع الدعم", "en": "🎧 Contact support"},
+    # /middleman
+    "middleman_title": {"ar": "🛡️ طلب وسيط معتمد", "en": "🛡️ Trusted middleman request"},
+    "middleman_desc": {"ar": "طلب رقم **`{id}`** — في انتظار وسيط معتمد يستلم العملية ويأمّنها.", "en": "Request **`{id}`** — waiting for a trusted middleman to secure the deal."},
+    "middleman_field_requester": {"ar": "👤 الطالب", "en": "👤 Requester"},
+    "middleman_field_partner": {"ar": "🤝 الطرف التاني", "en": "🤝 Other party"},
+    "middleman_field_deal": {"ar": "📄 تفاصيل العملية", "en": "📄 Deal details"},
+    "middleman_taken": {"ar": "✅ {user} استلم العملية كوسيط معتمد.", "en": "✅ {user} took this deal as the trusted middleman."},
+    "middleman_take_button": {"ar": "🛡️ أنا الوسيط", "en": "🛡️ I'll be the middleman"},
+    "middleman_admin_only_take": {"ar": "⚠️ الزرار ده للقيادة/الوسطاء المعتمدين بس.", "en": "⚠️ This button is for leadership/trusted middlemen only."},
+    # shield pre-alert DM
+    "shield_dm_ring": {"ar": "🔔🛡️ {user} درعك هيخلص خلال 15 دقيقة! افتح اللعبة وجدّد الدرع حالاً.", "en": "🔔🛡️ {user} your shield expires in 15 minutes! Open the game and renew it now."},
+})

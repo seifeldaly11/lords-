@@ -19,21 +19,21 @@ class TestComponentsView(discord.ui.View):
     @discord.ui.button(
         label="السلام عليكم",
         custom_id="testt",
-        style=discord.ButtonStyle.success,
+        style=discord.ButtonStyle.success
     )
     async def greeting(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(
-            "وعليكم السلام — Wa alaikum assalam", ephemeral=True
+            "وعليكم السلام — Wa alaikum assalam"
         )
 
     @discord.ui.button(
         label="زر ثاني",
         custom_id="testtt",
-        style=discord.ButtonStyle.primary,
+        style=discord.ButtonStyle.primary
     )
     async def second_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(
-            "دوست على الزر الثاني — You pressed the second button", ephemeral=True
+            "دوست على الزر الثاني — You pressed the second button"
         )
 
 
@@ -44,7 +44,7 @@ class TestSelect(discord.ui.Select):
             placeholder="اضغط هنا • Choose an option",
             options=[
                 discord.SelectOption(label="hi • أهلاً", value="test"),
-            ],
+            ]
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -67,17 +67,17 @@ def build_test_embed() -> discord.Embed:
             "Use the menu and buttons below to test the interactive components.\n"
             "استخدم القائمة والأزرار بالأسفل لتجربة المكوّنات التفاعلية."
         ),
-        color=discord.Color.blurple(),
+        color=discord.Color.blurple()
     )
     embed.add_field(
         name="🔽 Select Menu • قائمة الاختيار",
         value="hi -> test\nاختر من القائمة لعرض الرد التفاعلي.",
-        inline=False,
+        inline=False
     )
     embed.add_field(
         name="────────────",
         value="🟢 السلام عليكم  •  🔵 زر ثاني\nTwo bilingual buttons are ready below.",
-        inline=False,
+        inline=False
     )
     if TEST_IMAGE_URL.startswith(("http://", "https://")):
         # Main image = Media Gallery equivalent; thumbnail = Section accessory.

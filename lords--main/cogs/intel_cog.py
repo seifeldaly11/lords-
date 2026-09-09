@@ -51,7 +51,7 @@ class GearTierView(discord.ui.View):
         embed.add_field(name="💎 P2P", value=info["p2p"], inline=False)
         embed.add_field(name="🆓 F2P", value=info["f2p"], inline=False)
         embed.add_field(name=t("gear_weak_field", lang), value=info["weak"], inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
     @discord.ui.button(label="🏹 عتاد الصيد", style=discord.ButtonStyle.success)
     async def hunting(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -62,7 +62,7 @@ class GearTierView(discord.ui.View):
         )
         embed.add_field(name="💎 P2P", value=info["p2p"], inline=False)
         embed.add_field(name="🆓 F2P", value=info["f2p"], inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
     @discord.ui.button(label="🏗️ عتاد الاقتصاد", style=discord.ButtonStyle.secondary)
     async def economy(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -73,7 +73,7 @@ class GearTierView(discord.ui.View):
         )
         embed.add_field(name=t("gear_pieces_field", lang), value=info["pieces"], inline=False)
         embed.add_field(name=t("gear_warning_field", lang), value=info["warning"], inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed)
 
 
 # ---------------------------------------------------------------------------
@@ -89,7 +89,7 @@ class IntelCog(commands.Cog):
 
     @app_commands.command(
         name="scout",
-        description="🔍 ارفق صورة عتاد/بروفايل الخصم والـ AI يحللها ويقولك هو قوي ولا ضعيف",
+        description="🔍 ارفق صورة عتاد/بروفايل الخصم والـ AI يحللها ويقولك هو قوي ولا ضعيف"
     )
     @app_commands.describe(image="Enemy gear or profile image for AI analysis")
     @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
@@ -100,11 +100,11 @@ class IntelCog(commands.Cog):
             await interaction.response.send_message(t("ai_bad_image", lang), ephemeral=True)
             return
 
-        await interaction.response.defer(thinking=True, ephemeral=True)
+        await interaction.response.defer(thinking=True)
         loading_text = (
             "جارٍ تحليل قوة الخصم من الصورة... ⏳" if lang == "ar" else "Analyzing opponent strength from the image... ⏳"
         )
-        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang), ephemeral=True)
+        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang))
 
         answer = await ask_ai(_scout_prompt(lang), image_url=image.url, lang=lang, guild_id=interaction.guild_id)
 
@@ -114,7 +114,7 @@ class IntelCog(commands.Cog):
         try:
             await loading_msg.edit(embed=embed)
         except discord.HTTPException:
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed)
 
     @scout.error
     async def scout_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -128,7 +128,7 @@ class IntelCog(commands.Cog):
     async def geartiers(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
-            t("geartiers_prompt", lang), view=GearTierView(self.gear_tiers, lang), ephemeral=True
+            t("geartiers_prompt", lang), view=GearTierView(self.gear_tiers, lang)
         )
 
 

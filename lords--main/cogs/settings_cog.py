@@ -15,7 +15,7 @@ from utils.storage import set_bot_channel_id
 
 language_group = app_commands.Group(
     name="language",
-    description="🌐 إعداد لغة ردود البوت | Configure bot reply language",
+    description="🌐 إعداد لغة ردود البوت | Configure bot reply language"
 )
 
 
@@ -27,7 +27,7 @@ LANGUAGE_CHOICES = [
 
 @language_group.command(
     name="server",
-    description="🌐 اختر لغة البوت لكل السيرفر (للمشرفين) | Set the server bot language",
+    description="🌐 اختر لغة البوت لكل السيرفر (للمشرفين) | Set the server bot language"
 )
 @app_commands.describe(lang="Language")
 @app_commands.choices(lang=LANGUAGE_CHOICES)
@@ -54,7 +54,7 @@ async def _set_personal_language(interaction: discord.Interaction, lang: app_com
 
 @language_group.command(
     name="me",
-    description="🌐 اختر لغة ردود البوت لك أنت | Choose your personal bot reply language",
+    description="🌐 اختر لغة ردود البوت لك أنت | Choose your personal bot reply language"
 )
 @app_commands.describe(lang="Language")
 @app_commands.choices(lang=LANGUAGE_CHOICES)
@@ -64,7 +64,7 @@ async def language_me(interaction: discord.Interaction, lang: app_commands.Choic
 
 @app_commands.command(
     name="languageme",
-    description="🌐 اختصار لاختيار لغة ردود البوت لك | Shortcut for your personal bot language",
+    description="🌐 اختصار لاختيار لغة ردود البوت لك | Shortcut for your personal bot language"
 )
 @app_commands.describe(lang="Language")
 @app_commands.choices(lang=LANGUAGE_CHOICES)
@@ -74,13 +74,13 @@ async def languageme(interaction: discord.Interaction, lang: app_commands.Choice
 
 @app_commands.command(
     name="bot_channel",
-    description="📍 حدد القناة أو الثريد اللي البوت يتواصل فيه (إدارة فقط) | Set the channel/thread the bot talks in",
+    description="📍 حدد القناة أو الثريد اللي البوت يتواصل فيه (إدارة فقط) | Set the channel/thread the bot talks in"
 )
 @app_commands.describe(channel="Channel or thread")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def bot_channel(
     interaction: discord.Interaction,
-    channel: Union[discord.TextChannel, discord.Thread],
+    channel: Union[discord.TextChannel, discord.Thread]
 ):
     lang = get_lang(interaction.guild_id, interaction.user.id)
     set_bot_channel_id(interaction.guild_id, channel.id)

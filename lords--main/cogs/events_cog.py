@@ -43,13 +43,13 @@ class EventCalcModal(discord.ui.Modal):
     available_speedups = discord.ui.TextInput(
         label="🚀 التسريعات المتاحة (مثال: 24×2, 8×3)",
         placeholder="24×2, 8×3 أو 4h, 1d×2",
-        required=False,
+        required=False
     )
     ai_question = discord.ui.TextInput(
         label="🤖 سؤال للـAI (اختياري)",
         placeholder="اسأل عن الحدث أو سيب الـAI يساعدك",
         style=discord.TextStyle.paragraph,
-        required=False,
+        required=False
     )
 
     def __init__(self, event_key: str, event_label: str, lang: str):
@@ -70,7 +70,7 @@ class EventCalcModal(discord.ui.Modal):
         lang = self.lang
         question = self.ai_question.value.strip()
         if question:
-            await interaction.response.defer(thinking=True, ephemeral=True)
+            await interaction.response.defer(thinking=True)
         try:
             required = float(self.required_points.value)
             per_action = float(self.points_per_action.value)
@@ -83,9 +83,9 @@ class EventCalcModal(discord.ui.Modal):
                     question,
                     extra_context=f"الحدث المختار: {self.event_label}. البيانات التي أدخلها المستخدم غير مكتملة أو غير صحيحة.",
                     lang=lang,
-                    guild_id=interaction.guild_id,
+                    guild_id=interaction.guild_id
                 )
-                await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة الحدث", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
+                await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة الحدث", description=answer[:3500], color=discord.Color.blurple()))
             else:
                 await (interaction.followup.send if question else interaction.response.send_message)(t("event_invalid_numbers", lang), ephemeral=True)
             return
@@ -110,7 +110,7 @@ class EventCalcModal(discord.ui.Modal):
 
         embed = discord.Embed(
             title=t("event_result_title", lang, label=self.event_label),
-            color=discord.Color.gold(),
+            color=discord.Color.gold()
         )
         embed.add_field(name=t("event_required_points_field", lang), value=f"{required:,.0f}", inline=True)
         embed.add_field(name=t("event_points_per_action_field", lang), value=f"{per_action:,.0f}", inline=True)
@@ -152,12 +152,12 @@ class EventCalcModal(discord.ui.Modal):
                 question,
                 extra_context=f"نتيجة حاسبة الحدث: {actions_needed} أفعال، التسريعات المتاحة: {fmt_minutes(speedups, lang)}.",
                 lang=lang,
-                guild_id=interaction.guild_id,
+                guild_id=interaction.guild_id
             )
             embed.add_field(name="🤖 مساعدة الـAI", value=answer[:1024], inline=False)
 
         embed.set_footer(text=t("event_footer", lang))
-        await (interaction.followup.send if question else interaction.response.send_message)(embed=embed, ephemeral=True)
+        await (interaction.followup.send if question else interaction.response.send_message)(embed=embed)
 
 class EventTypeSelect(discord.ui.Select):
     def __init__(self, lang: str, category_label: str):
@@ -194,7 +194,7 @@ class EventCategorySelect(discord.ui.Select):
         category_label = EVENT_CATEGORY_LABELS_I18N[self.values[0]][self.lang]
         await interaction.response.edit_message(
             content=t("event_prompt", self.lang, category=category_label),
-            view=EventTypeView(self.lang, category_label),
+            view=EventTypeView(self.lang, category_label)
         )
 
 
@@ -247,7 +247,7 @@ SPEEDUP_ENTRY_RE = re.compile(
 
 SPEEDUP_SEARCH_RE = re.compile(
     r"(?<![\w])(\d+(?:\.\d+)?)\s*(days?|d|hours?|hrs?|hr|h|minutes?|mins?|min|m|يوم|أيام|ساعة|ساعات|دقيقة|دقايق)\s*(?:[×xX*]\s*(\d+(?:\.\d+)?))?",
-    re.IGNORECASE,
+    re.IGNORECASE
 )
 
 
@@ -302,13 +302,13 @@ class SpeedupModal(discord.ui.Modal):
     entries = discord.ui.TextInput(
         label="🚀 التسريعات",
         style=discord.TextStyle.paragraph,
-        placeholder="مثال: 4h, 6h, 1d×3  أو  24×4, 3d×2",
+        placeholder="مثال: 4h, 6h, 1d×3  أو  24×4, 3d×2"
     )
     ai_question = discord.ui.TextInput(
         label="🤖 سؤال للـAI (اختياري)",
         placeholder="اسأل عن التسريعات أو طريقة استخدامها",
         style=discord.TextStyle.paragraph,
-        required=False,
+        required=False
     )
 
     def __init__(self, lang: str):
@@ -322,13 +322,13 @@ class SpeedupModal(discord.ui.Modal):
         total_minutes, breakdown, errors = parse_speedup_text(self.entries.value, lang)
         question = self.ai_question.value.strip()
         if question:
-            await interaction.response.defer(thinking=True, ephemeral=True)
+            await interaction.response.defer(thinking=True)
 
         if not breakdown:
             if question:
                 from cogs.ai_cog import ask_ai
                 answer = await ask_ai(question, extra_context=f"المدخلات التي كتبها المستخدم للتسريعات: {self.entries.value}", lang=lang, guild_id=interaction.guild_id)
-                await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة التسريعات", description=answer[:3500], color=discord.Color.blurple()), ephemeral=True)
+                await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة التسريعات", description=answer[:3500], color=discord.Color.blurple()))
             else:
                 await (interaction.followup.send if question else interaction.response.send_message)(t("speedup_invalid_numbers", lang), ephemeral=True)
             return
@@ -337,7 +337,7 @@ class SpeedupModal(discord.ui.Modal):
             title=t("speedup_result_title", lang),
             description=f"**{fmt_minutes(total_minutes, lang)}**",
             color=discord.Color.purple(),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.utcnow()
         )
         embed.add_field(name=t("speedup_breakdown_field", lang), value="\n".join(breakdown)[:1024], inline=False)
         embed.add_field(name=t("speedup_in_hours_field", lang), value=f"{total_minutes / 60:g} {t('speedup_hours_unit', lang)}", inline=True)
@@ -348,7 +348,7 @@ class SpeedupModal(discord.ui.Modal):
             answer = await ask_ai(question, extra_context=f"إجمالي التسريعات المحسوب: {fmt_minutes(total_minutes, lang)}. التفاصيل: {', '.join(breakdown)}", lang=lang, guild_id=interaction.guild_id)
             embed.add_field(name="🤖 مساعدة الـAI", value=answer[:1024], inline=False)
 
-        await (interaction.followup.send if question else interaction.response.send_message)(embed=embed, ephemeral=True)
+        await (interaction.followup.send if question else interaction.response.send_message)(embed=embed)
 
 # ---------------------------------------------------------------------------
 # الـ Cog الرئيسي
@@ -365,23 +365,23 @@ class EventsCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
             t("event_category_prompt", lang),
-            view=EventCategoryView(lang),
-            ephemeral=True,
+            view=EventCategoryView(lang)
+            
         )
 
     @app_commands.command(name="shelter", description="🛡️ مؤقت حماية الجيش في المخبأ مع تنبيه قبل الانتهاء بـ15 دقيقة")
     async def shelter(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
-            t("shelter_prompt", lang), view=ShelterDurationView(self, lang), ephemeral=True
+            t("shelter_prompt", lang), view=ShelterDurationView(self, lang)
         )
 
     async def start_shelter(self, interaction: discord.Interaction, hours: int):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         end_time = datetime.utcnow() + timedelta(hours=hours)
         await interaction.response.send_message(
-            t("shelter_started", lang, hours=hours, end_time=end_time.strftime('%H:%M UTC')),
-            ephemeral=True,
+            t("shelter_started", lang, hours=hours, end_time=end_time.strftime('%H:%M UTC'))
+            
         )
         remind_seconds = max(0, hours * 3600 - 15 * 60)
         channel = interaction.channel

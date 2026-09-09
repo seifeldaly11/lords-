@@ -63,6 +63,7 @@ INITIAL_EXTENSIONS = [
     "cogs.hunt_cog",
     "cogs.rally_cog",
     "cogs.market_cog",
+    "cogs.shop_cog",
     "cogs.ai_cog",
     "cogs.intel_cog",
     "cogs.welcome_cog",
