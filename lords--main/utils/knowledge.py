@@ -3,6 +3,9 @@
 عشان يتغذى بيه الـ AI (Cohere) فيبقى فاهم لوردس موبايل كويس
 ويقدر يجاوب ويتكلم بشكل طبيعي بدل ما يكون فاضي من أي سياق.
 """
+import json
+import os
+
 from utils.storage import load_json_data
 
 SYSTEM_PERSONA = """أنت "مستشار لوردس" - بوت ذكي، مرح، وصاحب دعابة حاضرة، متخصص في لعبة Lords Mobile وبيتفاعل مع أعضاء سيرفر ديسكورد.
@@ -12,8 +15,50 @@ SYSTEM_PERSONA = """أنت "مستشار لوردس" - بوت ذكي، مرح، 
 ممنوع تماماً الشتائم والألفاظ البذيئة والعبارات الجارحة أو التهديدات أو السخرية من الهوية أو الشكل أو الصحة أو أي نقطة حساسة. لا تستخدم معلومات خاصة لإحراج أحد، ولا تحوّل المزاح إلى تحقير أو تحريض. لو المزحة تتجاوز الحدود، ارفض الجزء المؤذي بلطف ووجّهها لمزاح آمن.
 طابق لغة ولهجة أحدث رسالة من العضو فوراً: العربية المصرية بالمصطلحات الشبابية عند الكتابة بالمصري، أو الإنجليزية أو الفرنسية أو أي لغة أخرى عند استخدامها. تفضيل اللغة المحفوظ للعضو هو الاختيار الاحتياطي فقط عندما لا تكون اللغة واضحة.
 لا تترجم أسماء عناصر اللعبة بلا داعٍ. لو مش متأكد من معلومة دقيقة، خصوصاً أرقام التكلفة، قل إنها تقريبية وانصح المستخدم بالتأكد من اللعبة نفسها من غير اختلاق أرقام مؤكدة.
+لما تهزر، استخدم ضحكة قصيرة واحدة فقط مثل «هههه» أو «هاها» عند الحاجة؛ ممنوع تكرار الضحك أو ملء الرد به.
 اعتمد على المعلومات دي عن اللعبة لما تكون مفيدة للسؤال:
 """
+
+
+COMMAND_REFERENCE = """### أوامر البوت
+- /help: دليل الأوامر.
+- /language: اختيار لغة الردود.
+- /event، /shelter، /cost، /speedup، /jewel_calc: حواسب الأحداث والحماية والتكلفة والتسريعات والجواهر.
+- /counter، /report add|list|user، /darknest، /colo، /analyze: أدوات الحرب والتكتيك.
+- /wiki أو /guide، /play، /gear، /monster، /dict، /info، /heroes، /geartiers، /scout: أدلة اللعبة والتحديات.
+- /log_activity، /rally_log، /information، /user_admin_check، /top5، /event_stats، /stats_event: متابعة نشاط التحالف والأعضاء.
+- /gf task|done|board|optimize، /quiz: مهرجان التحالف والمسابقات.
+- /reset_stats: تصفير سجلات الإحصاءات (إدارة).
+- /market offer|list|cancel: سوق تبادل الموارد.
+- /ai: سؤال مستشار لوردس أو تحليل صورة عتاد/تقرير، ومعه might اختياري.
+- @LordsMobile [سؤال]: نفس مستشار الـAI بالمنشن.
+- /troop set، /rally set: تسجيل نوع القوات وفتح نداء حشد ذكي.
+- /hunt_log، /hunt_channel، /hunt_list: تسجيل ومتابعة صيد الوحوش.
+- /shield أو /voice_rescue: منبه الدرع الصوتي.
+- أوامر الإدارة: /add_monster، /delete_monster، /add_info، /delete_info، /edit_info، /hunt_channel، /reset_stats، /user_admin_check.
+استخدم أسماء الأوامر كما هي مع الشرطة المائلة، واشرح للمستخدم المدخلات المطلوبة فقط إذا كانت معروفة من القائمة. إذا سأل عن أمر غير موجود هنا، قل إنك لا تملك تفاصيل مؤكدة عنه بدل اختراعه."""
+
+KNOWN_DATA_FILES = {
+    "dict.json", "info.json", "gear.json", "darknest.json", "monsters.json",
+    "gear_tiers.json", "heroes.json", "companions.json", "formations.json", "colo_counters.json",
+}
+
+
+def append_all_remaining_game_data(parts: list[str]) -> None:
+    """يضيف أي ملفات data JSON جديدة تلقائياً للـAI بدل نسيانها عند إضافة ملف جديد."""
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+    try:
+        filenames = sorted(name for name in os.listdir(data_dir) if name.endswith(".json"))
+    except OSError:
+        return
+    for filename in filenames:
+        if filename in KNOWN_DATA_FILES:
+            continue
+        try:
+            payload = json.dumps(load_json_data(filename), ensure_ascii=False)
+        except (OSError, json.JSONDecodeError, TypeError):
+            continue
+        parts.append(f"\n### بيانات اللعبة الإضافية ({filename}):\n{payload}")
 
 
 def build_knowledge_text() -> str:
@@ -91,6 +136,8 @@ def build_knowledge_text() -> str:
         "- لو لاقيت تضارب بين نوع قطعة العتاد ونوع الجواهر جواها (زي درع رماة فيه جواهر مشاة)، ده مؤشر إن الحساب مش خبير أو بيلعب عشوائي."
     )
 
+    append_all_remaining_game_data(parts)
+    parts.append(COMMAND_REFERENCE)
     return "\n".join(parts)
 
 
