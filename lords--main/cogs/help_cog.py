@@ -666,7 +666,7 @@ class HelpCog(commands.Cog):
             # Acknowledge with the polished card first. The menu is attached in a
             # second request so Discord component errors cannot erase the response.
             embed = build_intro_embed(self.bot, lang)
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.response.send_message(embed=embed)
             try:
                 await interaction.edit_original_response(view=HelpView(self.bot, lang))
             except Exception:
@@ -679,9 +679,9 @@ class HelpCog(commands.Cog):
                 else "The interactive help menu could not be loaded. Please try again in a moment."
             )
             if not interaction.response.is_done():
-                await interaction.response.send_message(fallback, ephemeral=True)
+                await interaction.response.send_message(fallback)
             else:
-                await interaction.followup.send(fallback, ephemeral=True)
+                await interaction.followup.send(fallback)
 
 
 
