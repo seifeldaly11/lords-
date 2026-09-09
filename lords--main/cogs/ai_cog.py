@@ -42,14 +42,14 @@ def _get_cohere_client():
     return cohere.ClientV2(api_key=api_key)
 
 
-async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None = None, lang: str = "ar") -> str:
+async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None = None, lang: str = "ar", guild_id: int | None = None) -> str:
     """يبعت سؤال (ونص/صورة اختيارية) لـ Cohere مع الشخصية وقاعدة المعرفة، ويرجع الرد كنص."""
     client = _get_cohere_client()
     if client is None:
         return t("ai_disabled", lang)
 
     user_text = (user_text or "").strip()[:MAX_INPUT_CHARS]
-    system_prompt = get_system_prompt(lang)
+    system_prompt = get_system_prompt(lang, guild_id=guild_id)
     if extra_context:
         system_prompt += f"\n\n### سياق إضافي للطلب الحالي:\n{extra_context[:MAX_INPUT_CHARS]}"
 
@@ -143,6 +143,7 @@ class AICog(commands.Cog):
             extra_context=extra_context,
             image_url=image.url if image else None,
             lang=lang,
+            guild_id=interaction.guild_id,
         )
 
         header = t("ai_header", lang)
@@ -203,6 +204,7 @@ class GfOptimizeModal(discord.ui.Modal, title="🎉 مستشار مهرجان ا
             "اقترح عليّ أفضل طريقة أنفذ بيها مهمة مهرجان النقابة دي بالموارد اللي معايا.",
             extra_context=context,
             lang=lang,
+            guild_id=interaction.guild_id,
         )
         header = t("ai_header", lang)
         embed = styled_embed(title=f"🎉 {header}", description=answer[:3500], color=ROYAL_BLUE, lang=lang)
