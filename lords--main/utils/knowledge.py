@@ -6,7 +6,7 @@
 import json
 import os
 
-from utils.storage import load_json_data
+from utils.storage import load, load_json_data
 
 SYSTEM_PERSONA = """أنت "مستشار لوردس" - بوت ذكي، مرح، وصاحب دعابة حاضرة، متخصص في لعبة Lords Mobile وبيتفاعل مع أعضاء سيرفر ديسكورد.
 شخصيتك ودودة وواثقة وسريعة البديهة. استخدم هزاراً خفيفاً وسخرية ذكية و"قصف جبهة" طريفاً عندما يكون الكلام مزاحاً أو تحدياً، بحيث يكون الإحراج للموقف أو للصياغة لا إهانة حقيقية للشخص. لا تكرر نفس النكات الجاهزة ولا تتكلم بجفاف أو تقول إنك نموذج ذكاء اصطناعي.
@@ -61,6 +61,34 @@ def append_all_remaining_game_data(parts: list[str]) -> None:
         parts.append(f"\n### بيانات اللعبة الإضافية ({filename}):\n{payload}")
 
 
+def _knowledge_localized(value, lang: str) -> str:
+    if isinstance(value, dict):
+        return str(value.get(lang) or value.get("ar") or value.get("en") or "")
+    return str(value or "")
+
+
+def build_server_knowledge(guild_id: int | None) -> str:
+    """يضيف بيانات الوحوش والشروحات الخاصة بالسيرفر الحالي فقط إلى سياق الـAI."""
+    if guild_id is None:
+        return ""
+    gid = str(guild_id)
+    parts = []
+
+    monsters = load("custom_monsters").get(gid, {})
+    if monsters:
+        parts.append("\n### وحوش هذا التحالف (بيانات الإدارة):")
+        for key, entry in monsters.items():
+            parts.append(f"- {key}: {json.dumps(entry, ensure_ascii=False)}")
+
+    custom_info = load("custom_info").get(gid, {})
+    if custom_info:
+        parts.append("\n### شروحات هذا التحالف (بيانات الإدارة):")
+        for key, entry in custom_info.items():
+            parts.append(f"- {key}: {json.dumps(entry, ensure_ascii=False)}")
+
+    return "\n".join(parts)
+
+
 def build_knowledge_text() -> str:
     parts = []
 
@@ -70,9 +98,18 @@ def build_knowledge_text() -> str:
         parts.append(f"- {term}: {desc}")
 
     info_data = load_json_data("info.json")
-    parts.append("\n### الأحداث الرئيسية:")
-    for key, val in info_data.items():
-        parts.append(f"- {val['title']}: {val['desc']}")
+    parts.append("\n### أدلة اللعبة والأحداث:")
+    categories = info_data.get("categories", []) if isinstance(info_data, dict) else info_data
+    for category in categories if isinstance(categories, list) else []:
+        category_title = category.get("title", "") if isinstance(category, dict) else ""
+        parts.append(f"## {_knowledge_localized(category_title, 'ar')} / {_knowledge_localized(category_title, 'en')}")
+        for item in category.get("items", []) if isinstance(category, dict) else []:
+            title = item.get("title", "")
+            desc = item.get("desc", "")
+            parts.append(
+                f"- {_knowledge_localized(title, 'ar')} / {_knowledge_localized(title, 'en')}: "
+                f"{_knowledge_localized(desc, 'ar')} / {_knowledge_localized(desc, 'en')}"
+            )
 
     gear_data = load_json_data("gear.json")
     parts.append("\n### العتاد حسب نوع القوات:")
@@ -87,12 +124,15 @@ def build_knowledge_text() -> str:
         parts.append(f"- مستوى {lvl}: أبطال: {val['heroes']} | تشكيلة: {val['formation']} | ملاحظات: {val['notes']}")
 
     monster_data = load_json_data("monsters.json")
-    parts.append("\n### أبطال صيد الوحوش:")
+    parts.append("\n### بيانات الوحوش:")
     for name, val in monster_data.items():
         if name == "_note":
             continue
-        note = f" | ملاحظة: {val['defense_note']}" if val.get("defense_note") else ""
-        parts.append(f"- {name}: نوع الضرر المطلوب {val['damage_type']}{note} | أبطال مقترحين: {', '.join(val['heroes'])}")
+        display_name = val.get("name", name) if isinstance(val, dict) else name
+        damage = val.get("damage_type", "") if isinstance(val, dict) else ""
+        heroes = val.get("heroes", []) if isinstance(val, dict) else []
+        note = val.get("defense_note", "") if isinstance(val, dict) else ""
+        parts.append(f"- {display_name}: الضرر {damage} | الأبطال: {heroes} | ملاحظة: {note}")
 
     gear_tiers = load_json_data("gear_tiers.json")
     parts.append("\n### تصنيف العتاد حسب الغرض:")
@@ -160,6 +200,9 @@ LANG_INSTRUCTION_AR = (
 )
 
 
-def get_system_prompt(lang: str = "ar") -> str:
+def get_system_prompt(lang: str = "ar", guild_id: int | None = None) -> str:
     prompt = SYSTEM_PERSONA + "\n" + KNOWLEDGE_TEXT
+    server_knowledge = build_server_knowledge(guild_id)
+    if server_knowledge:
+        prompt += server_knowledge
     return prompt + (LANG_INSTRUCTION_EN if lang == "en" else LANG_INSTRUCTION_AR)
