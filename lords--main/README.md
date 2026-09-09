@@ -57,7 +57,7 @@ python bot.py
 
 ### الأدلة والأبطال والمصطلحات
 - `/gear` — أفضل عتاد لكل نوع قوات (F2P/P2P).
-- `/monster` — أفضل أبطال الصيد (سحر/فيزياء) حسب اسم الوحش، شامل Frostwing وHell Drider (دفاع سحري قوي، اضربهم بضرر جسدي) وNoceros وSaberfang (دفاع جسدي قوي، اضربهم بضرر سحري).
+- `/monster` — قائمة الوحوش التي أضافتها الإدارة، مع اختيار الوحش من قائمة منسدلة.
 - `/dict` — قاموس مصطلحات سريع مع اقتراحات تلقائية (T4, Rally, RSS, Familiars, Wedge, Champion Set, Hunter Set...).
 - `/info` — شرح الأحداث (ساحة التنين، المنفرد، KvK، مهرجان التحالف، نظام الجيش).
 - `/heroes` — خلاصة الأبطال: أبطال التطوير (Trickster, Scarlet Bolt)، أبطال حرب مجانيين (Rose Knight, Demon Slayer, Snow Queen, Child of Light)، أبطال حرب للشحن (Lore Weaver, Songstress of the Sea, Berserker).
