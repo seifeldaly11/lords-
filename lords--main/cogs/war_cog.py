@@ -244,7 +244,7 @@ class WarCog(commands.Cog):
         context = "ركز على قراءة الأرقام الظاهرة في الصورة وعدم اختلاق رقم غير واضح."
         if numbers:
             context += f"\nالأرقام التي أدخلها المستخدم: {numbers[:1200]}"
-        answer = await ask_ai(prompt, extra_context=context, image_url=screenshot.url if screenshot else None, lang=lang)
+        answer = await ask_ai(prompt, extra_context=context, image_url=screenshot.url if screenshot else None, lang=lang, guild_id=interaction.guild_id)
         embed = styled_embed(title="🖼️ نتيجة تحليل المعركة", description=answer[:3500], color=ROYAL_BLUE, lang=lang)
         if screenshot:
             embed.set_thumbnail(url=screenshot.url)
