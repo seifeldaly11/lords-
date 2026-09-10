@@ -146,6 +146,10 @@ ADMIN_HINTS = (
 
 # English copy used by /help when the user selects English.
 ENGLISH_COMMAND_DESCRIPTIONS = {
+    "add_reply": "[Admin] Add a canned reply with shortcuts",
+    "delete_reply": "[Admin] Delete a canned reply",
+    "replies": "List all registered canned replies",
+    "reply": "Send a canned reply to this channel",
     "help": "Open the live command center and browse commands by section.",
     "ai": "Ask the Lords advisor a question or attach an image for analysis.",
     "optimize": "Get an AI plan for completing an Alliance Festival task.",
