@@ -8,7 +8,7 @@ from discord.ext import commands
 from utils.i18n import get_lang, t
 from utils.storage import load, save, load_json_data
 from utils.ui import styled_embed, loading_embed, ROYAL_BLUE
-from cogs.ai_cog import ask_ai
+# from cogs.ai_cog import ask_ai (lazy loaded to prevent circular import)
 
 REPORTS_FILE = "reports"
 
