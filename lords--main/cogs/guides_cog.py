@@ -328,6 +328,21 @@ class MonsterDeleteView(discord.ui.View):
                 
             )
             return
+
+        # Clean up any other duplicate alias entries for this monster
+        ar_n = _monster_name(removed, self.selected_key, "ar")
+        en_n = _monster_name(removed, self.selected_key, "en")
+        for b_k in list(bucket.keys()):
+            b_v = bucket[b_k]
+            if isinstance(b_v, dict):
+                b_ar = _monster_name(b_v, b_k, "ar")
+                b_en = _monster_name(b_v, b_k, "en")
+                if (
+                    (ar_n and _normalize_name(b_ar) == _normalize_name(ar_n))
+                    or (en_n and b_en.lower() == en_n.lower())
+                ):
+                    bucket.pop(b_k, None)
+
         if bucket:
             data[gid] = bucket
         else:
@@ -414,25 +429,29 @@ class MonsterEditSelect(discord.ui.Select):
         gid_str = str(interaction.guild_id)
         bucket = data.setdefault(gid_str, {})
 
-        target_keys = set()
-        target_keys.add(key)
-        target_keys.add(clean_key)
-        target_keys.add(en_name.lower().replace(" ", "_"))
-        target_keys.add(_normalize_name(ar_name).replace(" ", "_"))
+        # Pick single canonical key to update the EXISTING monster in-place
+        canonical_key = clean_key or key
+        if key in bucket and not clean_key:
+            canonical_key = key
+        elif key in bucket:
+            canonical_key = key
 
-        # Also find any existing bucket keys that refer to this monster
-        for b_key, b_val in list(bucket.items()):
-            if not isinstance(b_val, dict):
-                continue
-            b_ar = _monster_name(b_val, b_key, "ar")
-            b_en = _monster_name(b_val, b_key, "en")
-            if (
-                _normalize_name(b_ar) == _normalize_name(ar_name)
-                or _normalize_name(b_key) == _normalize_name(ar_name)
-                or b_en.lower() == en_name.lower()
-                or b_key.lower() == en_name.lower().replace(" ", "_")
-            ):
-                target_keys.add(b_key)
+        # Purge any old duplicate alias keys from previous edits so it doesn't create multiple entries
+        for b_key in list(bucket.keys()):
+            if b_key != canonical_key:
+                b_val = bucket[b_key]
+                if not isinstance(b_val, dict):
+                    continue
+                b_ar = _monster_name(b_val, b_key, "ar")
+                b_en = _monster_name(b_val, b_key, "en")
+                if (
+                    _normalize_name(b_ar) == _normalize_name(ar_name)
+                    or _normalize_name(b_key) == _normalize_name(ar_name)
+                    or b_en.lower() == en_name.lower()
+                    or b_key.lower() == en_name.lower().replace(" ", "_")
+                    or b_key.lower() == clean_key.lower()
+                ):
+                    bucket.pop(b_key, None)
 
         base_entry = dict(selected) if selected else {}
         base_entry["name"] = {"ar": ar_name, "en": en_name}
@@ -441,15 +460,12 @@ class MonsterEditSelect(discord.ui.Select):
         if saved_local:
             base_entry["local_image"] = local_filename
 
-        for t_k in target_keys:
-            if not t_k:
-                continue
-            existing = bucket.get(t_k)
-            if isinstance(existing, dict):
-                existing.update(base_entry)
-                bucket[t_k] = existing
-            else:
-                bucket[t_k] = dict(base_entry)
+        existing = bucket.get(canonical_key)
+        if isinstance(existing, dict):
+            existing.update(base_entry)
+            bucket[canonical_key] = existing
+        else:
+            bucket[canonical_key] = dict(base_entry)
 
         save(CUSTOM_MONSTERS_FILE, data)
 
@@ -842,14 +858,28 @@ class GuidesCog(commands.Cog):
         self.static_monsters = load_json_data("monsters.json")
 
     def _get_monsters(self, guild_id: int) -> dict:
-        """Show the bilingual standard list, plus monsters added by this server's admins."""
+        """Show the bilingual standard list, plus monsters added by this server's admins without duplicate entries."""
         custom_data = load(CUSTOM_MONSTERS_FILE)
-        monsters = {
+        guild_bucket = custom_data.get(str(guild_id), {})
+        merged = {
             key: value for key, value in self.static_monsters.items()
             if not key.startswith("_") and isinstance(value, dict)
         }
-        monsters.update(custom_data.get(str(guild_id), {}))
-        return monsters
+        merged.update(guild_bucket)
+
+        deduped = {}
+        seen_names = set()
+        for k, v in merged.items():
+            if not isinstance(v, dict):
+                continue
+            en_n = (_monster_name(v, k, "en") or _resolve_monster_en(k) or k).strip().lower()
+            ar_n = _normalize_name(_monster_name(v, k, "ar") or _resolve_monster_ar(k) or k)
+            ident = en_n or ar_n
+            if ident in seen_names:
+                continue
+            seen_names.add(ident)
+            deduped[k] = v
+        return deduped
 
     def _get_info(self, guild_id: int) -> dict:
         """يرجع الأقسام الجاهزة وإضافات الإدارة بصيغة ثنائية اللغة."""
