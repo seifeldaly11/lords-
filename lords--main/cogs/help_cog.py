@@ -719,7 +719,7 @@ class HelpCog(commands.Cog):
     ])
     async def shortcuts(self, interaction: discord.Interaction, language: Optional[app_commands.Choice[str]] = None):
         """Alias for /help."""
-        await self.help_command(interaction, language)
+        await self.help_command.callback(self, interaction, language)
 
 
 async def setup(bot: commands.Bot):
