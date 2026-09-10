@@ -29,11 +29,80 @@ CUSTOM_INFO_FILE = "custom_info"
 # /monster (ديناميكي بالكامل - يبدأ فاضي)
 # ---------------------------------------------------------------------------
 
+
+MONSTER_AR_TO_EN = {
+    "سابرفنغ": "Saberfang",
+    "تنين الثلج": "Frostwing",
+    "جناح الصقيع": "Frostwing",
+    "نوسيروس": "Noceros",
+    "عنكبوت الجحيم": "Hell Drider",
+    "غريفون": "Gryphon",
+    "الجناح الأسود": "Blackwing",
+    "العنقاء": "Blackwing",
+    "اليرقة العملاقة": "Mega Maggot",
+    "بون أبتيت": "Bon Appeti",
+    "غارغانتوا": "Gargantua",
+    "حاصد الأرواح": "Grim Reaper",
+    "صلخر": "Hardrox",
+    "مخلب البومة": "Hootclaw",
+    "تنين اليشم": "Jade Wyrm",
+    "طروادة الآلي": "Mecha Trojan",
+    "حصان طروادة": "Mecha Trojan",
+    "ملكة النحل": "Queen Bee",
+    "وحش الثلج": "Snow Beast",
+    "شوك الرعب": "Terrorthorn",
+    "شوكة الرعب": "Terrorthorn",
+    "عملاق المد": "Tidal Titan",
+    "شامان الفودو": "Voodoo Shaman",
+    "ساحرة الشر": "Voodoo Shaman",
+    "ذيل القطن": "Cottontail",
+    "الكوخ المتوحش": "Cottageroar",
+    "نخر": "Necrosis",
+    "نيكروسيس": "Necrosis",
+    "المصارع الثعبان": "Serpent Gladiator",
+    "الثعبان المقاتل": "Serpent Gladiator",
+    "جورجون": "Gorgon",
+    "زعنفة القطب": "Arctic Flipper",
+}
+MONSTER_EN_TO_AR = {v.lower(): k for k, v in MONSTER_AR_TO_EN.items()}
+for k, v in list(MONSTER_AR_TO_EN.items()):
+    MONSTER_EN_TO_AR[v] = k
+
+
 def _monster_name(entry: dict, key: str, lang: str) -> str:
     names = entry.get("name")
+    target_lang = "en" if lang == "en" else "ar"
+    
+    # If dict of localized names
     if isinstance(names, dict):
-        return names.get(lang) or names.get("ar") or names.get("en") or key
-    return entry.get(f"name_{lang}") or names or key
+        val = names.get(target_lang)
+        if val:
+            return str(val)
+        other = names.get("ar" if target_lang == "en" else "en")
+        if other and isinstance(other, str):
+            if target_lang == "en" and other.strip() in MONSTER_AR_TO_EN:
+                return MONSTER_AR_TO_EN[other.strip()]
+            if target_lang == "ar" and other.strip() in MONSTER_EN_TO_AR:
+                return MONSTER_EN_TO_AR[other.strip()]
+            return other
+    
+    # If single string or attribute
+    val = entry.get(f"name_{target_lang}") or names
+    if isinstance(val, str) and val.strip():
+        val = val.strip()
+        if target_lang == "en" and val in MONSTER_AR_TO_EN:
+            return MONSTER_AR_TO_EN[val]
+        if target_lang == "ar" and val in MONSTER_EN_TO_AR:
+            return MONSTER_EN_TO_AR[val]
+        return val
+        
+    # Fallback to key lookup
+    cleaned_key = key.replace("_", " ").title()
+    if target_lang == "en":
+        return cleaned_key
+    if target_lang == "ar" and cleaned_key in MONSTER_EN_TO_AR:
+        return MONSTER_EN_TO_AR[cleaned_key]
+    return cleaned_key
 
 
 def _monster_text(value, lang: str) -> str:

@@ -49,10 +49,16 @@ CATEGORY_META = {
         "color": discord.Color.dark_gold(),
     },
     "market": {
-        "emoji": "💱",
+        "emoji": "🌾",
         "ar": "بورصة الموارد",
         "en": "𝑹𝒆𝒔𝒐𝒖𝒓𝒄𝒆 𝑴𝒂𝒓𝒌𝒆𝒕",
         "color": discord.Color.green(),
+    },
+    "accounts_shop": {
+        "emoji": "🏷️",
+        "ar": "سوق بيع الحسابات والوساطة",
+        "en": "𝑨𝒄𝒄𝒐𝒖𝒏𝒕𝒔 𝑺𝒉𝒐𝒑 & 𝑴𝒊𝒅𝒅𝒍𝒆𝒎𝒂𝒏",
+        "color": discord.Color.gold(),
     },
     "hunt": {
         "emoji": "🐾",
@@ -98,6 +104,7 @@ CATEGORY_ORDER = [
     "war",
     "alliance",
     "market",
+    "accounts_shop",
     "hunt",
     "shield",
     "settings",
@@ -111,7 +118,8 @@ CATEGORY_BLURBS = {
     "calculators": {"ar": "حاسبات وأدلة تساعدك تاخد القرار الصح بسرعة.", "en": "Calculators and quick guides for better decisions."},
     "war": {"ar": "خطط الحرب، الكاونترات، وتحليل المعارك.", "en": "War planning, counters, and battle analysis."},
     "alliance": {"ar": "أدوات قيادة ومتابعة نشاط أعضاء التحالف.", "en": "Leadership tools and alliance activity tracking."},
-    "market": {"ar": "تابع الموارد والأسعار واتخذ قرارات أذكى.", "en": "Track resources and prices with confidence."},
+    "market": {"ar": "متابعة أسعار وبورصة الموارد وتبادلات التحالف.", "en": "Track alliance resource exchange rates and calculations."},
+    "accounts_shop": {"ar": "سوق بيع وشراء الحسابات وتأمين المعاملات بالوسيط المعتمد.", "en": "Buy, sell, and trade Lords Mobile accounts securely with trusted middlemen."},
     "hunt": {"ar": "نظّم الصيد وسجّل النتائج بدون فوضى.", "en": "Organize hunts and track results effortlessly."},
     "shield": {"ar": "تنبيهات الدرع والحماية في الوقت المناسب.", "en": "Shield and protection alerts at the right time."},
     "settings": {"ar": "اضبط اللغة، الإعدادات، وروابط اللعبة.", "en": "Configure language, settings, and game links."},
@@ -651,34 +659,42 @@ class HelpCog(commands.Cog):
             )
             await ctx.send(fallback)
 
+    
     @app_commands.command(
-        name="help",
-        description="Open the live command center, organized by function, administration, war, and AI."
+        name="shortcuts",
+        description="⚡ اختصارات سريعة لأهم أوامر البوت | Quick cheatsheet of essential commands"
     )
-    async def help_cmd(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        try:
-            # Acknowledge with the polished card first. The menu is attached in a
-            # second request so Discord component errors cannot erase the response.
-            embed = build_intro_embed(self.bot, lang)
-            await interaction.response.send_message(embed=embed)
-            try:
-                await interaction.edit_original_response(view=HelpView(self.bot, lang))
-            except Exception:
-                log.exception("Failed to attach /help menu view")
-        except Exception:
-            log.exception("Failed to render /help")
-            fallback = (
-                "تعذر تحميل القائمة التفاعلية مؤقتًا. جرّب الأمر مرة أخرى بعد لحظات."
-                if lang == "ar"
-                else "The interactive help menu could not be loaded. Please try again in a moment."
+    @app_commands.describe(language="اختر لغة العرض | Select display language")
+    @app_commands.choices(language=[
+        app_commands.Choice(name="العربية", value="ar"),
+        app_commands.Choice(name="English", value="en"),
+    ])
+    async def shortcuts(self, interaction: discord.Interaction, language: Optional[app_commands.Choice[str]] = None):
+        lang = language.value if language else get_lang(interaction.guild_id, interaction.user.id)
+        if lang == "en":
+            embed = discord.Embed(
+                title="⚡ Lords Bot Quick Shortcuts",
+                description="Here are the most frequently used commands across your alliance:",
+                color=discord.Color.gold()
             )
-            if not interaction.response.is_done():
-                await interaction.response.send_message(fallback)
-            else:
-                await interaction.followup.send(fallback)
+            embed.add_field(name="⚔️ War & Rallies", value="• `/rally` — Set up war rallies & counters\n• `/shield` — Set shield expiration timer & alarm\n• `/intel` — Log kingdom enemy scout intel", inline=False)
+            embed.add_field(name="🤖 AI & Calculators", value="• `/حساب_التسريعات` (`/ai_speedup`) — AI speedup calculator\n• `/حاسبة_الاحداث` (`/ai_event`) — AI Hell/Solo event points\n• `/monster` — Best hero lineups for monster hunting\n• `/info` — Essential castle guides & research", inline=False)
+            embed.add_field(name="🌾 Resources & Trading", value="• `/market` — Alliance resource exchange board\n• `/shop` — Browse verified accounts for sale\n• `/sell` — List an account with middleman protection\n• `/middleman` — Request official trade mediation", inline=False)
+            embed.add_field(name="🏰 Alliance Activity", value="• `/hunt_list` — Track members' daily monster hunts\n• `/board` — Guild Fest leaderboard\n• `/help` — Full interactive command dashboard", inline=False)
+            embed.set_footer(text="Tip: Type / to see real-time command suggestions and descriptions.")
+        else:
+            embed = discord.Embed(
+                title="⚡ الدليل السريع لاختصارات أوامر البوت",
+                description="أهم الأوامر اليومية التي يحتاجها كل قائد وعضو في التحالف:",
+                color=discord.Color.gold()
+            )
+            embed.add_field(name="⚔️ الحرب والحشود", value="• `/rally` — تنظيم الحشود والكاونترات\n• `/shield` — ضبط منبه ومؤقت الدرع قبل سقوطه\n• `/intel` — تسجيل تقارير واستطلاع العدو", inline=False)
+            embed.add_field(name="🤖 الذكاء الاصطناعي والحواسب", value="• `/حساب_التسريعات` — حاسبة تسريعات ذكية بالـ AI\n• `/حاسبة_الاحداث` — حساب متطلبات أحداث الجحيم والفردي\n• `/monster` — أفضل أبطال صيد الوحوش (مترجم)\n• `/info` — أدلة القلعة وتشكيلات الأبطال والمعدات", inline=False)
+            embed.add_field(name="🌾 الموارد والتجارة", value="• `/market` — بورصة موارد التحالف وحساب التبادلات\n• `/shop` — تصفح حسابات اللعبة المعروضة للبيع\n• `/sell` — عرض حسابك للبيع بتأمين الوساطة\n• `/middleman` — طلب وسيط معتمد لتأمين الصفقة", inline=False)
+            embed.add_field(name="🏰 التحالف والمتابعة", value="• `/hunt_list` — متابعة صيد الأعضاء اليومي\n• `/board` — صدارة وترتيب مهرجان التحالف\n• `/help` — لوحة المساعدة التفاعلية الشاملة", inline=False)
+            embed.set_footer(text="نصيحة: اكتب / في الشات لتظهر لك كل الأوامر بوصفها وخياراتها فوراً.")
 
-
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(HelpCog(bot))
