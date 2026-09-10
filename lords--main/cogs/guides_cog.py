@@ -196,29 +196,36 @@ class MonsterSelect(discord.ui.Select):
         local_dir = os.path.join("storage", "monster_images")
         os.makedirs(local_dir, exist_ok=True)
 
-        # Resolve English canonical name from Arabic or English
+        local_path = None
+        # 1. Direct entry local_image
+        if info.get("local_image"):
+            p = os.path.join(local_dir, info["local_image"])
+            if os.path.exists(p) and os.path.getsize(p) > 0:
+                local_path = p
+
+        # 2. Resolve both canonical names to find local cached file
         en_name = _resolve_monster_en(key)
         if not en_name or en_name == key:
             en_name = _resolve_monster_en(title)
-        
+        ar_name = _resolve_monster_ar(key) or _resolve_monster_ar(title)
+
         norm_key = (en_name or key).lower().replace(" ", "_").strip()
         clean_key = re.sub(r'[^a-zA-Z0-9_]', '', norm_key)
-        
-        # Candidate local filenames
-        candidates = [
-            f"{gid}_{clean_key}.png",
-            f"{clean_key}.png",
-            f"{key}.png"
-        ]
-        
-        local_path = None
-        for c in candidates:
-            if not c or c == ".png":
-                continue
-            p = os.path.join(local_dir, c)
-            if os.path.exists(p) and os.path.getsize(p) > 0:
-                local_path = p
-                break
+
+        if not local_path:
+            candidates = [
+                f"{gid}_{clean_key}.png",
+                f"{clean_key}.png",
+                f"{gid}_{key}.png",
+                f"{key}.png"
+            ]
+            for c in candidates:
+                if not c or c in {".png", f"{gid}_.png"}:
+                    continue
+                p = os.path.join(local_dir, c)
+                if os.path.exists(p) and os.path.getsize(p) > 0:
+                    local_path = p
+                    break
 
         # If not on disk, check if user has custom image URL or static fallback
         if not local_path:
@@ -342,14 +349,23 @@ class MonsterEditSelect(discord.ui.Select):
         self.entries = entries
         self.lang = lang
         self.image = image
-        options = [
-            discord.SelectOption(
-                label=_monster_name(value, key, lang)[:100],
-                value=key,
-                emoji=value.get("emoji") or "🐲"
+        options = []
+        for key, value in entries.items():
+            ar_title = _monster_name(value, key, "ar")
+            en_title = _monster_name(value, key, "en")
+            # Clear bilingual label so admin knows both languages are covered
+            if ar_title and en_title and ar_title != en_title:
+                display_label = f"{ar_title} | {en_title}"
+            else:
+                display_label = ar_title or en_title or key
+            options.append(
+                discord.SelectOption(
+                    label=display_label[:100],
+                    value=key,
+                    emoji=value.get("emoji") or "🐲",
+                    description=f"AR & EN: {en_title}"[:100]
+                )
             )
-            for key, value in entries.items()
-        ]
         super().__init__(
             placeholder=placeholder or t("edit_monster_select_placeholder", lang),
             options=options[:25]
@@ -359,18 +375,26 @@ class MonsterEditSelect(discord.ui.Select):
         await interaction.response.defer(ephemeral=True)
         key = self.values[0]
         selected = self.entries.get(key, {})
-        name = _monster_name(selected, key, self.lang)
+
+        # Resolve both language names
+        ar_name = _monster_name(selected, key, "ar") or _resolve_monster_ar(key) or key
+        en_name = _monster_name(selected, key, "en") or _resolve_monster_en(key) or key
+        if not ar_name or ar_name == en_name:
+            ar_lookup = _resolve_monster_ar(en_name)
+            if ar_lookup:
+                ar_name = ar_lookup
+        if not en_name or en_name == ar_name:
+            en_lookup = _resolve_monster_en(ar_name)
+            if en_lookup:
+                en_name = en_lookup
 
         # Local storage directory
         local_dir = os.path.join("storage", "monster_images")
         os.makedirs(local_dir, exist_ok=True)
         gid = str(interaction.guild_id or 0)
 
-        en_name = _resolve_monster_en(key)
-        if not en_name or en_name == key:
-            en_name = _resolve_monster_en(name)
-        norm_key = (en_name or key).lower().replace(" ", "_").strip()
-        clean_key = re.sub(r'[^a-zA-Z0-9_]', '', norm_key)
+        norm_en = (en_name or key).lower().replace(" ", "_").strip()
+        clean_key = re.sub(r'[^a-zA-Z0-9_]', '', norm_en) or "monster"
 
         local_filename = f"{gid}_{clean_key}.png"
         local_path = os.path.join(local_dir, local_filename)
@@ -378,27 +402,62 @@ class MonsterEditSelect(discord.ui.Select):
         try:
             await self.image.save(local_path)
             saved_local = True
+            # Also save a generic copy
+            gen_path = os.path.join(local_dir, f"{clean_key}.png")
+            import shutil
+            shutil.copyfile(local_path, gen_path)
         except Exception:
             pass
 
+        # Update CUSTOM_MONSTERS_FILE for ALL matching keys (both Arabic & English aliases)
         data = load(CUSTOM_MONSTERS_FILE)
         gid_str = str(interaction.guild_id)
         bucket = data.setdefault(gid_str, {})
-        entry = bucket.get(key)
-        if not entry:
-            entry = dict(selected) if selected else {}
-        if "name" not in entry:
-            ar_n = _resolve_monster_ar(key) or key
-            entry["name"] = {"ar": ar_n, "en": en_name or key}
-        entry["emoji"] = entry.get("emoji") or "🐲"
-        entry["image_url"] = self.image.url
+
+        target_keys = set()
+        target_keys.add(key)
+        target_keys.add(clean_key)
+        target_keys.add(en_name.lower().replace(" ", "_"))
+        target_keys.add(_normalize_name(ar_name).replace(" ", "_"))
+
+        # Also find any existing bucket keys that refer to this monster
+        for b_key, b_val in list(bucket.items()):
+            if not isinstance(b_val, dict):
+                continue
+            b_ar = _monster_name(b_val, b_key, "ar")
+            b_en = _monster_name(b_val, b_key, "en")
+            if (
+                _normalize_name(b_ar) == _normalize_name(ar_name)
+                or _normalize_name(b_key) == _normalize_name(ar_name)
+                or b_en.lower() == en_name.lower()
+                or b_key.lower() == en_name.lower().replace(" ", "_")
+            ):
+                target_keys.add(b_key)
+
+        base_entry = dict(selected) if selected else {}
+        base_entry["name"] = {"ar": ar_name, "en": en_name}
+        base_entry["emoji"] = base_entry.get("emoji") or "🐲"
+        base_entry["image_url"] = self.image.url
         if saved_local:
-            entry["local_image"] = local_filename
-        bucket[key] = entry
+            base_entry["local_image"] = local_filename
+
+        for t_k in target_keys:
+            if not t_k:
+                continue
+            existing = bucket.get(t_k)
+            if isinstance(existing, dict):
+                existing.update(base_entry)
+                bucket[t_k] = existing
+            else:
+                bucket[t_k] = dict(base_entry)
+
         save(CUSTOM_MONSTERS_FILE, data)
 
+        # Bilingual confirmation embed
         embed = discord.Embed(
-            title=f"✅ {t('edit_monster_success', self.lang, name=name)}",
+            title=f"✅ تم تحديث صورة الوحش للغتين (العربية والإنجليزية) معاً",
+            description=f"**العربي:** {ar_name}
+**English:** {en_name}",
             color=discord.Color.green()
         )
 
