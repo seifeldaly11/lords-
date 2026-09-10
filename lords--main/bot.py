@@ -42,9 +42,8 @@ def apply_english_command_descriptions() -> None:
             description = ENGLISH_COMMAND_DESCRIPTIONS.get(path)
             if description is None:
                 description = ENGLISH_COMMAND_DESCRIPTIONS.get(command.name)
-            if description is None:
-                description = f"Open the /{path.replace(' ', ' ') } feature and follow its prompts."
-            command.description = description[:100]
+            if description is not None:
+                command.description = description[:100]
             if isinstance(command, app_commands.Group):
                 walk(command.commands, path)
 
