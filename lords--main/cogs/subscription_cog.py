@@ -18,10 +18,21 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
-OWNER_ID = int(os.getenv("OWNER_ID", "1527765325221990521"))
-CONTACT_USERNAME = os.getenv("CONTACT_USERNAME", "seifeldaly124")
+def _parse_int(val, default: int) -> int:
+    if val is None:
+        return default
+    s = str(val).strip()
+    if not s:
+        return default
+    try:
+        return int(s)
+    except (ValueError, TypeError):
+        return default
+
+OWNER_ID = _parse_int(os.getenv("OWNER_ID"), 1527765325221990521)
+CONTACT_USERNAME = (os.getenv("CONTACT_USERNAME") or "seifeldaly124").strip()
 CONTACT_LINE = f"للتجديد يرجى التواصل مع: **{CONTACT_USERNAME}**"
-GRACE_PERIOD_DAYS = int(os.getenv("GRACE_PERIOD_DAYS", "3"))
+GRACE_PERIOD_DAYS = _parse_int(os.getenv("GRACE_PERIOD_DAYS"), 3)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "storage", "subscriptions.db")
