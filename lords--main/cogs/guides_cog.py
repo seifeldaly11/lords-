@@ -30,79 +30,130 @@ CUSTOM_INFO_FILE = "custom_info"
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Monster Translations & Image Fallbacks
+# ---------------------------------------------------------------------------
+
+MONSTER_IMAGES = {
+    "saberfang": "https://static.wikia.nocookie.net/lordsmobile/images/9/91/Saberfang.png",
+    "frostwing": "https://static.wikia.nocookie.net/lordsmobile/images/d/da/Frostwing.png",
+    "noceros": "https://static.wikia.nocookie.net/lordsmobile/images/c/c8/Noceros.png",
+    "hell_drider": "https://static.wikia.nocookie.net/lordsmobile/images/f/fd/Hell_Drider.png",
+    "gryphon": "https://static.wikia.nocookie.net/lordsmobile/images/2/2f/Gryphon.png",
+    "blackwing": "https://static.wikia.nocookie.net/lordsmobile/images/c/ce/Blackwing.png",
+    "mega_maggot": "https://static.wikia.nocookie.net/lordsmobile/images/5/55/Mega_Maggot.png",
+    "bon_appeti": "https://static.wikia.nocookie.net/lordsmobile/images/b/bf/Bon_Appeti.png",
+    "gargantua": "https://static.wikia.nocookie.net/lordsmobile/images/2/21/Gargantua.png",
+    "grim_reaper": "https://static.wikia.nocookie.net/lordsmobile/images/7/74/Grim_Reaper.png",
+    "hardrox": "https://static.wikia.nocookie.net/lordsmobile/images/d/d6/Hardrox.png",
+    "hootclaw": "https://static.wikia.nocookie.net/lordsmobile/images/c/cb/Hootclaw.png",
+    "jade_wyrm": "https://static.wikia.nocookie.net/lordsmobile/images/5/51/Jade_Wyrm.png",
+    "mecha_trojan": "https://static.wikia.nocookie.net/lordsmobile/images/3/3a/Mecha_Trojan.png",
+    "queen_bee": "https://static.wikia.nocookie.net/lordsmobile/images/f/f0/Queen_Bee.png",
+    "snow_beast": "https://static.wikia.nocookie.net/lordsmobile/images/2/28/Snow_Beast.png",
+    "terrorthorn": "https://static.wikia.nocookie.net/lordsmobile/images/6/6a/Terrorthorn.png",
+    "tidal_titan": "https://static.wikia.nocookie.net/lordsmobile/images/c/c0/Tidal_Titan.png",
+    "voodoo_shaman": "https://static.wikia.nocookie.net/lordsmobile/images/2/2e/Voodoo_Shaman.png",
+    "cottontail": "https://static.wikia.nocookie.net/lordsmobile/images/0/07/Cottageroar.png",
+    "cottageroar": "https://static.wikia.nocookie.net/lordsmobile/images/0/07/Cottageroar.png",
+    "necrosis": "https://static.wikia.nocookie.net/lordsmobile/images/4/49/Undead_Ogre.png",
+    "serpent_gladiator": "https://static.wikia.nocookie.net/lordsmobile/images/0/0b/Serpent_Vizier.png",
+    "gorgon": "https://static.wikia.nocookie.net/lordsmobile/images/4/4e/Gorgon.png",
+    "arctic_flipper": "https://static.wikia.nocookie.net/lordsmobile/images/c/c9/Arctic_Flipper.png",
+    "cyclops": "https://static.wikia.nocookie.net/lordsmobile/images/2/23/Cyclops.png",
+}
+
 MONSTER_AR_TO_EN = {
-    "سابرفنغ": "Saberfang",
-    "تنين الثلج": "Frostwing",
-    "جناح الصقيع": "Frostwing",
-    "نوسيروس": "Noceros",
-    "عنكبوت الجحيم": "Hell Drider",
-    "غريفون": "Gryphon",
-    "الجناح الأسود": "Blackwing",
-    "العنقاء": "Blackwing",
-    "اليرقة العملاقة": "Mega Maggot",
-    "بون أبتيت": "Bon Appeti",
-    "غارغانتوا": "Gargantua",
-    "حاصد الأرواح": "Grim Reaper",
-    "صلخر": "Hardrox",
-    "مخلب البومة": "Hootclaw",
-    "تنين اليشم": "Jade Wyrm",
-    "طروادة الآلي": "Mecha Trojan",
-    "حصان طروادة": "Mecha Trojan",
-    "ملكة النحل": "Queen Bee",
+    "سابرفنغ": "Saberfang", "سابرفانج": "Saberfang", "ذو الناب": "Saberfang",
+    "تنين الثلج": "Frostwing", "جناح الصقيع": "Frostwing", "فروستونج": "Frostwing",
+    "نوسيروس": "Noceros", "الكركدن": "Noceros",
+    "عنكبوت الجحيم": "Hell Drider", "هيل درايدر": "Hell Drider",
+    "غريفون": "Gryphon", "الجريفون": "Gryphon",
+    "الجناح الاسود": "Blackwing", "الجناح الأسود": "Blackwing", "تنين الظلام": "Blackwing", "العنقاء": "Blackwing",
+    "اليرقة العملاقة": "Mega Maggot", "الدودة العملاقة": "Mega Maggot", "الدوده العملاقة": "Mega Maggot", "ميجا ماجوت": "Mega Maggot",
+    "بون أبتيت": "Bon Appeti", "بون ابتيت": "Bon Appeti", "بون أبيتيت": "Bon Appeti", "بون ابيتيت": "Bon Appeti",
+    "غارغانتوا": "Gargantua", "غوريلا": "Gargantua", "الغوريلا": "Gargantua",
+    "حاصد الارواح": "Grim Reaper", "حاصد الأرواح": "Grim Reaper",
+    "صلخر": "Hardrox", "هاردوكس": "Hardrox", "هارد روكس": "Hardrox",
+    "مخلب البومة": "Hootclaw", "مخلب البومه": "Hootclaw",
+    "تنين اليشم": "Jade Wyrm", "جايد ويرم": "Jade Wyrm",
+    "طروادة الالي": "Mecha Trojan", "طروادة الآلي": "Mecha Trojan", "حصان طروادة": "Mecha Trojan",
+    "ملكة النحل": "Queen Bee", "ملكه النحل": "Queen Bee",
     "وحش الثلج": "Snow Beast",
-    "شوك الرعب": "Terrorthorn",
-    "شوكة الرعب": "Terrorthorn",
+    "شوك الرعب": "Terrorthorn", "شوكة الرعب": "Terrorthorn",
     "عملاق المد": "Tidal Titan",
-    "شامان الفودو": "Voodoo Shaman",
-    "ساحرة الشر": "Voodoo Shaman",
+    "شامان الفودو": "Voodoo Shaman", "الكاهن فودو": "Voodoo Shaman", "كاهن فودو": "Voodoo Shaman", "ساحرة الشر": "Voodoo Shaman", "ساحره الشر": "Voodoo Shaman",
     "ذيل القطن": "Cottontail",
     "الكوخ المتوحش": "Cottageroar",
-    "نخر": "Necrosis",
-    "نيكروسيس": "Necrosis",
-    "المصارع الثعبان": "Serpent Gladiator",
-    "الثعبان المقاتل": "Serpent Gladiator",
-    "جورجون": "Gorgon",
-    "زعنفة القطب": "Arctic Flipper",
+    "نخر": "Necrosis", "نيكروسيس": "Necrosis",
+    "المصارع الثعبان": "Serpent Gladiator", "الثعبان المقاتل": "Serpent Gladiator",
+    "جورجون": "Gorgon", "الأفعى جورجون": "Gorgon", "الافعى جورجون": "Gorgon",
+    "زعنفة القطب": "Arctic Flipper", "زعنفه القطب": "Arctic Flipper",
+    "العملاق الاعور": "Cyclops", "العملاق الأعور": "Cyclops", "عملاق اعور": "Cyclops", "عملاق أعور": "Cyclops",
 }
-MONSTER_EN_TO_AR = {v.lower(): k for k, v in MONSTER_AR_TO_EN.items()}
-for k, v in list(MONSTER_AR_TO_EN.items()):
-    MONSTER_EN_TO_AR[v] = k
 
+def _normalize_name(text: str) -> str:
+    t_str = str(text or "").strip()
+    t_str = re.sub(r'[\u064B-\u065F\u0670]', '', t_str)
+    t_str = t_str.replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
+    t_str = t_str.replace('ة', 'ه').replace('ى', 'ي')
+    return ' '.join(t_str.split()).lower()
+
+_NORM_AR_TO_EN = {_normalize_name(k): v for k, v in MONSTER_AR_TO_EN.items()}
+_NORM_EN_TO_AR = {_normalize_name(v): k for k, v in MONSTER_AR_TO_EN.items()}
+
+def _resolve_monster_en(name: str) -> str:
+    norm = _normalize_name(name)
+    if norm in _NORM_AR_TO_EN:
+        return _NORM_AR_TO_EN[norm]
+    # Check lowercase match
+    for k, v in MONSTER_AR_TO_EN.items():
+        if k in name or name in k:
+            return v
+    return name
+
+def _resolve_monster_ar(name: str) -> str:
+    norm = _normalize_name(name)
+    if norm in _NORM_EN_TO_AR:
+        return _NORM_EN_TO_AR[norm]
+    for k, v in MONSTER_AR_TO_EN.items():
+        if v.lower() == norm or v.lower() in norm:
+            return k
+    return name
+
+def _get_monster_image(name: str, key: str = "") -> str:
+    clean_key = key.lower().replace("-", "_").strip()
+    if clean_key in MONSTER_IMAGES:
+        return MONSTER_IMAGES[clean_key]
+    en_name = _resolve_monster_en(name).lower().replace(" ", "_")
+    if en_name in MONSTER_IMAGES:
+        return MONSTER_IMAGES[en_name]
+    for m_key, url in MONSTER_IMAGES.items():
+        if m_key in clean_key or m_key in en_name:
+            return url
+    return ""
 
 def _monster_name(entry: dict, key: str, lang: str) -> str:
     names = entry.get("name")
     target_lang = "en" if lang == "en" else "ar"
     
-    # If dict of localized names
     if isinstance(names, dict):
         val = names.get(target_lang)
         if val:
             return str(val)
         other = names.get("ar" if target_lang == "en" else "en")
         if other and isinstance(other, str):
-            if target_lang == "en" and other.strip() in MONSTER_AR_TO_EN:
-                return MONSTER_AR_TO_EN[other.strip()]
-            if target_lang == "ar" and other.strip() in MONSTER_EN_TO_AR:
-                return MONSTER_EN_TO_AR[other.strip()]
-            return other
+            return _resolve_monster_en(other) if target_lang == "en" else _resolve_monster_ar(other)
     
-    # If single string or attribute
     val = entry.get(f"name_{target_lang}") or names
     if isinstance(val, str) and val.strip():
         val = val.strip()
-        if target_lang == "en" and val in MONSTER_AR_TO_EN:
-            return MONSTER_AR_TO_EN[val]
-        if target_lang == "ar" and val in MONSTER_EN_TO_AR:
-            return MONSTER_EN_TO_AR[val]
-        return val
+        return _resolve_monster_en(val) if target_lang == "en" else _resolve_monster_ar(val)
         
-    # Fallback to key lookup
     cleaned_key = key.replace("_", " ").title()
     if target_lang == "en":
-        return cleaned_key
-    if target_lang == "ar" and cleaned_key in MONSTER_EN_TO_AR:
-        return MONSTER_EN_TO_AR[cleaned_key]
-    return cleaned_key
+        return _resolve_monster_en(cleaned_key)
+    return _resolve_monster_ar(cleaned_key)
 
 
 def _monster_text(value, lang: str) -> str:
@@ -146,8 +197,9 @@ class MonsterSelect(discord.ui.Select):
             embed.add_field(name=t("monster_heroes_field", lang), value=heroes[:1024], inline=False)
         if defense_note:
             embed.add_field(name=t("monster_defense_field", lang), value=defense_note[:1024], inline=False)
-        if info.get("image_url"):
-            embed.set_image(url=info["image_url"])
+        image_url = info.get("image_url") or _get_monster_image(title, key)
+        if image_url:
+            embed.set_image(url=image_url)
         embed.set_footer(text=t("monster_footer", lang))
         await interaction.response.send_message(embed=embed)
 
