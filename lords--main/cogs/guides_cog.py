@@ -455,9 +455,8 @@ class MonsterEditSelect(discord.ui.Select):
 
         # Bilingual confirmation embed
         embed = discord.Embed(
-            title=f"✅ تم تحديث صورة الوحش للغتين (العربية والإنجليزية) معاً",
-            description=f"**العربي:** {ar_name}
-**English:** {en_name}",
+            title="✅ تم تحديث صورة الوحش للغتين (العربية والإنجليزية) معاً",
+            description=f"**العربي:** {ar_name}\n**English:** {en_name}",
             color=discord.Color.green()
         )
 
