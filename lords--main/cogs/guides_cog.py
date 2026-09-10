@@ -11,6 +11,8 @@
 منفصلة تماماً عن البيانات الجاهزة في data/*.json، فمفيش خطر إنها تتمسح لو حدّثنا الكود.
 """
 from typing import Optional
+import os
+import time
 
 import re
 
