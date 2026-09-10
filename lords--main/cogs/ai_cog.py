@@ -148,13 +148,18 @@ class SpeedupCalcModal(discord.ui.Modal, title="⏱️ حاسبة التسريع
             guild_id=interaction.guild_id
         )
 
-        title = "⏱️ نتيجة حساب التسريعات" if lang == "ar" else "⏱️ Speedup Calculation Result"
-        embed = styled_embed(title=title, description=answer[:3500], color=ROYAL_BLUE, lang=lang)
-        embed.set_footer(text=f"طلب من: {interaction.user.display_name}")
+        title = "⏱️ **نتيجة حساب التسريعات**" if lang == "ar" else "⏱️ **Speedup Calculation Result**"
+        msg_out = f"{title}\n\n{answer}\n\n> 👤 *طلب من: {interaction.user.mention}*"
         try:
-            await loading_msg.edit(embed=embed)
+            if len(msg_out) <= 2000:
+                await loading_msg.edit(content=msg_out, embed=None)
+            else:
+                chunks = [msg_out[i:i+1900] for i in range(0, len(msg_out), 1900)]
+                await loading_msg.edit(content=chunks[0], embed=None)
+                for chunk in chunks[1:]:
+                    await interaction.followup.send(chunk)
         except discord.HTTPException:
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(msg_out[:2000])
 
 
 # ---------------------------------------------------------------------------
@@ -207,13 +212,18 @@ class EventCalcModal(discord.ui.Modal, title="🏆 حاسبة الأحداث ا�
             guild_id=interaction.guild_id
         )
 
-        title = "🏆 نتيجة حاسبة الأحداث" if lang == "ar" else "🏆 Event Calculation Result"
-        embed = styled_embed(title=title, description=answer[:3500], color=ROYAL_BLUE, lang=lang)
-        embed.set_footer(text=f"طلب من: {interaction.user.display_name}")
+        title = "🏆 **نتيجة حاسبة الأحداث**" if lang == "ar" else "🏆 **Event Calculation Result**"
+        msg_out = f"{title}\n\n{answer}\n\n> 👤 *طلب من: {interaction.user.mention}*"
         try:
-            await loading_msg.edit(embed=embed)
+            if len(msg_out) <= 2000:
+                await loading_msg.edit(content=msg_out, embed=None)
+            else:
+                chunks = [msg_out[i:i+1900] for i in range(0, len(msg_out), 1900)]
+                await loading_msg.edit(content=chunks[0], embed=None)
+                for chunk in chunks[1:]:
+                    await interaction.followup.send(chunk)
         except discord.HTTPException:
-            await interaction.followup.send(embed=embed)
+            await interaction.followup.send(msg_out[:2000])
 
 
 # ---------------------------------------------------------------------------
