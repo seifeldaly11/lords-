@@ -16,7 +16,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/9/91/Saberfang.png"
   },
   "frostwing": {
     "name": {
@@ -35,7 +36,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/d/da/Frostwing.png"
   },
   "noceros": {
     "name": {
@@ -54,7 +56,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/c/c8/Noceros.png"
   },
   "hell_drider": {
     "name": {
@@ -73,7 +76,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/f/fd/Hell_Drider.png"
   },
   "gryphon": {
     "name": {
@@ -92,7 +96,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/2/2f/Gryphon.png"
   },
   "blackwing": {
     "name": {
@@ -111,7 +116,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/c/ce/Blackwing.png"
   },
   "mega_maggot": {
     "name": {
@@ -130,7 +136,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/5/55/Mega_Maggot.png"
   },
   "bon_appeti": {
     "name": {
@@ -149,7 +156,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/b/bf/Bon_Appeti.png"
   },
   "gargantua": {
     "name": {
@@ -168,7 +176,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/2/21/Gargantua.png"
   },
   "grim_reaper": {
     "name": {
@@ -187,7 +196,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/7/74/Grim_Reaper.png"
   },
   "hardrox": {
     "name": {
@@ -206,7 +216,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/d/d6/Hardrox.png"
   },
   "hootclaw": {
     "name": {
@@ -225,7 +236,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/c/cb/Hootclaw.png"
   },
   "jade_wyrm": {
     "name": {
@@ -244,7 +256,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/5/51/Jade_Wyrm.png"
   },
   "mecha_trojan": {
     "name": {
@@ -263,7 +276,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/3/3a/Mecha_Trojan.png"
   },
   "queen_bee": {
     "name": {
@@ -282,7 +296,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/f/f0/Queen_Bee.png"
   },
   "snow_beast": {
     "name": {
@@ -301,7 +316,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/2/28/Snow_Beast.png"
   },
   "terrorthorn": {
     "name": {
@@ -320,7 +336,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/6/6a/Terrorthorn.png"
   },
   "tidal_titan": {
     "name": {
@@ -339,7 +356,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/c/c0/Tidal_Titan.png"
   },
   "voodoo_shaman": {
     "name": {
@@ -358,7 +376,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/2/2e/Voodoo_Shaman.png"
   },
   "cottontail": {
     "name": {
@@ -377,7 +396,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/0/07/Cottageroar.png"
   },
   "necrosis": {
     "name": {
@@ -396,7 +416,8 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/4/49/Undead_Ogre.png"
   },
   "serpent_gladiator": {
     "name": {
@@ -415,7 +436,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/0/0b/Serpent_Vizier.png"
   },
   "gorgon": {
     "name": {
@@ -434,7 +456,8 @@
     "heroes": {
       "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
       "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/4/4e/Gorgon.png"
   },
   "arctic_flipper": {
     "name": {
@@ -453,6 +476,7 @@
     "heroes": {
       "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
       "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
-    }
+    },
+    "image_url": "https://static.wikia.nocookie.net/lordsmobile/images/c/c9/Arctic_Flipper.png"
   }
 }
