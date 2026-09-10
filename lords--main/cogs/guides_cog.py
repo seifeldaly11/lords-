@@ -65,7 +65,7 @@ MONSTER_IMAGES = {
 
 MONSTER_AR_TO_EN = {
     "سابرفنغ": "Saberfang", "سابرفانج": "Saberfang", "ذو الناب": "Saberfang",
-    "تنين الثلج": "Frostwing", "جناح الصقيع": "Frostwing", "فروستونج": "Frostwing",
+    "تنين الثلج": "Frostwing", "جناح الصقيع": "Frostwing", "فروستونج": "Frostwing", "فروست وينج": "Frostwing", "فروست وينغ": "Frostwing",
     "نوسيروس": "Noceros", "الكركدن": "Noceros",
     "عنكبوت الجحيم": "Hell Drider", "هيل درايدر": "Hell Drider",
     "غريفون": "Gryphon", "الجريفون": "Gryphon",
@@ -79,7 +79,7 @@ MONSTER_AR_TO_EN = {
     "تنين اليشم": "Jade Wyrm", "جايد ويرم": "Jade Wyrm",
     "طروادة الالي": "Mecha Trojan", "طروادة الآلي": "Mecha Trojan", "حصان طروادة": "Mecha Trojan",
     "ملكة النحل": "Queen Bee", "ملكه النحل": "Queen Bee",
-    "وحش الثلج": "Snow Beast",
+    "وحش الثلج": "Snow Beast", "سنو بيست": "Snow Beast", "سنود بيست": "Snow Beast",
     "شوك الرعب": "Terrorthorn", "شوكة الرعب": "Terrorthorn",
     "عملاق المد": "Tidal Titan",
     "شامان الفودو": "Voodoo Shaman", "الكاهن فودو": "Voodoo Shaman", "كاهن فودو": "Voodoo Shaman", "ساحرة الشر": "Voodoo Shaman", "ساحره الشر": "Voodoo Shaman",
