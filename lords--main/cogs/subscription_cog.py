@@ -206,16 +206,43 @@ def add_note_to_db(server_id: str, note_text: str):
     conn.close()
 
 
-def get_notes_from_db(server_id: str):
+def get_notes_from_db(server_id: str = None):
     conn = get_connection()
     cur = conn.cursor()
-    cur.execute(
-        "SELECT note_text, created_at FROM notes WHERE server_id = ? ORDER BY id DESC",
-        (server_id,)
-    )
+    if server_id:
+        cur.execute(
+            "SELECT id, server_id, note_text, created_at FROM notes WHERE server_id = ? ORDER BY id DESC LIMIT 25",
+            (server_id,)
+        )
+    else:
+        cur.execute(
+            "SELECT id, server_id, note_text, created_at FROM notes ORDER BY id DESC LIMIT 25"
+        )
     rows = cur.fetchall()
     conn.close()
     return rows
+
+
+def get_note_by_id(note_id: int):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT id, server_id, note_text, created_at FROM notes WHERE id = ?",
+        (note_id,)
+    )
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+
+def delete_note_from_db(note_id: int) -> bool:
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    deleted = cur.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
 
 
 async def get_guild_owner(bot: commands.Bot, guild: discord.Guild) -> discord.User | None:
@@ -330,6 +357,104 @@ async def global_subscription_check(interaction: discord.Interaction) -> bool:
         return False
 
     return True
+
+
+
+class NoteViewSelect(discord.ui.Select):
+    def __init__(self, notes):
+        options = []
+        for row in notes[:25]:
+            note_id, sid, text, created = row[0], row[1], row[2], row[3]
+            preview = text[:45].strip().replace("\n", " ")
+            try:
+                date_str = datetime.datetime.fromisoformat(created).strftime('%m-%d %H:%M')
+            except Exception:
+                date_str = ""
+            desc = f"سيرفر: {sid} | {date_str}"[:50]
+            options.append(discord.SelectOption(
+                label=f"#{note_id}: {preview}"[:100],
+                value=str(note_id),
+                description=desc,
+                emoji="📝"
+            ))
+        super().__init__(placeholder="اختر ملاحظة من القائمة لعرض تفاصيلها...", options=options, min_values=1, max_values=1)
+
+    async def callback(self, interaction: discord.Interaction):
+        if not is_owner(interaction.user.id):
+            await interaction.response.send_message("🔒 هذا الأمر مخصص لمالك البوت فقط.", ephemeral=True)
+            return
+        note_id = int(self.values[0])
+        note = get_note_by_id(note_id)
+        if not note:
+            await interaction.response.send_message("⚠️ لم يتم العثور على الملاحظة، قد تكون حُذفت.", ephemeral=True)
+            return
+        
+        nid, sid, text, created = note[0], note[1], note[2], note[3]
+        try:
+            date_str = datetime.datetime.fromisoformat(created).strftime('%Y-%m-%d %H:%M UTC')
+        except Exception:
+            date_str = created
+        
+        msg = (
+            f"📌 **تفاصيل الملاحظة #{nid}:**\n"
+            f"▫️ **آيدي السيرفر:** `{sid}`\n"
+            f"▫️ **تاريخ التسجيل:** `{date_str}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"**نص الملاحظة:**\n{text}"
+        )
+        await interaction.response.send_message(msg, ephemeral=True)
+
+
+class NoteViewUI(discord.ui.View):
+    def __init__(self, notes):
+        super().__init__(timeout=180)
+        self.add_item(NoteViewSelect(notes))
+
+
+class NoteDeleteSelect(discord.ui.Select):
+    def __init__(self, notes):
+        options = []
+        for row in notes[:25]:
+            note_id, sid, text, created = row[0], row[1], row[2], row[3]
+            preview = text[:45].strip().replace("\n", " ")
+            try:
+                date_str = datetime.datetime.fromisoformat(created).strftime('%m-%d %H:%M')
+            except Exception:
+                date_str = ""
+            desc = f"سيرفر: {sid} | {date_str}"[:50]
+            options.append(discord.SelectOption(
+                label=f"#{note_id}: {preview}"[:100],
+                value=str(note_id),
+                description=desc,
+                emoji="🗑️"
+            ))
+        super().__init__(placeholder="اختر الملاحظة التي ترغب في مسحها نهائياً...", options=options, min_values=1, max_values=1)
+
+    async def callback(self, interaction: discord.Interaction):
+        if not is_owner(interaction.user.id):
+            await interaction.response.send_message("🔒 هذا الأمر مخصص لمالك البوت فقط.", ephemeral=True)
+            return
+        note_id = int(self.values[0])
+        note = get_note_by_id(note_id)
+        preview_text = note[2][:50] if note else f"#{note_id}"
+        
+        success = delete_note_from_db(note_id)
+        if success:
+            await interaction.response.send_message(
+                f"🗑️ **تم مسح الملاحظة بنجاح!**\n> {preview_text}",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "⚠️ تعذر حذف الملاحظة أو أنها حُذفت مسبقاً.",
+                ephemeral=True
+            )
+
+
+class NoteDeleteUI(discord.ui.View):
+    def __init__(self, notes):
+        super().__init__(timeout=180)
+        self.add_item(NoteDeleteSelect(notes))
 
 
 class SubscriptionCog(commands.Cog):
@@ -569,28 +694,45 @@ class SubscriptionCog(commands.Cog):
             f"✅ تم إضافة الملاحظة للسيرفر `{server_id}`.", ephemeral=True
         )
 
-    @app_commands.command(name="عرض_الملاحظات", description="🔒 عرض الملاحظات المسجلة لسيرفر معين")
-    @app_commands.describe(server_id="آيدي السيرفر")
-    async def view_notes_cmd(self, interaction: discord.Interaction, server_id: str):
+    @app_commands.command(name="عرض_الملاحظات", description="🔒 عرض قائمة بالملاحظات المسجلة واختيار إحداها")
+    @app_commands.describe(server_id="آيدي السيرفر (اختياري - اتركه فارغاً لعرض كل الملاحظات)")
+    async def view_notes_cmd(self, interaction: discord.Interaction, server_id: str = None):
         if await deny_if_not_owner(interaction):
             return
 
         notes = get_notes_from_db(server_id)
         if not notes:
-            await interaction.response.send_message(f"لا توجد ملاحظات مسجلة للسيرفر `{server_id}`.", ephemeral=True)
+            msg = f"لا توجد ملاحظات مسجلة للسيرفر `{server_id}`." if server_id else "لا توجد أي ملاحظات مسجلة حالياً."
+            await interaction.response.send_message(msg, ephemeral=True)
             return
 
-        lines = []
-        for note_text, created_at in notes:
-            date = datetime.datetime.fromisoformat(created_at).strftime('%Y-%m-%d %H:%M UTC')
-            lines.append(f"› {note_text}\n  ({date})")
+        view = NoteViewUI(notes)
+        count = len(notes)
+        scope = f"للسيرفر `{server_id}`" if server_id else "(أحدث الملاحظات المسجلة)"
+        await interaction.response.send_message(
+            f"📋 **تم العثور على {count} ملاحظة {scope}:**\nاختر من القائمة المنسدلة أدناه للاطلاع على نص الملاحظة الكامل:",
+            view=view,
+            ephemeral=True
+        )
 
-        text = "\n\n".join(lines)
-        chunks = [text[i:i + 1900] for i in range(0, len(text), 1900)]
+    @app_commands.command(name="مسح_ملاحظة", description="🔒 مسح ملاحظة مسجلة باختيارها من القائمة")
+    @app_commands.describe(server_id="آيدي السيرفر (اختياري لتصفية الملاحظات)")
+    async def delete_note_cmd(self, interaction: discord.Interaction, server_id: str = None):
+        if await deny_if_not_owner(interaction):
+            return
 
-        await interaction.response.send_message(f"**ملاحظات السيرفر `{server_id}`:**\n\n{chunks[0]}", ephemeral=True)
-        for chunk in chunks[1:]:
-            await interaction.followup.send(chunk, ephemeral=True)
+        notes = get_notes_from_db(server_id)
+        if not notes:
+            msg = f"لا توجد ملاحظات لحذفها للسيرفر `{server_id}`." if server_id else "لا توجد أي ملاحظات مسجلة حالياً لحذفها."
+            await interaction.response.send_message(msg, ephemeral=True)
+            return
+
+        view = NoteDeleteUI(notes)
+        await interaction.response.send_message(
+            "🗑️ **اختر الملاحظة التي ترغب في مسحها من القائمة المنسدلة أدناه:**",
+            view=view,
+            ephemeral=True
+        )
 
     @app_commands.command(name="مغادرة_اجبارية", description="🔒 مغادرة سيرفر فوراً بدون حذف بيانات اشتراكه")
     @app_commands.describe(server_id="آيدي السيرفر")
