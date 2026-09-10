@@ -235,7 +235,7 @@ class AICog(commands.Cog):
         await interaction.response.send_modal(SpeedupCalcModal())
 
     @app_commands.command(
-        name="speedup",
+        name="ai_speedup",
         description="⏱️ Speedup calculator: aggregate days, hours and verify against your target"
     )
     @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
@@ -251,7 +251,7 @@ class AICog(commands.Cog):
         await interaction.response.send_modal(EventCalcModal())
 
     @app_commands.command(
-        name="event_calc",
+        name="ai_event",
         description="🏆 Event calculator: calculate Hell/Solo points and Phase 3 completion plan"
     )
     @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
