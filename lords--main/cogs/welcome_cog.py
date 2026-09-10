@@ -195,37 +195,6 @@ async def generate_welcome_image(
         return output
 
 
-class WelcomeView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="📜 View Rules • شاهد القوانين", style=discord.ButtonStyle.blurple, custom_id="view_rules_btn")
-    async def view_rules(self, interaction: discord.Interaction, button: discord.ui.Button):
-        rules_channel_id = get_setting(interaction.guild.id, "rules_channel_id")
-        if rules_channel_id:
-            await interaction.response.send_message(
-                f"📖 View the rules here: <#{rules_channel_id}> • يمكنك قراءة القوانين هنا."
-                
-            )
-        else:
-            await interaction.response.send_message(
-                "Rules channel is not configured yet • لم يتم تحديد روم القوانين بعد."
-                
-            )
-
-
-class RulesView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="✅ Agree to Rules • موافق على القوانين", style=discord.ButtonStyle.green, custom_id="accept_rules_btn")
-    async def button_callback(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(
-            "Thank you! Your agreement was recorded. 🎉 • شكراً لك! تم تسجيل موافقتك بنجاح."
-            
-        )
-
-
 class WelcomeCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -297,14 +266,8 @@ class WelcomeCog(commands.Cog):
         except (KeyError, IndexError):
             welcome_text = DEFAULT_WELCOME_TEMPLATE.format(**values)
 
-        embed = discord.Embed(
-            title="🎉 عضو جديد انضم إلينا • A new member joined!",
-            description=f"{member.mention}\n\n{welcome_text}",
-            color=discord.Color.from_rgb(*_color_value(name_color))
-        )
-        embed.set_image(url="attachment://welcome.png")
-        embed.set_footer(text=f"عضو رقم {guild.member_count} في {guild.name} • Member #{guild.member_count}")
-        await welcome_channel.send(embed=embed, file=file, view=WelcomeView())
+        content = f"👋 {member.mention}\n\n{welcome_text}\n\n🎖️ *عضو رقم {guild.member_count} في {guild.name} • Member #{guild.member_count}*"
+        await welcome_channel.send(content=content, file=file)
 
     @app_commands.command(name="تحديد-روم-الترحيب", description="Set the channel for bilingual welcome messages")
     @app_commands.describe(channel="Welcome message channel")
@@ -374,132 +337,6 @@ class WelcomeCog(commands.Cog):
             
         )
 
-    @app_commands.command(name="تحديد-روم-القوانين", description="Set the channel used by the View Rules button")
-    @app_commands.describe(channel="Rules channel")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def set_rules_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        set_setting(interaction.guild.id, "rules_channel_id", channel.id)
-        await interaction.response.send_message(
-            f"✅ Rules channel set to {channel.mention} • تم تحديد روم القوانين."
-        )
-
-    @app_commands.command(name="تحديد-رسالة-القوانين", description="Set the Arabic and English server rules")
-    @app_commands.describe(
-        message_ar="Arabic rules message",
-        message_en="English rules message (optional)"
-    )
-    @app_commands.checks.has_permissions(administrator=True)
-    async def set_rules_message(
-        self, interaction: discord.Interaction, message_ar: str, message_en: str | None = None
-    ):
-        set_setting(interaction.guild.id, "rules_message_ar", message_ar)
-        set_setting(
-            interaction.guild.id,
-            "rules_message_en",
-            message_en or "Welcome! Respect members, do not advertise, use the correct channels, and respect privacy."
-        )
-        await interaction.response.send_message(
-            "✅ Bilingual rules message saved • تم حفظ رسالة القوانين الثنائية اللغة."
-            
-        )
-
-    @app_commands.command(name="استعادة-رسالة-القوانين", description="Restore the default bilingual server rules")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def reset_rules_message(self, interaction: discord.Interaction):
-        set_setting(interaction.guild.id, "rules_message_ar", None)
-        set_setting(interaction.guild.id, "rules_message_en", None)
-        await interaction.response.send_message(
-            "✅ Default rules restored • تم استعادة القوانين الافتراضية."
-        )
-
-    @app_commands.command(name="ارسال-القوانين", description="Send your customized bilingual server rules")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def send_rules(self, interaction: discord.Interaction):
-        arabic_rules = get_setting(
-            interaction.guild.id,
-            "rules_message_ar"
-        ) or "أهلاً بك! يرجى احترام الأعضاء، منع الإعلانات، الالتزام بالقنوات، واحترام الخصوصية."
-        english_rules = get_setting(
-            interaction.guild.id,
-            "rules_message_en"
-        ) or "Welcome! Respect members, do not advertise, use the correct channels, and respect privacy."
-        embed = discord.Embed(
-            title="📜 قوانين السيرفر • Server Rules",
-            description=(
-                f"**العربية:**\n{arabic_rules}\n\n"
-                f"**English:**\n{english_rules}\n\n"
-                "اضغط الزر بالأسفل للموافقة • Press the button below to agree."
-            ),
-            color=discord.Color.blue()
-        )
-        if interaction.guild.icon:
-            embed.set_thumbnail(url=interaction.guild.icon.url)
-        await interaction.response.send_message(embed=embed, view=RulesView())
-
-    @app_commands.command(name="ارسال-امبيد", description="Send a bilingual custom embed with an optional named image")
-    @app_commands.describe(
-        message_ar="Arabic message",
-        channel="Target channel",
-        title="Optional embed title",
-        message_en="Optional English message",
-        image="Optional image",
-        color="Embed accent color",
-        member="Optional member to mention and write inside the image"
-    )
-    @app_commands.choices(color=EMBED_COLOR_CHOICES)
-    @app_commands.checks.has_permissions(administrator=True)
-    async def send_custom_embed(
-        self,
-        interaction: discord.Interaction,
-        message_ar: str,
-        channel: discord.TextChannel,
-        title: str | None = None,
-        message_en: str | None = None,
-        image: discord.Attachment | None = None,
-        color: app_commands.Choice[str] | None = None,
-        member: discord.Member | None = None
-    ):
-        colors = {
-            "blurple": discord.Color.blurple(),
-            "blue": discord.Color.blue(),
-            "gold": discord.Color.gold(),
-            "green": discord.Color.green(),
-            "red": discord.Color.red(),
-            "purple": discord.Color.purple(),
-        }
-        embed = discord.Embed(
-            title=title or "📢 Announcement • إعلان",
-            description=(f"{member.mention}\n\n" if member else "") + message_ar + (f"\n\n{message_en}" if message_en else ""),
-            color=colors.get(color.value if color else "blurple", discord.Color.blurple())
-        )
-        embed.set_footer(text=f"Posted by {interaction.user} • بواسطة {interaction.user}", icon_url=interaction.user.display_avatar.url)
-
-        file = None
-        if image is not None:
-            if not (image.content_type or "").startswith("image/"):
-                await interaction.response.send_message("❌ The uploaded file is not a valid image • الملف المرفوع ليس صورة صالحة.")
-                return
-            if member:
-                file = discord.File(
-                    render_name_on_image(await image.read(), member.display_name, (color.value if color else "gold")),
-                    filename="named-card.png"
-                )
-            else:
-                file = await image.to_file()
-            embed.set_image(url=f"attachment://{file.filename}")
-
-        try:
-            await channel.send(embed=embed, file=file) if file else await channel.send(embed=embed)
-        except discord.Forbidden:
-            await interaction.response.send_message(
-                f"❌ I cannot send messages in {channel.mention} • لا أملك صلاحية الإرسال."
-            )
-            return
-        await interaction.response.send_message(
-            f"✅ Bilingual embed sent to {channel.mention} • تم إرسال الـEmbed بنجاح."
-        )
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(WelcomeCog(bot))
-    bot.add_view(WelcomeView())
-    bot.add_view(RulesView())
