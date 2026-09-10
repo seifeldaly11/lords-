@@ -12,26 +12,23 @@ from utils.i18n import get_lang, t
 from utils.ui import styled_embed, loading_embed, ROYAL_BLUE
 from cogs.guild_cog import gf_group
 
-MAX_INPUT_CHARS = 1200  # حماية بسيطة ضد الإدخال الطويل جداً/إساءة الاستخدام
+MAX_INPUT_CHARS = 1500  # حماية ضد الإدخال الطويل جداً
 log = logging.getLogger("lordsbot.ai")
-# command-r-plus was removed by Cohere on 2025-09-15.
-# command-a-03-2025 is an active chat model.
 TEXT_MODEL = "command-a-03-2025"
-VISION_MODEL = "command-a-vision-07-2025"  # موديل Cohere اللي بيقدر يفهم صور (عتاد/تقارير)
+VISION_MODEL = "command-a-vision-07-2025"
 
 
 def _tidy_ai_reply(answer: str) -> str:
-    """يمنع الضحك المتكرر من ابتلاع الرد، مع الإبقاء على لمسة الهزار."""
+    """تنظيف رد الذكاء الاصطناعي والتأكد من صياغة الحسابات بوضوح."""
     answer = (answer or "").strip()
     answer = re.sub(r"ه{4,}", "هههه", answer)
     answer = re.sub(r"(?:ha){4,}", "haha", answer, flags=re.IGNORECASE)
     answer = re.sub(r"(?:ه{2,}[\s!،,.-]*){3,}", "هههه ", answer)
-    answer = re.sub(r"(?:(?:ha){1,2}[\s!,.؟?-]*){3,}", "haha ", answer, flags=re.IGNORECASE)
     return answer[:3500]
 
 
 def _get_cohere_client():
-    """يبني عميل Cohere عند الحاجة فقط، ويرجع None لو التوكن مش موجود."""
+    """يبني عميل Cohere عند الحاجة فقط."""
     api_key = os.getenv("COHERE_API_KEY")
     if not api_key:
         return None
@@ -42,126 +39,224 @@ def _get_cohere_client():
     return cohere.ClientV2(api_key=api_key)
 
 
-async def ask_ai(user_text: str, extra_context: str = "", image_url: str | None = None, lang: str = "ar", guild_id: int | None = None) -> str:
-    """يبعت سؤال (ونص/صورة اختيارية) لـ Cohere مع الشخصية وقاعدة المعرفة، ويرجع الرد كنص."""
+async def ask_ai(
+    user_text: str,
+    extra_context: str = "",
+    image_url: str | None = None,
+    lang: str = "ar",
+    guild_id: int | None = None
+) -> str:
+    """إرسال المطالبة لـ Cohere وحساب الناتج."""
     client = _get_cohere_client()
-    if client is None:
-        return t("ai_disabled", lang)
+    if not client:
+        return (
+            "⚠️ الذكاء الاصطناعي غير متصل حالياً (يرجى التأكد من إضافة COHERE_API_KEY في ملف .env الخاص بالاستضافة)."
+            if lang == "ar"
+            else "⚠️ AI is not configured. Please ensure COHERE_API_KEY is set in your environment."
+        )
 
-    user_text = (user_text or "").strip()[:MAX_INPUT_CHARS]
-    system_prompt = get_system_prompt(lang, guild_id=guild_id)
+    clean_text = (user_text or "").strip()[:MAX_INPUT_CHARS]
+    system_prompt = get_system_prompt(guild_id)
+
+    calc_instructions = (
+        "\n\n[تعليمات إضافية للمستشار]:\n"
+        "- أنت خبير متقدم في حسابات لوردس موبايل (Lords Mobile Calculator).\n"
+        "- إذا طُلب منك حساب تسريعات (Speedups): اجمع بدقة كل فئة (أيام، ساعات، دقائق)، ثم أعطِ المجموع الإجمالي بالكامل (مثال: إجمالي الأيام والساعات)، وبيّن هل تكفي للهدف المطلوب أو كم ينقص اللاعب.\n"
+        "- إذا طُلب منك حساب أحداث (جحيم Hell، فردي Solo، مهرجان Guild Fest، حرب KvK): احسب نقاط كل مرحلة بدقة، واقترح للاعب هل الموارد/التسريعات تكفي لإكمال المرحلة 3، وأفضل تسلسل للصرف بدون إهدار.\n"
+        "- اكتب الناتج مرتباً بنقاط وعناوين واضحة وأرقام واضحة ومباشرة."
+    )
+    system_prompt += calc_instructions
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    user_content = []
+    full_prompt = clean_text
     if extra_context:
-        system_prompt += f"\n\n### سياق إضافي للطلب الحالي:\n{extra_context[:MAX_INPUT_CHARS]}"
+        full_prompt = f"{extra_context}\n\n{clean_text}"
+
+    user_content.append({"type": "text", "text": full_prompt})
 
     if image_url:
-        model = VISION_MODEL
-        user_content = [
-            {"type": "text", "text": user_text or ("حلل الصورة دي" if lang == "ar" else "Analyze this image")},
-            {"type": "image_url", "image_url": {"url": image_url}},
-        ]
-    else:
-        model = TEXT_MODEL
-        user_content = user_text
+        user_content.append({
+            "type": "image_url",
+            "image_url": {"url": image_url}
+        })
 
-    def _call():
-        response = client.chat(
-            model=model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
-            ]
-        )
-        # cohere ClientV2 response: response.message.content هي قائمة أجزاء نصية
-        try:
-            return "".join(part.text for part in response.message.content if hasattr(part, "text"))
-        except Exception:
-            return str(response)
+    messages.append({"role": "user", "content": user_content})
+
+    model = VISION_MODEL if image_url else TEXT_MODEL
 
     try:
-        return _tidy_ai_reply(await asyncio.to_thread(_call))
-    except Exception as e:
-        # Keep the user-facing message safe while logging enough detail for hosting diagnostics.
-        log.exception(
-            "Cohere request failed (model=%s, has_image=%s, error=%s)",
-            model,
-            bool(image_url),
-            type(e).__name__
+        response = await asyncio.to_thread(
+            client.chat,
+            model=model,
+            messages=messages,
+            temperature=0.3  # دقة حسابية أعلى
         )
-        return t("ai_error", lang, err=type(e).__name__)
+        raw_answer = response.message.content[0].text
+        return _tidy_ai_reply(raw_answer)
+
+    except Exception as e:
+        log.error("خطأ أثناء استدعاء الذكاء الاصطناعي: %s", e)
+        return (
+            "حدث خطأ أثناء معالجة الحسابات، يرجى المحاولة بعد لحظات."
+            if lang == "ar"
+            else "An error occurred while calculating. Please try again."
+        )
 
 
 # ---------------------------------------------------------------------------
-# /ai - محادثة عامة عن اللعبة + تحليل صور عتاد/تقارير
+# نافذة حاسبة التسريعات (Speedup Calculator Modal)
+# ---------------------------------------------------------------------------
+
+class SpeedupCalcModal(discord.ui.Modal, title="⏱️ حاسبة التسريعات الذكية"):
+    speedups = discord.ui.TextInput(
+        label="⚡ التسريعات المتاحة لديك",
+        placeholder="مثال: 15 تسريع 3 أيام، 30 تسريع 24 ساعة، 50 تسريع 3 ساعات، 120 تسريع ساعة...",
+        style=discord.TextStyle.paragraph,
+        max_length=1000
+    )
+    goal = discord.ui.TextInput(
+        label="🎯 الهدف أو الوقت المطلوب (اختياري)",
+        placeholder="مثال: بحث T4 باقي له 75 يوم، أو تطوير قلعة 25، أو حدث تدريب...",
+        style=discord.TextStyle.paragraph,
+        required=False,
+        max_length=500
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        loading_text = "جارٍ جمع التسريعات وحساب الإجمالي بدقة... ⏳" if lang == "ar" else "Calculating total speedups... ⏳"
+        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang))
+
+        context = (
+            f"[طلب حساب تسريعات]\n"
+            f"التسريعات المدخلة:\n{self.speedups.value}\n"
+            f"الهدف المطلوب:\n{self.goal.value or 'لا يوجد هدف محدد (المطلوب جمع الإجمالي فقط)'}\n"
+            "المطلوب منك:\n"
+            "1. تفنيد كل فئة من التسريعات وضربها في عددها.\n"
+            "2. إعطاء المجموع الإجمالي بالكامل بوضوح بصيغة: (إجمالي الأيام، والساعات، والدقائق، وما يعادلها بالساعات أو الدقائق الكلية).\n"
+            "3. مقارنة المجموع بالهدف المطلوب (إن وجد) وبيان هل يكفي أم لا، وكم الفارق المتبقي أو الزائد.\n"
+            "4. تقديم نصيحة ذهبية للاستفادة القصوى أثناء أحداث الجحيم أو التسريع."
+        )
+
+        answer = await ask_ai(
+            "احسب لي إجمالي التسريعات دي وقارنها بهدفي.",
+            extra_context=context,
+            lang=lang,
+            guild_id=interaction.guild_id
+        )
+
+        title = "⏱️ نتيجة حساب التسريعات" if lang == "ar" else "⏱️ Speedup Calculation Result"
+        embed = styled_embed(title=title, description=answer[:3500], color=ROYAL_BLUE, lang=lang)
+        embed.set_footer(text=f"طلب من: {interaction.user.display_name}")
+        try:
+            await loading_msg.edit(embed=embed)
+        except discord.HTTPException:
+            await interaction.followup.send(embed=embed)
+
+
+# ---------------------------------------------------------------------------
+# نافذة حاسبة الأحداث (Event Calculator Modal)
+# ---------------------------------------------------------------------------
+
+class EventCalcModal(discord.ui.Modal, title="🏆 حاسبة الأحداث الذكية"):
+    event_type = discord.ui.TextInput(
+        label="🎪 نوع الحدث والنقاط المطلوبة",
+        placeholder="مثال: حدث جحيم تدريب 950 ألف نقطة، أو حدث فردي أبحاث، أو KvK...",
+        style=discord.TextStyle.short,
+        max_length=200
+    )
+    resources = discord.ui.TextInput(
+        label="📦 ما لديك للصرف (تسريعات / جنود / موارد)",
+        placeholder="مثال: 40 يوم تسريعات تدريب، أو 200 ألف جندي T4، أو جواهر...",
+        style=discord.TextStyle.paragraph,
+        max_length=1000
+    )
+    goal = discord.ui.TextInput(
+        label="🎯 هدفك من الحدث",
+        placeholder="مثال: فتح المرحلة 3 (Phase 3)، أو المراكز الأولى، أو أخذ ميداليات الوحش...",
+        style=discord.TextStyle.short,
+        required=False,
+        max_length=200
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True)
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        loading_text = "جارٍ حساب نقاط الحدث وخطة المرحلة 3... ⏳" if lang == "ar" else "Calculating event points and Phase 3 plan... ⏳"
+        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang))
+
+        context = (
+            f"[طلب حساب حدث لوردس موبايل]\n"
+            f"الحدث والنقاط المطلوبة:\n{self.event_type.value}\n"
+            f"المتاح لدى اللاعب:\n{self.resources.value}\n"
+            f"هدف اللاعب:\n{self.goal.value or 'إكمال المرحلة 3 بأقل صرف'}\n"
+            "المطلوب منك:\n"
+            "1. حساب كم نقطة سينال اللاعب بما يملكه بالضبط بناءً على نظام نقاط لوردس موبايل المعروف.\n"
+            "2. هل هذا يكفي لإنهاء المرحلة 3 (Phase 3)؟\n"
+            "3. إذا كان لا يكفي، كم ينقصه بالضبط؟ وإذا كان يزيد، متى يتوقف حتى لا يهدر موارده؟\n"
+            "4. أفضل ترتيب وتنفيذ خطوة بخطوة."
+        )
+
+        answer = await ask_ai(
+            "احسب لي نقاط هذا الحدث وخطة التنفيذ المناسبة.",
+            extra_context=context,
+            lang=lang,
+            guild_id=interaction.guild_id
+        )
+
+        title = "🏆 نتيجة حاسبة الأحداث" if lang == "ar" else "🏆 Event Calculation Result"
+        embed = styled_embed(title=title, description=answer[:3500], color=ROYAL_BLUE, lang=lang)
+        embed.set_footer(text=f"طلب من: {interaction.user.display_name}")
+        try:
+            await loading_msg.edit(embed=embed)
+        except discord.HTTPException:
+            await interaction.followup.send(embed=embed)
+
+
+# ---------------------------------------------------------------------------
+# Cog التعريف والأوامر
 # ---------------------------------------------------------------------------
 
 class AICog(commands.Cog):
-    """مساعد ذكي مبني على Cohere يفهم لوردس موبايل ويتكلم بشكل طبيعي (نص وصور)."""
+    """حاسبات ذكية لـ Lords Mobile بالذكاء الاصطناعي."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
     @app_commands.command(
-        name="ai",
-        description="🤖 اسأل مستشار لوردس أو أرفق صورة عتاد/تقرير لتحليلها"
+        name="حساب_التسريعات",
+        description="⏱️ حاسبة التسريعات: تجمع لك التسريعات بدقة وتحسب إجمالي الأيام والساعات"
     )
-    @app_commands.describe(
-        question="Your question (optional if attaching an image)",
-        image="A gear or battle report screenshot to analyze",
-        might="Your account Might, if you want it in context"
+    @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
+    async def speedup_ar(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(SpeedupCalcModal())
+
+    @app_commands.command(
+        name="speedup",
+        description="⏱️ Speedup calculator: aggregate days, hours and verify against your target"
     )
-    @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
-    async def ai(
-        self,
-        interaction: discord.Interaction,
-        question: str = None,
-        image: discord.Attachment = None,
-        might: int = None
-    ):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
+    @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
+    async def speedup_en(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(SpeedupCalcModal())
 
-        if not question and not image:
-            await interaction.response.send_message(t("ai_need_input", lang), ephemeral=True)
-            return
+    @app_commands.command(
+        name="حاسبة_الاحداث",
+        description="🏆 حاسبة الأحداث: تحسب لك نقاط الجحيم والفردي وتخبرك هل تكفي لإنهاء المرحلة 3"
+    )
+    @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
+    async def event_ar(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(EventCalcModal())
 
-        if image and not (image.content_type or "").startswith("image/"):
-            await interaction.response.send_message(t("ai_bad_image", lang))
-            return
-
-        await interaction.response.defer(thinking=True)
-
-        loading_text = (
-            "جارٍ فحص التشكيلة والتكتيكات... ⏳" if lang == "ar" else "Analyzing tactics and formations... ⏳"
-        )
-        loading_msg = await interaction.followup.send(embed=loading_embed(loading_text, lang))
-
-        extra_context = ""
-        if might is not None:
-            extra_context += t("ai_might_line", lang, might=might)
-
-        answer = await ask_ai(
-            question,
-            extra_context=extra_context,
-            image_url=image.url if image else None,
-            lang=lang,
-            guild_id=interaction.guild_id
-        )
-
-        header = t("ai_header", lang)
-        footer = t("ai_footer", lang, user=interaction.user.display_name)
-        embed = styled_embed(title=header, description=answer[:3500], color=ROYAL_BLUE, lang=lang)
-        embed.set_footer(text=footer)
-        try:
-            await loading_msg.edit(embed=embed)
-        except discord.HTTPException:
-            await interaction.followup.send(embed=embed, ephemeral=True)
-
-    @ai.error
-    async def ai_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        if isinstance(error, app_commands.CommandOnCooldown):
-            await interaction.response.send_message(t("ai_cooldown", lang, s=f"{error.retry_after:.0f}"), ephemeral=True)
-        else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+    @app_commands.command(
+        name="event_calc",
+        description="🏆 Event calculator: calculate Hell/Solo points and Phase 3 completion plan"
+    )
+    @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
+    async def event_en(self, interaction: discord.Interaction):
+        await interaction.response.send_modal(EventCalcModal())
 
 
 # ---------------------------------------------------------------------------
