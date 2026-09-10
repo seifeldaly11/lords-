@@ -337,6 +337,100 @@ class MonsterDeleteView(discord.ui.View):
         )
 
 
+class MonsterEditSelect(discord.ui.Select):
+    def __init__(self, entries: dict, lang: str, image: discord.Attachment, placeholder: str = None):
+        self.entries = entries
+        self.lang = lang
+        self.image = image
+        options = [
+            discord.SelectOption(
+                label=_monster_name(value, key, lang)[:100],
+                value=key,
+                emoji=value.get("emoji") or "🐲"
+            )
+            for key, value in entries.items()
+        ]
+        super().__init__(
+            placeholder=placeholder or t("edit_monster_select_placeholder", lang),
+            options=options[:25]
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        key = self.values[0]
+        selected = self.entries.get(key, {})
+        name = _monster_name(selected, key, self.lang)
+
+        # Local storage directory
+        local_dir = os.path.join("storage", "monster_images")
+        os.makedirs(local_dir, exist_ok=True)
+        gid = str(interaction.guild_id or 0)
+
+        en_name = _resolve_monster_en(key)
+        if not en_name or en_name == key:
+            en_name = _resolve_monster_en(name)
+        norm_key = (en_name or key).lower().replace(" ", "_").strip()
+        clean_key = re.sub(r'[^a-zA-Z0-9_]', '', norm_key)
+
+        local_filename = f"{gid}_{clean_key}.png"
+        local_path = os.path.join(local_dir, local_filename)
+        saved_local = False
+        try:
+            await self.image.save(local_path)
+            saved_local = True
+        except Exception:
+            pass
+
+        data = load(CUSTOM_MONSTERS_FILE)
+        gid_str = str(interaction.guild_id)
+        bucket = data.setdefault(gid_str, {})
+        entry = bucket.get(key)
+        if not entry:
+            entry = dict(selected) if selected else {}
+        if "name" not in entry:
+            ar_n = _resolve_monster_ar(key) or key
+            entry["name"] = {"ar": ar_n, "en": en_name or key}
+        entry["emoji"] = entry.get("emoji") or "🐲"
+        entry["image_url"] = self.image.url
+        if saved_local:
+            entry["local_image"] = local_filename
+        bucket[key] = entry
+        save(CUSTOM_MONSTERS_FILE, data)
+
+        embed = discord.Embed(
+            title=f"✅ {t('edit_monster_success', self.lang, name=name)}",
+            color=discord.Color.green()
+        )
+
+        file = None
+        if saved_local and os.path.exists(local_path):
+            file = discord.File(local_path, filename=local_filename)
+            embed.set_image(url=f"attachment://{local_filename}")
+
+        for item in self.view.children:
+            item.disabled = True
+        await interaction.edit_original_response(
+            content=None,
+            embed=embed,
+            attachments=[file] if file else [],
+            view=self.view
+        )
+
+
+class MonsterEditView(discord.ui.View):
+    def __init__(self, entries: dict, lang: str, image: discord.Attachment):
+        super().__init__(timeout=180)
+        items = list(entries.items())
+        for i in range(0, min(len(items), 100), 25):
+            chunk = dict(items[i:i+25])
+            placeholder = (
+                f"{t('edit_monster_select_placeholder', lang)} ({i+1}-{min(i+25, len(items))})"
+                if len(items) > 25 else None
+            )
+            self.add_item(MonsterEditSelect(chunk, lang, image, placeholder=placeholder))
+
+
+
 # ---------------------------------------------------------------------------
 # /info (يجمع بين info.json الجاهز + الإضافات اليدوية اللي ممكن تتضمن صور)
 # ---------------------------------------------------------------------------
@@ -829,6 +923,39 @@ class GuidesCog(commands.Cog):
 
     @delete_monster.error
     async def delete_monster_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=True)
+        else:
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+
+    @app_commands.command(
+        name="edit_monster",
+        description="🖼️ [إدارة/Admin] اختر وحشًا لتعديل وتحديث صورته | Choose a monster to update its image"
+    )
+    @app_commands.describe(
+        image="الصورة الجديدة للوحش | The new monster image"
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def edit_monster(self, interaction: discord.Interaction, image: discord.Attachment):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        if not (image.content_type or "").startswith("image/"):
+            await interaction.response.send_message(t("add_monster_bad_image", lang), ephemeral=True)
+            return
+
+        custom = self._get_monsters(interaction.guild_id)
+        if not custom:
+            await interaction.response.send_message(t("edit_monster_empty", lang), ephemeral=True)
+            return
+
+        await interaction.response.send_message(
+            t("edit_monster_prompt", lang),
+            view=MonsterEditView(custom, lang, image),
+            ephemeral=True
+        )
+
+    @edit_monster.error
+    async def edit_monster_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=True)
