@@ -152,10 +152,29 @@ async def generate_welcome_image(
         mask = Image.new("L", (220, 220), 0)
         ImageDraw.Draw(mask).ellipse((0, 0, 220, 220), fill=255)
         avatar_img.putalpha(mask)
-        avatar_x, avatar_y = width // 2 - 110, 45
-        draw = ImageDraw.Draw(base)
+        avatar_x, avatar_y = width // 2 - 110, 65
+        draw = ImageDraw.Draw(base, "RGBA")
         accent = _color_value(name_color)
-        draw.ellipse((avatar_x - 9, avatar_y - 9, avatar_x + 229, avatar_y + 229), fill=(*accent, 255))
+
+        cx, cy, radius = width // 2, 175, 110
+        # Luxury gold glow aura
+        for r in range(radius + 80, radius + 20, -10):
+            a = int(14 * (1 - (r - radius - 20) / 60))
+            draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(212, 175, 55, a))
+
+        # Golden wing filigree ornaments on sides
+        for side in [-1, 1]:
+            ox = cx + side * (radius + 25)
+            for i in range(4):
+                w_offset = i * 24
+                draw.arc((ox + side * w_offset - 45, cy - 65 + i*14, ox + side * w_offset + 55, cy + 45 + i*14),
+                         start=0, end=360, fill=(218, 165, 32, 190 - i*30), width=3)
+
+        # Concentric gold luxury border
+        draw.ellipse((cx - radius - 14, cy - radius - 14, cx + radius + 14, cy + radius + 14), outline=(218, 165, 32, 220), width=3)
+        draw.ellipse((cx - radius - 7, cy - radius - 7, cx + radius + 7, cy + radius + 7), outline=(255, 215, 0, 255), width=4)
+        draw.ellipse((cx - radius - 2, cy - radius - 2, cx + radius + 2, cy + radius + 2), outline=(139, 101, 8, 255), width=2)
+
         base.paste(avatar_img, (avatar_x, avatar_y), avatar_img)
 
         name_font = _font(48)
