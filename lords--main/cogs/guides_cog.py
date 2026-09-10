@@ -121,6 +121,21 @@ def _resolve_monster_ar(name: str) -> str:
             return k
     return name
 
+def _is_expired_url(url: str) -> bool:
+    if not url or not isinstance(url, str):
+        return True
+    if "cdn.discordapp.com" in url or "media.discordapp.net" in url:
+        m = re.search(r'[?&]ex=([0-9a-fA-F]+)', url)
+        if m:
+            try:
+                import time
+                exp_ts = int(m.group(1), 16)
+                if time.time() >= exp_ts - 60:
+                    return True
+            except Exception:
+                pass
+    return False
+
 def _get_monster_image(name: str, key: str = "") -> str:
     clean_key = key.lower().replace("-", "_").strip()
     if clean_key in MONSTER_IMAGES:
@@ -182,27 +197,42 @@ class MonsterSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         lang = self.lang
         key = self.values[0]
-        info = self.monster_data[key]
+        info = self.monster_data.get(key, {})
         title = _monster_name(info, key, lang)
         embed = discord.Embed(
             title=f"🐲 {title}",
             color=discord.Color.dark_green()
         )
-        damage_type = _monster_text(info.get("damage_type"), lang)
-        heroes = _monster_text(info.get("heroes"), lang)
-        defense_note = _monster_text(info.get("defense_note"), lang)
-        if damage_type:
-            embed.add_field(name=t("monster_damage_field", lang), value=damage_type[:1024], inline=False)
-        if heroes:
-            embed.add_field(name=t("monster_heroes_field", lang), value=heroes[:1024], inline=False)
-        if defense_note:
-            embed.add_field(name=t("monster_defense_field", lang), value=defense_note[:1024], inline=False)
-        image_url = info.get("image_url") or _get_monster_image(title, key)
+        embed.set_footer(text=t("monster_footer", lang))
+
+        # 1. Check if a permanent locally saved image exists on the host
+        gid = str(interaction.guild_id or 0)
+        local_dir = os.path.join("storage", "monster_images")
+        clean_key = re.sub(r'[^a-zA-Z0-9_]', '', key.lower().replace(" ", "_"))
+        local_candidates = [
+            os.path.join(local_dir, f"{gid}_{clean_key}.png"),
+            os.path.join(local_dir, f"{clean_key}.png"),
+        ]
+        local_path = next((p for p in local_candidates if os.path.exists(p)), None)
+
+        if local_path:
+            filename = f"monster_{clean_key}.png"
+            file = discord.File(local_path, filename=filename)
+            embed.set_image(url=f"attachment://{filename}")
+            await interaction.response.send_message(embed=embed, file=file)
+            return
+
+        # 2. Check info image_url without expired Discord CDN links
+        raw_url = info.get("image_url")
+        if raw_url and not _is_expired_url(raw_url):
+            image_url = raw_url
+        else:
+            image_url = _get_monster_image(title, key)
+
         if image_url:
             embed.set_image(url=image_url)
-        embed.set_footer(text=t("monster_footer", lang))
-        await interaction.response.send_message(embed=embed)
 
+        await interaction.response.send_message(embed=embed)
 
 class MonsterView(discord.ui.View):
     def __init__(self, monster_data: dict, lang: str):
@@ -715,10 +745,24 @@ class GuidesCog(commands.Cog):
         gid = str(interaction.guild_id)
         data.setdefault(gid, {})
         key = name_en.lower().replace(" ", "_")
+        # Save image locally so it NEVER expires after 24h
+        local_dir = os.path.join("storage", "monster_images")
+        os.makedirs(local_dir, exist_ok=True)
+        clean_key = re.sub(r'[^a-zA-Z0-9_]', '', key)
+        local_filename = f"{gid}_{clean_key}.png"
+        local_path = os.path.join(local_dir, local_filename)
+        saved_local = False
+        try:
+            await image.save(local_path)
+            saved_local = True
+        except Exception:
+            pass
+
         entry = {
             "name": {"ar": name_ar, "en": name_en},
             "emoji": "🐲",
             "image_url": image.url,
+            "local_image": local_filename if saved_local else None,
         }
         if damage_ar or damage_en:
             entry["damage_type"] = {"ar": (damage_ar or damage_en or "").strip(), "en": (damage_en or damage_ar or "").strip()}
