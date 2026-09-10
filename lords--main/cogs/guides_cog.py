@@ -192,31 +192,73 @@ class MonsterSelect(discord.ui.Select):
             color=discord.Color.dark_green()
         )
 
-        # 1. Local saved image
         gid = str(interaction.guild_id or 0)
         local_dir = os.path.join("storage", "monster_images")
-        clean_key = re.sub(r'[^a-zA-Z0-9_]', '', key.lower().replace(" ", "_"))
-        local_candidates = [
-            os.path.join(local_dir, f"{gid}_{clean_key}.png"),
-            os.path.join(local_dir, f"{clean_key}.png"),
+        os.makedirs(local_dir, exist_ok=True)
+
+        # Resolve English canonical name from Arabic or English
+        en_name = _resolve_monster_en(key)
+        if not en_name or en_name == key:
+            en_name = _resolve_monster_en(title)
+        
+        norm_key = (en_name or key).lower().replace(" ", "_").strip()
+        clean_key = re.sub(r'[^a-zA-Z0-9_]', '', norm_key)
+        
+        # Candidate local filenames
+        candidates = [
+            f"{gid}_{clean_key}.png",
+            f"{clean_key}.png",
+            f"{key}.png"
         ]
-        local_path = next((p for p in local_candidates if os.path.exists(p)), None)
+        
+        local_path = None
+        for c in candidates:
+            if not c or c == ".png":
+                continue
+            p = os.path.join(local_dir, c)
+            if os.path.exists(p) and os.path.getsize(p) > 0:
+                local_path = p
+                break
 
-        if local_path:
-            filename = f"monster_{clean_key}.png"
-            file = discord.File(local_path, filename=filename)
-            embed.set_image(url=f"attachment://{filename}")
+        # If not on disk, check if user has custom image URL or static fallback
+        if not local_path:
+            image_url = info.get("image_url") or _get_monster_image(title, key)
+            if image_url:
+                try:
+                    import urllib.request, io
+                    from PIL import Image
+                    req = urllib.request.Request(image_url, headers={"User-Agent": "Mozilla/5.0"})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        img_bytes = resp.read()
+                    if img_bytes:
+                        im = Image.open(io.BytesIO(img_bytes))
+                        save_name = f"{clean_key}.png" if clean_key else f"{int(time.time())}.png"
+                        local_path = os.path.join(local_dir, save_name)
+                        im.save(local_path, format="PNG")
+                except Exception:
+                    pass
+
+        # If still no image, generate an elegant card with Pillow
+        if not local_path or not os.path.exists(local_path):
+            try:
+                from PIL import Image, ImageDraw
+                im = Image.new("RGB", (700, 450), color=(18, 22, 30))
+                draw = ImageDraw.Draw(im)
+                draw.rectangle([15, 15, 685, 435], outline=(212, 175, 55), width=3)
+                draw.text((350, 200), f"🐲 {title}", fill=(255, 255, 255), anchor="mm")
+                save_name = f"{clean_key or 'card'}.png"
+                local_path = os.path.join(local_dir, save_name)
+                im.save(local_path, format="PNG")
+            except Exception:
+                pass
+
+        if local_path and os.path.exists(local_path):
+            fname = os.path.basename(local_path)
+            file = discord.File(local_path, filename=fname)
+            embed.set_image(url=f"attachment://{fname}")
             await interaction.response.send_message(embed=embed, file=file)
-            return
-
-        # 2. The user's exact uploaded image URL (always priority)
-        image_url = info.get("image_url") or _get_monster_image(title, key)
-
-        if image_url:
-            embed.set_image(url=image_url)
-
-        # No text, no footer, clean image only
-        await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.send_message(embed=embed)
 
 class MonsterView(discord.ui.View):
     def __init__(self, monster_data: dict, lang: str):
