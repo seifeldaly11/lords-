@@ -606,5 +606,5 @@ class SubscriptionCog(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-    bot.tree.add_check(global_subscription_check)
+    bot.tree.interaction_check = global_subscription_check
     await bot.add_cog(SubscriptionCog(bot))
