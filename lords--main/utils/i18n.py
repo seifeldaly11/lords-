@@ -1197,7 +1197,11 @@ TRANSLATIONS = {
     "delete_monster_selected": {"ar": "اخترت **{name}**. لو متأكد اضغط زر الحذف.", "en": "Selected **{name}**. Press delete if you are sure."},
     "delete_monster_selection_needed": {"ar": "⚠️ اختار وحشًا من القائمة الأول.", "en": "⚠️ Choose a monster first."},
     "delete_monster_confirm": {"ar": "🗑️ تأكيد الحذف", "en": "🗑️ Confirm delete"},
-    "delete_monster_empty": {"ar": "📭 مفيش وحوش مضافة للسيرفر ده حاليًا.", "en": "📭 This server has no custom monsters yet."},
+        "delete_monster_empty": {"ar": "📭 مفيش وحوش مضافة للسيرفر ده حاليًا.", "en": "📭 This server has no custom monsters yet."},
+    "edit_monster_prompt": {"ar": "🖼️ اختر الوحش اللي عايز تعدل صورته بالصورة الجديدة المرفقة:", "en": "🖼️ Choose the monster whose image you want to update with the new attachment:"},
+    "edit_monster_select_placeholder": {"ar": "اختر الوحش لتعديل صورته...", "en": "Choose a monster to update image..."},
+    "edit_monster_success": {"ar": "تم تحديث صورة وحش **{name}** بنجاح!", "en": "Successfully updated image for monster **{name}**!"},
+    "edit_monster_empty": {"ar": "📭 مفيش وحوش مضافة للسيرفر ده حاليًا عشان تعدلها.", "en": "📭 No monsters found in this server to edit."},
 
     "add_monster_bad_image": {
         "ar": "❌ المرفق اللي حطيته مش صورة.",
