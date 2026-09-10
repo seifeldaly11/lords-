@@ -86,10 +86,18 @@ def is_owner(user_id: int) -> bool:
     return user_id == OWNER_ID
 
 
+def is_server_owner_or_bot_owner(interaction: discord.Interaction) -> bool:
+    if is_owner(interaction.user.id):
+        return True
+    if interaction.guild is not None and interaction.user.id == interaction.guild.owner_id:
+        return True
+    return False
+
+
 async def deny_if_not_owner(interaction: discord.Interaction) -> bool:
-    if not is_owner(interaction.user.id):
+    if not is_server_owner_or_bot_owner(interaction):
         await interaction.response.send_message(
-            "❌ هذا الأمر مخصص لمالك البوت فقط، لا تملك صلاحية استخدامه.",
+            "🔒 هذا الأمر مخصص لمالك السيرفر فقط، لا تملك صلاحية استخدامه.",
             ephemeral=True
         )
         return True
@@ -383,7 +391,7 @@ class SubscriptionCog(commands.Cog):
     async def before_check_subscriptions(self):
         await self.bot.wait_until_ready()
 
-    @app_commands.command(name="servers_list", description="عرض قائمة كل السيرفرات التي ينتمي إليها البوت")
+    @app_commands.command(name="servers_list", description="🔒 عرض قائمة كل السيرفرات التي ينتمي إليها البوت")
     async def servers_list(self, interaction: discord.Interaction):
         if await deny_if_not_owner(interaction):
             return
@@ -407,7 +415,7 @@ class SubscriptionCog(commands.Cog):
         for chunk in chunks[1:]:
             await interaction.followup.send(chunk, ephemeral=True)
 
-    @app_commands.command(name="subscriptions_status", description="عرض حالة اشتراكات جميع السيرفرات المخزنة")
+    @app_commands.command(name="subscriptions_status", description="🔒 عرض حالة اشتراكات جميع السيرفرات المخزنة")
     async def subscriptions_status(self, interaction: discord.Interaction):
         if await deny_if_not_owner(interaction):
             return
@@ -450,7 +458,7 @@ class SubscriptionCog(commands.Cog):
         for chunk in chunks[1:]:
             await interaction.followup.send(chunk, ephemeral=True)
 
-    @app_commands.command(name="set_subscription", description="تحديد اشتراك جديد لسيرفر معين")
+    @app_commands.command(name="set_subscription", description="🔒 تحديد اشتراك جديد لسيرفر معين")
     @app_commands.describe(server_id="آيدي السيرفر", days="عدد الأيام")
     async def set_subscription_cmd(self, interaction: discord.Interaction, server_id: str, days: int):
         if await deny_if_not_owner(interaction):
@@ -467,7 +475,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="renew_subscription", description="تجديد (إضافة أيام) على اشتراك سيرفر معين")
+    @app_commands.command(name="renew_subscription", description="🔒 تجديد (إضافة أيام) على اشتراك سيرفر معين")
     @app_commands.describe(server_id="آيدي السيرفر", days="عدد الأيام المضافة")
     async def renew_subscription_cmd(self, interaction: discord.Interaction, server_id: str, days: int):
         if await deny_if_not_owner(interaction):
@@ -484,7 +492,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="stop_subscription", description="إيقاف اشتراك سيرفر ومغادرته فوراً")
+    @app_commands.command(name="stop_subscription", description="🔒 إيقاف اشتراك سيرفر ومغادرته فوراً")
     @app_commands.describe(server_id="آيدي السيرفر")
     async def stop_subscription_cmd(self, interaction: discord.Interaction, server_id: str):
         if await deny_if_not_owner(interaction):
@@ -505,7 +513,7 @@ class SubscriptionCog(commands.Cog):
                 ephemeral=True
             )
 
-    @app_commands.command(name="create_code", description="توليد كود اشتراك جديد بعدد أيام محدد")
+    @app_commands.command(name="create_code", description="🔒 توليد كود اشتراك جديد بعدد أيام محدد")
     @app_commands.describe(days="عدد الأيام التي يمنحها الكود")
     async def create_code_cmd(self, interaction: discord.Interaction, days: int):
         if await deny_if_not_owner(interaction):
@@ -521,7 +529,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="redeem", description="تفعيل كود اشتراك (متاح لأصحاب السيرفرات)")
+    @app_commands.command(name="redeem", description="🔒 تفعيل كود اشتراك (متاح لصاحب السيرفر فقط)")
     @app_commands.describe(code="الكود المراد تفعيله")
     async def redeem_cmd(self, interaction: discord.Interaction, code: str):
         guild = interaction.guild
@@ -547,7 +555,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="add_note", description="إضافة ملاحظة خاصة عن سيرفر معين")
+    @app_commands.command(name="add_note", description="🔒 إضافة ملاحظة خاصة عن سيرفر معين")
     @app_commands.describe(server_id="آيدي السيرفر", note_text="نص الملاحظة")
     async def add_note_cmd(self, interaction: discord.Interaction, server_id: str, note_text: str):
         if await deny_if_not_owner(interaction):
@@ -558,7 +566,7 @@ class SubscriptionCog(commands.Cog):
             f"✅ تم إضافة الملاحظة للسيرفر `{server_id}`.", ephemeral=True
         )
 
-    @app_commands.command(name="view_notes", description="عرض الملاحظات المسجلة لسيرفر معين")
+    @app_commands.command(name="view_notes", description="🔒 عرض الملاحظات المسجلة لسيرفر معين")
     @app_commands.describe(server_id="آيدي السيرفر")
     async def view_notes_cmd(self, interaction: discord.Interaction, server_id: str):
         if await deny_if_not_owner(interaction):
@@ -581,7 +589,7 @@ class SubscriptionCog(commands.Cog):
         for chunk in chunks[1:]:
             await interaction.followup.send(chunk, ephemeral=True)
 
-    @app_commands.command(name="force_leave", description="مغادرة سيرفر فوراً بدون حذف بيانات اشتراكه")
+    @app_commands.command(name="force_leave", description="🔒 مغادرة سيرفر فوراً بدون حذف بيانات اشتراكه")
     @app_commands.describe(server_id="آيدي السيرفر")
     async def force_leave_cmd(self, interaction: discord.Interaction, server_id: str):
         if await deny_if_not_owner(interaction):
