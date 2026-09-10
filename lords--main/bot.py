@@ -67,6 +67,7 @@ INITIAL_EXTENSIONS = [
     "cogs.intel_cog",
     "cogs.welcome_cog",
     "cogs.subscription_cog",
+    "cogs.replies_cog",
 ]
 
 
