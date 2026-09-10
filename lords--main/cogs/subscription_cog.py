@@ -448,7 +448,7 @@ class SubscriptionCog(commands.Cog):
                 extra_line = f"› سيغادر البوت خلال: {days_left_to_leave} يوم إذا لم يتم التجديد\n"
 
             lines.append(
-                f"**{guild_name}** (`{server_id}`)\n› الحالة: {status}\n› تاريخ الانتهاء: {expiry_date.strftime("%Y-%m-%d %H:%M UTC")}\n{extra_line}"
+                f"**{guild_name}** (`{server_id}`)\n› الحالة: {status}\n› تاريخ الانتهاء: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}\n{extra_line}"
             )
 
         text = "\n".join(lines)
@@ -471,7 +471,7 @@ class SubscriptionCog(commands.Cog):
         expires_at = set_subscription(server_id, days)
         expiry_date = datetime.datetime.fromisoformat(expires_at)
         await interaction.response.send_message(
-            f"✅ تم تحديد اشتراك جديد للسيرفر `{server_id}` لمدة {days} يوم.\nينتهي في: {expiry_date.strftime("%Y-%m-%d %H:%M UTC")}",
+            f"✅ تم تحديد اشتراك جديد للسيرفر `{server_id}` لمدة {days} يوم.\nينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
             ephemeral=True
         )
 
@@ -488,7 +488,7 @@ class SubscriptionCog(commands.Cog):
         expires_at = renew_subscription(server_id, days)
         expiry_date = datetime.datetime.fromisoformat(expires_at)
         await interaction.response.send_message(
-            f"✅ تم تجديد اشتراك السيرفر `{server_id}` بإضافة {days} يوم.\nالاشتراك الآن ينتهي في: {expiry_date.strftime("%Y-%m-%d %H:%M UTC")}",
+            f"✅ تم تجديد اشتراك السيرفر `{server_id}` بإضافة {days} يوم.\nالاشتراك الآن ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
             ephemeral=True
         )
 
@@ -551,7 +551,7 @@ class SubscriptionCog(commands.Cog):
         expires_at = renew_subscription(str(guild.id), days)
         expiry_date = datetime.datetime.fromisoformat(expires_at)
         await interaction.response.send_message(
-            f"✅ تم تفعيل الكود بنجاح! تمت إضافة {days} يوم لاشتراك هذا السيرفر.\nالاشتراك الآن ينتهي في: {expiry_date.strftime("%Y-%m-%d %H:%M UTC")}",
+            f"✅ تم تفعيل الكود بنجاح! تمت إضافة {days} يوم لاشتراك هذا السيرفر.\nالاشتراك الآن ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
             ephemeral=True
         )
 
@@ -579,7 +579,7 @@ class SubscriptionCog(commands.Cog):
 
         lines = []
         for note_text, created_at in notes:
-            date = datetime.datetime.fromisoformat(created_at).strftime("%Y-%m-%d %H:%M UTC")
+            date = datetime.datetime.fromisoformat(created_at).strftime('%Y-%m-%d %H:%M UTC')
             lines.append(f"› {note_text}\n  ({date})")
 
         text = "\n\n".join(lines)
