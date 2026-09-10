@@ -1,3 +1,458 @@
 {
-  "_note": "بيانات الوحوش القديمة تم حذفها. أضف الوحوش الجديدة من خلال /add_monster أو حدّث هذا الملف ببيانات اللعبة الجديدة."
+  "saberfang": {
+    "name": {
+      "ar": "سابرفنغ",
+      "en": "Saberfang"
+    },
+    "emoji": "🐯",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي مرتفع جداً - اضرب بأبطال سحر وتفادى الضرر الجسدي.",
+      "en": "Very high PDEF - Attack with Magic heroes only and avoid Physical."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "frostwing": {
+    "name": {
+      "ar": "جناح الصقيع",
+      "en": "Frostwing"
+    },
+    "emoji": "🐺",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي - استخدم تشكيلة ضرر جسدي.",
+      "en": "High MDEF - Attack with a full Physical DMG lineup."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "noceros": {
+    "name": {
+      "ar": "نوسيروس",
+      "en": "Noceros"
+    },
+    "emoji": "🦏",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي عالي - اضرب بأبطال سحريين لضمان أعلى ضرر.",
+      "en": "High PDEF - Use Magic heroes for maximum damage output."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "hell_drider": {
+    "name": {
+      "ar": "عنكبوت الجحيم",
+      "en": "Hell Drider"
+    },
+    "emoji": "🕷️",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي - اضرب بأبطال ضرر جسدي.",
+      "en": "High MDEF - Use Physical heroes."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "gryphon": {
+    "name": {
+      "ar": "غريفون",
+      "en": "Gryphon"
+    },
+    "emoji": "🦅",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه متوازن لكن الضرر الجسدي أسرع وأفضل لإسقاطه.",
+      "en": "Balanced DEF, but a high-damage Physical lineup performs best."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "blackwing": {
+    "name": {
+      "ar": "الجناح الأسود",
+      "en": "Blackwing"
+    },
+    "emoji": "🦇",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي مرتفع - استخدم أبطال سحر.",
+      "en": "High PDEF - Use Magic heroes."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "mega_maggot": {
+    "name": {
+      "ar": "اليرقة العملاقة",
+      "en": "Mega Maggot"
+    },
+    "emoji": "🐛",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي مرتفع ويبث سموماً - اضرب بسحر واستخدم معالج.",
+      "en": "High PDEF and deals poison - Use Magic heroes with a healer."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "bon_appeti": {
+    "name": {
+      "ar": "بون أبتيت",
+      "en": "Bon Appeti"
+    },
+    "emoji": "🧁",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي ويحول الأبطال إلى كعك - اضرب بأبطال ضرر جسدي سريع.",
+      "en": "High MDEF and turns heroes into cakes - Use burst Physical heroes."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "gargantua": {
+    "name": {
+      "ar": "غارغانتوا",
+      "en": "Gargantua"
+    },
+    "emoji": "🗿",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي خارق - اضرب بأبطال سحر فقط.",
+      "en": "Extremely high PDEF - Magic heroes only."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "grim_reaper": {
+    "name": {
+      "ar": "حاصد الأرواح",
+      "en": "Grim Reaper"
+    },
+    "emoji": "💀",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري خارق - اضرب بأبطال ضرر جسدي قوي.",
+      "en": "Immense MDEF - Attack with strong Physical heroes."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "hardrox": {
+    "name": {
+      "ar": "صلخر",
+      "en": "Hardrox"
+    },
+    "emoji": "🪨",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "جسم صخري بدفاع جسدي عالي جداً - اضرب بأبطال سحر.",
+      "en": "Heavy rock armor with high PDEF - Use Magic heroes."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "hootclaw": {
+    "name": {
+      "ar": "مخلب البومة",
+      "en": "Hootclaw"
+    },
+    "emoji": "🦉",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي - استخدم أبطال هجوم جسدي.",
+      "en": "High MDEF - Physical DMG heroes are most effective."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "jade_wyrm": {
+    "name": {
+      "ar": "تنين اليشم",
+      "en": "Jade Wyrm"
+    },
+    "emoji": "🐉",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي عالي - اضرب بسحر مركز.",
+      "en": "High PDEF - Focus with Magic damage."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "mecha_trojan": {
+    "name": {
+      "ar": "طروادة الآلي",
+      "en": "Mecha Trojan"
+    },
+    "emoji": "🐴",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دروع معدنية بدفاع جسدي قوي - اضربه بالسحر.",
+      "en": "Heavy metallic armor - Strike with Magic DMG."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "queen_bee": {
+    "name": {
+      "ar": "ملكة النحل",
+      "en": "Queen Bee"
+    },
+    "emoji": "🐝",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعها السحري قوي وتهاجم عن بعد - استخدم أبطال ضرر جسدي.",
+      "en": "High MDEF and ranged attacks - Use Physical heroes."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "snow_beast": {
+    "name": {
+      "ar": "وحش الثلج",
+      "en": "Snow Beast"
+    },
+    "emoji": "❄️",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي - هاجم بأبطال ضرر جسدي سريع.",
+      "en": "High MDEF - Attack with burst Physical heroes."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "terrorthorn": {
+    "name": {
+      "ar": "شوك الرعب",
+      "en": "Terrorthorn"
+    },
+    "emoji": "🌵",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي - استخدم أبطال ضرر جسدي.",
+      "en": "High MDEF - Physical DMG heroes recommended."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "tidal_titan": {
+    "name": {
+      "ar": "عملاق المد",
+      "en": "Tidal Titan"
+    },
+    "emoji": "🌊",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي مرتفع جداً - استخدم أبطال ضرر سحري.",
+      "en": "High PDEF - Use Magic DMG heroes."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "voodoo_shaman": {
+    "name": {
+      "ar": "شامان الفودو",
+      "en": "Voodoo Shaman"
+    },
+    "emoji": "🎭",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي - استخدم تشكيلة ضرر جسدي.",
+      "en": "High MDEF - Use a full Physical DMG lineup."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "cottontail": {
+    "name": {
+      "ar": "ذيل القطن",
+      "en": "Cottontail"
+    },
+    "emoji": "🐇",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي مرتفع - اضرب بأبطال سحر.",
+      "en": "High PDEF - Use Magic heroes."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "necrosis": {
+    "name": {
+      "ar": "نخر",
+      "en": "Necrosis"
+    },
+    "emoji": "☠️",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي مرتفع - اضرب بأبطال سحر.",
+      "en": "High PDEF - Magic heroes are required."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  },
+  "serpent_gladiator": {
+    "name": {
+      "ar": "المصارع الثعبان",
+      "en": "Serpent Gladiator"
+    },
+    "emoji": "🐍",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي - استخدم أبطال ضرر جسدي.",
+      "en": "High MDEF - Physical DMG heroes recommended."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "gorgon": {
+    "name": {
+      "ar": "جورجون",
+      "en": "Gorgon"
+    },
+    "emoji": "🧝‍♀️",
+    "damage_type": {
+      "ar": "جسدي / فيزيائي (Physical)",
+      "en": "Physical"
+    },
+    "defense_note": {
+      "ar": "دفاعه السحري قوي - هاجم بأبطال ضرر جسدي.",
+      "en": "High MDEF - Attack with Physical heroes."
+    },
+    "heroes": {
+      "ar": "قاتل الشياطين (Demon Slayer)، المتتبع (Tracker)، صاعقة القرمز (Scarlet Bolt)، المخادع (Trickster)، الغراب الأسود (Black Crow)",
+      "en": "Demon Slayer, Tracker, Scarlet Bolt, Trickster, Black Crow"
+    }
+  },
+  "arctic_flipper": {
+    "name": {
+      "ar": "زعنفة القطب",
+      "en": "Arctic Flipper"
+    },
+    "emoji": "🐧",
+    "damage_type": {
+      "ar": "سحري (Magic)",
+      "en": "Magic"
+    },
+    "defense_note": {
+      "ar": "دفاعه الجسدي قوي - اضرب بأبطال سحر.",
+      "en": "High PDEF - Use Magic heroes."
+    },
+    "heroes": {
+      "ar": "المحرقة (Incinerator)، متلاعبة العناصر (Elementalist)، ملكة الثلج (Snow Queen)، بريما دونا (Prima Donna)، حكيم العواصف (Sage of Storms)",
+      "en": "Incinerator, Elementalist, Snow Queen, Prima Donna, Sage of Storms"
+    }
+  }
 }
