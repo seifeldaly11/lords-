@@ -95,9 +95,9 @@ def is_server_owner_or_bot_owner(interaction: discord.Interaction) -> bool:
 
 
 async def deny_if_not_owner(interaction: discord.Interaction) -> bool:
-    if not is_server_owner_or_bot_owner(interaction):
+    if not is_owner(interaction.user.id):
         await interaction.response.send_message(
-            "🔒 هذا الأمر مخصص لمالك السيرفر فقط، لا تملك صلاحية استخدامه.",
+            "🔒 هذا الأمر مخصص لمالك البوت فقط، لا تملك صلاحية استخدامه.",
             ephemeral=True
         )
         return True
