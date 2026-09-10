@@ -37,8 +37,9 @@ def _monster_name(entry: dict, key: str, lang: str) -> str:
 
 
 def _monster_text(value, lang: str) -> str:
+    """Return the requested language, including bilingual lists of heroes."""
     if isinstance(value, dict):
-        return str(value.get(lang) or value.get("ar") or value.get("en") or "")
+        value = value.get(lang) or value.get("ar") or value.get("en") or ""
     if isinstance(value, list):
         return ", ".join(str(item) for item in value)
     return str(value or "")
@@ -509,10 +510,17 @@ class GuidesCog(commands.Cog):
         self.bot = bot
         self.dict_data = load_json_data("dict.json")
         self.static_info_data = load_json_data("info.json")
+        self.static_monsters = load_json_data("monsters.json")
 
     def _get_monsters(self, guild_id: int) -> dict:
-        data = load(CUSTOM_MONSTERS_FILE)
-        return data.get(str(guild_id), {})
+        """Show the bilingual standard list, plus monsters added by this server's admins."""
+        custom_data = load(CUSTOM_MONSTERS_FILE)
+        monsters = {
+            key: value for key, value in self.static_monsters.items()
+            if not key.startswith("_") and isinstance(value, dict)
+        }
+        monsters.update(custom_data.get(str(guild_id), {}))
+        return monsters
 
     def _get_info(self, guild_id: int) -> dict:
         """يرجع الأقسام الجاهزة وإضافات الإدارة بصيغة ثنائية اللغة."""
@@ -525,9 +533,15 @@ class GuidesCog(commands.Cog):
 
     # -- /monster + /add_monster ----------------------------------------
 
-    @app_commands.command(name="monster", description="🐲 أفضل أبطال الصيد حسب اسم الوحش")
-    async def monster(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
+    @app_commands.command(name="monster", description="🐲 اختر اللغة واعرف أفضل أبطال الصيد | Choose language and find the best hunt heroes")
+    @app_commands.describe(language="اختر لغة الرد | Choose response language")
+    @app_commands.choices(language=[
+        app_commands.Choice(name="العربية", value="ar"),
+        app_commands.Choice(name="English", value="en"),
+    ])
+    async def monster(self, interaction: discord.Interaction, language: app_commands.Choice[str]):
+        # Language is deliberately selected per request, not inherited from server settings.
+        lang = language.value
         monsters = self._get_monsters(interaction.guild_id)
         if not monsters:
             await interaction.response.send_message(t("monster_empty", lang))
