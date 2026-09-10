@@ -133,6 +133,27 @@ async def on_message(message: discord.Message):
         )
 
 
+
+@bot.tree.error
+async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.MissingPermissions):
+        msg = "⚠️ **عذراً، هذا الأمر مخصص لإدارة السيرفر فقط.**"
+    elif isinstance(error, app_commands.CommandOnCooldown):
+        msg = f"⏳ يرجى الانتظار {error.retry_after:.1f} ثانية قبل إعادة استخدام هذا الأمر."
+    elif isinstance(error, app_commands.CheckFailure):
+        msg = "🔒 **ليس لديك الصلاحية لتنفيذ هذا الأمر أو أن اشتراك السيرفر منتهي.**"
+    else:
+        log.error(f"خطأ غير متوقع في الأمر {interaction.command}: {error}")
+        msg = "⚠️ حدث خطأ أثناء تنفيذ الأمر، يرجى المحاولة لاحقاً."
+    
+    try:
+        if interaction.response.is_done():
+            await interaction.followup.send(msg, ephemeral=True)
+        else:
+            await interaction.response.send_message(msg, ephemeral=True)
+    except Exception:
+        pass
+
 @bot.event
 async def on_ready():
     apply_english_command_descriptions()
