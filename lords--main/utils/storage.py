@@ -28,8 +28,9 @@ os.makedirs(BASE_DIR, exist_ok=True)
 DB_PATH = os.path.join(BASE_DIR, "lordsbot.db")
 
 _lock = threading.Lock()
-_conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+_conn = sqlite3.connect(DB_PATH, timeout=60.0, check_same_thread=False)
 _conn.execute("PRAGMA journal_mode=WAL;")
+_conn.execute("PRAGMA busy_timeout = 60000;")
 _conn.execute("PRAGMA synchronous=NORMAL;")
 _conn.execute(
     """
