@@ -1,0 +1,591 @@
+# -*- coding: utf-8 -*-
+"""
+وحدة إدارة وتجديد اشتراكات السيرفرات (Subscription Cog)
+=========================================================
+- تم تحويلها للعمل كوحدة (Cog) داخل بوت لوردس
+- تستخدم discord.py (Slash Commands & Tasks)
+- تستخدم SQLite لتخزين الاشتراكات والأكواد والملاحظات
+- الأوامر الإدارية مقفلة على مالك البوت فقط (OWNER_ID)
+- أمر /redeem متاح لأصحاب السيرفرات لتفعيل كود التجديد
+"""
+
+import os
+import sqlite3
+import random
+import string
+import datetime
+import discord
+from discord import app_commands
+from discord.ext import commands, tasks
+
+OWNER_ID = int(os.getenv("OWNER_ID", "1527765325221990521"))
+CONTACT_USERNAME = os.getenv("CONTACT_USERNAME", "seifeldaly124")
+CONTACT_LINE = f"للتجديد يرجى التواصل مع: **{CONTACT_USERNAME}**"
+GRACE_PERIOD_DAYS = int(os.getenv("GRACE_PERIOD_DAYS", "3"))
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, "storage", "subscriptions.db")
+
+
+def get_connection():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    return sqlite3.connect(DB_PATH)
+
+
+def init_db():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS subscriptions (
+            server_id TEXT PRIMARY KEY,
+            expires_at TEXT NOT NULL,
+            warned_1h INTEGER NOT NULL DEFAULT 0,
+            expired_notified INTEGER NOT NULL DEFAULT 0
+        )
+    """)
+
+    for column_def in ("warned_1h INTEGER NOT NULL DEFAULT 0", "expired_notified INTEGER NOT NULL DEFAULT 0"):
+        try:
+            cur.execute(f"ALTER TABLE subscriptions ADD COLUMN {column_def}")
+        except sqlite3.OperationalError:
+            pass
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS codes (
+            code TEXT PRIMARY KEY,
+            days INTEGER NOT NULL
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id TEXT NOT NULL,
+            note_text TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def is_owner(user_id: int) -> bool:
+    return user_id == OWNER_ID
+
+
+async def deny_if_not_owner(interaction: discord.Interaction) -> bool:
+    if not is_owner(interaction.user.id):
+        await interaction.response.send_message(
+            "❌ هذا الأمر مخصص لمالك البوت فقط، لا تملك صلاحية استخدامه.",
+            ephemeral=True
+        )
+        return True
+    return False
+
+
+def get_subscription(server_id: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT expires_at FROM subscriptions WHERE server_id = ?", (server_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def set_subscription(server_id: str, days: int):
+    expires_at = (datetime.datetime.utcnow() + datetime.timedelta(days=days)).isoformat()
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO subscriptions (server_id, expires_at, warned_1h, expired_notified)
+        VALUES (?, ?, 0, 0)
+        ON CONFLICT(server_id) DO UPDATE SET expires_at = excluded.expires_at, warned_1h = 0, expired_notified = 0
+    """, (server_id, expires_at))
+    conn.commit()
+    conn.close()
+    return expires_at
+
+
+def renew_subscription(server_id: str, days: int):
+    current = get_subscription(server_id)
+    if current:
+        current_date = datetime.datetime.fromisoformat(current)
+        base_date = max(current_date, datetime.datetime.utcnow())
+        new_date = base_date + datetime.timedelta(days=days)
+    else:
+        new_date = datetime.datetime.utcnow() + datetime.timedelta(days=days)
+
+    expires_at = new_date.isoformat()
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO subscriptions (server_id, expires_at, warned_1h, expired_notified)
+        VALUES (?, ?, 0, 0)
+        ON CONFLICT(server_id) DO UPDATE SET expires_at = excluded.expires_at, warned_1h = 0, expired_notified = 0
+    """, (server_id, expires_at))
+    conn.commit()
+    conn.close()
+    return expires_at
+
+
+def delete_subscription(server_id: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM subscriptions WHERE server_id = ?", (server_id,))
+    conn.commit()
+    conn.close()
+
+
+def generate_unique_code(days: int) -> str:
+    conn = get_connection()
+    cur = conn.cursor()
+
+    while True:
+        part1 = "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
+        part2 = "".join(random.choices(string.ascii_uppercase + string.digits, k=4))
+        code = f"SUB-{part1}-{part2}"
+
+        cur.execute("SELECT 1 FROM codes WHERE code = ?", (code,))
+        if not cur.fetchone():
+            break
+
+    cur.execute("INSERT INTO codes (code, days) VALUES (?, ?)", (code, days))
+    conn.commit()
+    conn.close()
+    return code
+
+
+def redeem_code_from_db(code: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT days FROM codes WHERE code = ?", (code,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        return None
+
+    days = row[0]
+    cur.execute("DELETE FROM codes WHERE code = ?", (code,))
+    conn.commit()
+    conn.close()
+    return days
+
+
+def add_note_to_db(server_id: str, note_text: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO notes (server_id, note_text, created_at) VALUES (?, ?, ?)",
+        (server_id, note_text, datetime.datetime.utcnow().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_notes_from_db(server_id: str):
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT note_text, created_at FROM notes WHERE server_id = ? ORDER BY id DESC",
+        (server_id,)
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
+async def get_guild_owner(bot: commands.Bot, guild: discord.Guild) -> discord.User | None:
+    try:
+        return guild.owner or await bot.fetch_user(guild.owner_id)
+    except Exception:
+        return None
+
+
+async def send_expiry_warning(bot: commands.Bot, guild: discord.Guild):
+    owner = await get_guild_owner(bot, guild)
+    if owner is None:
+        return
+    try:
+        msg = f"⚠️ تنبيه: سينتهي اشتراك سيرفرك **{guild.name}** خلال ساعة تقريباً.\nيرجى تجديد الاشتراك قبل توقف البوت في السيرفر.\n{CONTACT_LINE}"
+        await owner.send(msg)
+    except discord.Forbidden:
+        pass
+
+
+async def notify_and_leave(bot: commands.Bot, guild: discord.Guild):
+    channel = guild.system_channel
+    if channel is None:
+        for ch in guild.text_channels:
+            if ch.permissions_for(guild.me).send_messages:
+                channel = ch
+                break
+
+    if channel is not None:
+        try:
+            await channel.send(f"⚠️ انتهت مدة اشتراك هذا السيرفر، وتم إيقاف البوت.\n{CONTACT_LINE}")
+        except discord.Forbidden:
+            pass
+
+    owner = await get_guild_owner(bot, guild)
+    if owner is not None:
+        try:
+            await owner.send(f"❌ انتهى اشتراك سيرفرك **{guild.name}**.\nتم إيقاف البوت في هذا السيرفر حتى يتم دفع الاشتراك الجديد.\n{CONTACT_LINE}")
+        except discord.Forbidden:
+            pass
+
+    await guild.leave()
+
+
+async def send_expiry_notice(bot: commands.Bot, guild: discord.Guild):
+    channel = guild.system_channel
+    if channel is None:
+        for ch in guild.text_channels:
+            if ch.permissions_for(guild.me).send_messages:
+                channel = ch
+                break
+
+    grace_note = f"سيغادر البوت هذا السيرفر تلقائياً خلال {GRACE_PERIOD_DAYS} يوم إذا لم يتم التجديد."
+
+    if channel is not None:
+        try:
+            await channel.send(f"⚠️ انتهت مدة اشتراك هذا السيرفر، وتم إيقاف أوامر البوت الآن.\n{grace_note}\n{CONTACT_LINE}")
+        except discord.Forbidden:
+            pass
+
+    owner = await get_guild_owner(bot, guild)
+    if owner is not None:
+        try:
+            await owner.send(f"❌ انتهى اشتراك سيرفرك **{guild.name}**، وتم إيقاف البوت فيه الآن.\n{grace_note}\nيمكنك تفعيل كود جديد عبر /redeem داخل السيرفر في أي وقت خلال المهلة.\n{CONTACT_LINE}")
+        except discord.Forbidden:
+            pass
+
+
+async def leave_after_grace(bot: commands.Bot, guild: discord.Guild):
+    channel = guild.system_channel
+    if channel is None:
+        for ch in guild.text_channels:
+            if ch.permissions_for(guild.me).send_messages:
+                channel = ch
+                break
+
+    if channel is not None:
+        try:
+            await channel.send(f"👋 انتهت مهلة السماح ({GRACE_PERIOD_DAYS} يوم) دون تجديد الاشتراك، والبوت يغادر السيرفر الآن.\n{CONTACT_LINE}")
+        except discord.Forbidden:
+            pass
+
+    owner = await get_guild_owner(bot, guild)
+    if owner is not None:
+        try:
+            await owner.send(f"👋 لم يتم تجديد اشتراك سيرفرك **{guild.name}** خلال مهلة السماح، وتمت مغادرة البوت له.\nيمكنك إعادة دعوة البوت وتفعيل كود عبر /redeem في أي وقت.\n{CONTACT_LINE}")
+        except discord.Forbidden:
+            pass
+
+    await guild.leave()
+
+
+async def global_subscription_check(interaction: discord.Interaction) -> bool:
+    if is_owner(interaction.user.id):
+        return True
+
+    if interaction.command is not None and interaction.command.name == "redeem":
+        return True
+
+    if interaction.guild is None:
+        return True
+
+    expires_at = get_subscription(str(interaction.guild.id))
+    is_active = expires_at is not None and datetime.datetime.fromisoformat(expires_at) > datetime.datetime.utcnow()
+
+    if not is_active:
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                f"🔒 البوت مغلق حتى دفع الاشتراك الجديد.\n{CONTACT_LINE}",
+                ephemeral=True
+            )
+        return False
+
+    return True
+
+
+class SubscriptionCog(commands.Cog):
+    """وحدة إدارة اشتراكات السيرفرات وأكواد التفعيل."""
+
+    def __init__(self, bot: commands.Bot):
+        self.bot = bot
+        init_db()
+        self.check_subscriptions.start()
+
+    def cog_unload(self):
+        self.check_subscriptions.cancel()
+        try:
+            self.bot.tree.remove_check(global_subscription_check)
+        except Exception:
+            pass
+
+    @tasks.loop(minutes=10)
+    async def check_subscriptions(self):
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT server_id, expires_at, warned_1h, expired_notified FROM subscriptions")
+        rows = cur.fetchall()
+        conn.close()
+
+        now = datetime.datetime.utcnow()
+
+        for server_id, expires_at, warned_1h, expired_notified in rows:
+            expiry_date = datetime.datetime.fromisoformat(expires_at)
+            guild = self.bot.get_guild(int(server_id))
+
+            if now >= expiry_date:
+                grace_deadline = expiry_date + datetime.timedelta(days=GRACE_PERIOD_DAYS)
+
+                if now >= grace_deadline:
+                    if guild:
+                        await leave_after_grace(self.bot, guild)
+                    delete_subscription(server_id)
+                    continue
+
+                if expired_notified == 0:
+                    if guild:
+                        await send_expiry_notice(self.bot, guild)
+                    conn = get_connection()
+                    cur = conn.cursor()
+                    cur.execute("UPDATE subscriptions SET expired_notified = 1 WHERE server_id = ?", (server_id,))
+                    conn.commit()
+                    conn.close()
+                continue
+
+            remaining = expiry_date - now
+            if warned_1h == 0 and remaining <= datetime.timedelta(hours=1):
+                if guild:
+                    await send_expiry_warning(self.bot, guild)
+                conn = get_connection()
+                cur = conn.cursor()
+                cur.execute("UPDATE subscriptions SET warned_1h = 1 WHERE server_id = ?", (server_id,))
+                conn.commit()
+                conn.close()
+
+    @check_subscriptions.before_loop
+    async def before_check_subscriptions(self):
+        await self.bot.wait_until_ready()
+
+    @app_commands.command(name="servers_list", description="عرض قائمة كل السيرفرات التي ينتمي إليها البوت")
+    async def servers_list(self, interaction: discord.Interaction):
+        if await deny_if_not_owner(interaction):
+            return
+
+        guilds = self.bot.guilds
+        if not guilds:
+            await interaction.response.send_message("البوت لا ينتمي إلى أي سيرفر حالياً.", ephemeral=True)
+            return
+
+        lines = []
+        for g in guilds:
+            owner = g.owner if g.owner else await self.bot.fetch_user(g.owner_id)
+            lines.append(
+                f"**{g.name}**\n› ID السيرفر: `{g.id}`\n› عدد الأعضاء: {g.member_count}\n› مالك السيرفر: {owner} (`{g.owner_id}`)\n"
+            )
+
+        text = "\n".join(lines)
+        chunks = [text[i:i + 1900] for i in range(0, len(text), 1900)]
+
+        await interaction.response.send_message(chunks[0], ephemeral=True)
+        for chunk in chunks[1:]:
+            await interaction.followup.send(chunk, ephemeral=True)
+
+    @app_commands.command(name="subscriptions_status", description="عرض حالة اشتراكات جميع السيرفرات المخزنة")
+    async def subscriptions_status(self, interaction: discord.Interaction):
+        if await deny_if_not_owner(interaction):
+            return
+
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT server_id, expires_at FROM subscriptions")
+        rows = cur.fetchall()
+        conn.close()
+
+        if not rows:
+            await interaction.response.send_message("لا توجد اشتراكات مسجلة حالياً.", ephemeral=True)
+            return
+
+        now = datetime.datetime.utcnow()
+        lines = []
+        for server_id, expires_at in rows:
+            expiry_date = datetime.datetime.fromisoformat(expires_at)
+            remaining_days = (expiry_date - now).days
+            guild = self.bot.get_guild(int(server_id))
+            guild_name = guild.name if guild else "غير معروف (البوت ليس فيه حالياً)"
+
+            if expiry_date > now:
+                status = "✅ فعّال"
+                extra_line = f"› الأيام المتبقية: {remaining_days}\n"
+            else:
+                grace_deadline = expiry_date + datetime.timedelta(days=GRACE_PERIOD_DAYS)
+                days_left_to_leave = max((grace_deadline - now).days, 0)
+                status = "⏳ منتهي - ضمن مهلة السماح (الأوامر مقفلة)"
+                extra_line = f"› سيغادر البوت خلال: {days_left_to_leave} يوم إذا لم يتم التجديد\n"
+
+            lines.append(
+                f"**{guild_name}** (`{server_id}`)\n› الحالة: {status}\n› تاريخ الانتهاء: {expiry_date.strftime("%Y-%m-%d %H:%M UTC")}\n{extra_line}"
+            )
+
+        text = "\n".join(lines)
+        chunks = [text[i:i + 1900] for i in range(0, len(text), 1900)]
+
+        await interaction.response.send_message(chunks[0], ephemeral=True)
+        for chunk in chunks[1:]:
+            await interaction.followup.send(chunk, ephemeral=True)
+
+    @app_commands.command(name="set_subscription", description="تحديد اشتراك جديد لسيرفر معين")
+    @app_commands.describe(server_id="آيدي السيرفر", days="عدد الأيام")
+    async def set_subscription_cmd(self, interaction: discord.Interaction, server_id: str, days: int):
+        if await deny_if_not_owner(interaction):
+            return
+
+        if days <= 0:
+            await interaction.response.send_message("❌ عدد الأيام يجب أن يكون أكبر من صفر.", ephemeral=True)
+            return
+
+        expires_at = set_subscription(server_id, days)
+        expiry_date = datetime.datetime.fromisoformat(expires_at)
+        await interaction.response.send_message(
+            f"✅ تم تحديد اشتراك جديد للسيرفر `{server_id}` لمدة {days} يوم.\nينتهي في: {expiry_date.strftime("%Y-%m-%d %H:%M UTC")}",
+            ephemeral=True
+        )
+
+    @app_commands.command(name="renew_subscription", description="تجديد (إضافة أيام) على اشتراك سيرفر معين")
+    @app_commands.describe(server_id="آيدي السيرفر", days="عدد الأيام المضافة")
+    async def renew_subscription_cmd(self, interaction: discord.Interaction, server_id: str, days: int):
+        if await deny_if_not_owner(interaction):
+            return
+
+        if days <= 0:
+            await interaction.response.send_message("❌ عدد الأيام يجب أن يكون أكبر من صفر.", ephemeral=True)
+            return
+
+        expires_at = renew_subscription(server_id, days)
+        expiry_date = datetime.datetime.fromisoformat(expires_at)
+        await interaction.response.send_message(
+            f"✅ تم تجديد اشتراك السيرفر `{server_id}` بإضافة {days} يوم.\nالاشتراك الآن ينتهي في: {expiry_date.strftime("%Y-%m-%d %H:%M UTC")}",
+            ephemeral=True
+        )
+
+    @app_commands.command(name="stop_subscription", description="إيقاف اشتراك سيرفر ومغادرته فوراً")
+    @app_commands.describe(server_id="آيدي السيرفر")
+    async def stop_subscription_cmd(self, interaction: discord.Interaction, server_id: str):
+        if await deny_if_not_owner(interaction):
+            return
+
+        guild = self.bot.get_guild(int(server_id))
+        delete_subscription(server_id)
+
+        if guild:
+            await interaction.response.send_message(
+                f"⏳ جاري إيقاف اشتراك السيرفر **{guild.name}** ومغادرته...", ephemeral=True
+            )
+            await notify_and_leave(self.bot, guild)
+            await interaction.followup.send(f"✅ تم إيقاف الاشتراك ومغادرة السيرفر `{server_id}`.", ephemeral=True)
+        else:
+            await interaction.response.send_message(
+                f"⚠️ تم حذف الاشتراك من قاعدة البيانات، لكن البوت غير موجود حالياً في السيرفر `{server_id}`.",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="create_code", description="توليد كود اشتراك جديد بعدد أيام محدد")
+    @app_commands.describe(days="عدد الأيام التي يمنحها الكود")
+    async def create_code_cmd(self, interaction: discord.Interaction, days: int):
+        if await deny_if_not_owner(interaction):
+            return
+
+        if days <= 0:
+            await interaction.response.send_message("❌ عدد الأيام يجب أن يكون أكبر من صفر.", ephemeral=True)
+            return
+
+        code = generate_unique_code(days)
+        await interaction.response.send_message(
+            f"✅ تم إنشاء الكود التالي بنجاح:\n`{code}`\nيمنح: {days} يوم",
+            ephemeral=True
+        )
+
+    @app_commands.command(name="redeem", description="تفعيل كود اشتراك (متاح لأصحاب السيرفرات)")
+    @app_commands.describe(code="الكود المراد تفعيله")
+    async def redeem_cmd(self, interaction: discord.Interaction, code: str):
+        guild = interaction.guild
+        if guild is None:
+            await interaction.response.send_message("❌ هذا الأمر يعمل داخل السيرفرات فقط.", ephemeral=True)
+            return
+
+        if interaction.user.id != guild.owner_id and not is_owner(interaction.user.id):
+            await interaction.response.send_message(
+                "❌ هذا الأمر مخصص لمالك السيرفر فقط.", ephemeral=True
+            )
+            return
+
+        days = redeem_code_from_db(code.strip())
+        if days is None:
+            await interaction.response.send_message("❌ الكود غير صحيح أو تم استخدامه من قبل.", ephemeral=True)
+            return
+
+        expires_at = renew_subscription(str(guild.id), days)
+        expiry_date = datetime.datetime.fromisoformat(expires_at)
+        await interaction.response.send_message(
+            f"✅ تم تفعيل الكود بنجاح! تمت إضافة {days} يوم لاشتراك هذا السيرفر.\nالاشتراك الآن ينتهي في: {expiry_date.strftime("%Y-%m-%d %H:%M UTC")}",
+            ephemeral=True
+        )
+
+    @app_commands.command(name="add_note", description="إضافة ملاحظة خاصة عن سيرفر معين")
+    @app_commands.describe(server_id="آيدي السيرفر", note_text="نص الملاحظة")
+    async def add_note_cmd(self, interaction: discord.Interaction, server_id: str, note_text: str):
+        if await deny_if_not_owner(interaction):
+            return
+
+        add_note_to_db(server_id, note_text)
+        await interaction.response.send_message(
+            f"✅ تم إضافة الملاحظة للسيرفر `{server_id}`.", ephemeral=True
+        )
+
+    @app_commands.command(name="view_notes", description="عرض الملاحظات المسجلة لسيرفر معين")
+    @app_commands.describe(server_id="آيدي السيرفر")
+    async def view_notes_cmd(self, interaction: discord.Interaction, server_id: str):
+        if await deny_if_not_owner(interaction):
+            return
+
+        notes = get_notes_from_db(server_id)
+        if not notes:
+            await interaction.response.send_message(f"لا توجد ملاحظات مسجلة للسيرفر `{server_id}`.", ephemeral=True)
+            return
+
+        lines = []
+        for note_text, created_at in notes:
+            date = datetime.datetime.fromisoformat(created_at).strftime("%Y-%m-%d %H:%M UTC")
+            lines.append(f"› {note_text}\n  ({date})")
+
+        text = "\n\n".join(lines)
+        chunks = [text[i:i + 1900] for i in range(0, len(text), 1900)]
+
+        await interaction.response.send_message(f"**ملاحظات السيرفر `{server_id}`:**\n\n{chunks[0]}", ephemeral=True)
+        for chunk in chunks[1:]:
+            await interaction.followup.send(chunk, ephemeral=True)
+
+    @app_commands.command(name="force_leave", description="مغادرة سيرفر فوراً بدون حذف بيانات اشتراكه")
+    @app_commands.describe(server_id="آيدي السيرفر")
+    async def force_leave_cmd(self, interaction: discord.Interaction, server_id: str):
+        if await deny_if_not_owner(interaction):
+            return
+
+        guild = self.bot.get_guild(int(server_id))
+        if guild is None:
+            await interaction.response.send_message(f"⚠️ البوت غير موجود حالياً في السيرفر `{server_id}`.", ephemeral=True)
+            return
+
+        await interaction.response.send_message(f"⏳ جاري مغادرة السيرفر **{guild.name}**...", ephemeral=True)
+        await guild.leave()
+        await interaction.followup.send(f"✅ تمت مغادرة السيرفر `{server_id}` (بدون حذف بيانات الاشتراك).", ephemeral=True)
+
+
+async def setup(bot: commands.Bot):
+    bot.tree.add_check(global_subscription_check)
+    await bot.add_cog(SubscriptionCog(bot))
