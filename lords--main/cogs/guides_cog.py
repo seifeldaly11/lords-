@@ -123,20 +123,6 @@ def _resolve_monster_ar(name: str) -> str:
             return k
     return name
 
-def _is_expired_url(url: str) -> bool:
-    if not url or not isinstance(url, str):
-        return True
-    if "cdn.discordapp.com" in url or "media.discordapp.net" in url:
-        m = re.search(r'[?&]ex=([0-9a-fA-F]+)', url)
-        if m:
-            try:
-                import time
-                exp_ts = int(m.group(1), 16)
-                if time.time() >= exp_ts - 60:
-                    return True
-            except Exception:
-                pass
-    return False
 
 def _get_monster_image(name: str, key: str = "") -> str:
     clean_key = key.lower().replace("-", "_").strip()
@@ -205,9 +191,8 @@ class MonsterSelect(discord.ui.Select):
             title=f"🐲 {title}",
             color=discord.Color.dark_green()
         )
-        embed.set_footer(text=t("monster_footer", lang))
 
-        # 1. Check if a permanent locally saved image exists on the host
+        # 1. Local saved image
         gid = str(interaction.guild_id or 0)
         local_dir = os.path.join("storage", "monster_images")
         clean_key = re.sub(r'[^a-zA-Z0-9_]', '', key.lower().replace(" ", "_"))
@@ -224,16 +209,13 @@ class MonsterSelect(discord.ui.Select):
             await interaction.response.send_message(embed=embed, file=file)
             return
 
-        # 2. Check info image_url without expired Discord CDN links
-        raw_url = info.get("image_url")
-        if raw_url and not _is_expired_url(raw_url):
-            image_url = raw_url
-        else:
-            image_url = _get_monster_image(title, key)
+        # 2. The user's exact uploaded image URL (always priority)
+        image_url = info.get("image_url") or _get_monster_image(title, key)
 
         if image_url:
             embed.set_image(url=image_url)
 
+        # No text, no footer, clean image only
         await interaction.response.send_message(embed=embed)
 
 class MonsterView(discord.ui.View):
