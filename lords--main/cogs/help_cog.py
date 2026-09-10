@@ -4,6 +4,7 @@
 قديمة؛ لذلك أي أمر جديد يظهر في /help تلقائياً، وأي أمر محذوف يختفي منه.
 """
 from __future__ import annotations
+from typing import Optional
 
 from collections import defaultdict
 import logging
@@ -660,28 +661,18 @@ class HelpCog(commands.Cog):
             await ctx.send(fallback)
 
     
-    @app_commands.command(
-        name="shortcuts",
-        description="⚡ اختصارات سريعة لأهم أوامر البوت | Quick cheatsheet of essential commands"
-    )
-    @app_commands.describe(language="اختر لغة العرض | Select display language")
-    @app_commands.choices(language=[
-        app_commands.Choice(name="العربية", value="ar"),
-        app_commands.Choice(name="English", value="en"),
-    ])
-    async def shortcuts(self, interaction: discord.Interaction, language: Optional[app_commands.Choice[str]] = None):
-        lang = language.value if language else get_lang(interaction.guild_id, interaction.user.id)
+    def build_shortcuts_embed(self, lang: str) -> discord.Embed:
         if lang == "en":
             embed = discord.Embed(
-                title="⚡ Lords Bot Quick Shortcuts",
-                description="Here are the most frequently used commands across your alliance:",
+                title="⚡ Lords Bot • Command Center & Shortcuts",
+                description="The most essential commands for your alliance leaders and members:",
                 color=discord.Color.gold()
             )
             embed.add_field(name="⚔️ War & Rallies", value="• `/rally` — Set up war rallies & counters\n• `/shield` — Set shield expiration timer & alarm\n• `/intel` — Log kingdom enemy scout intel", inline=False)
             embed.add_field(name="🤖 AI & Calculators", value="• `/حساب_التسريعات` (`/ai_speedup`) — AI speedup calculator\n• `/حاسبة_الاحداث` (`/ai_event`) — AI Hell/Solo event points\n• `/monster` — Best hero lineups for monster hunting\n• `/info` — Essential castle guides & research", inline=False)
             embed.add_field(name="🌾 Resources & Trading", value="• `/market` — Alliance resource exchange board\n• `/shop` — Browse verified accounts for sale\n• `/sell` — List an account with middleman protection\n• `/middleman` — Request official trade mediation", inline=False)
             embed.add_field(name="🏰 Alliance Activity", value="• `/hunt_list` — Track members' daily monster hunts\n• `/board` — Guild Fest leaderboard\n• `/help` — Full interactive command dashboard", inline=False)
-            embed.set_footer(text="Tip: Type / to see real-time command suggestions and descriptions.")
+            embed.set_footer(text="Tip: Use the interactive dropdown menu below to browse any section in detail.")
         else:
             embed = discord.Embed(
                 title="⚡ الدليل السريع لاختصارات أوامر البوت",
@@ -692,9 +683,38 @@ class HelpCog(commands.Cog):
             embed.add_field(name="🤖 الذكاء الاصطناعي والحواسب", value="• `/حساب_التسريعات` — حاسبة تسريعات ذكية بالـ AI\n• `/حاسبة_الاحداث` — حساب متطلبات أحداث الجحيم والفردي\n• `/monster` — أفضل أبطال صيد الوحوش (مترجم)\n• `/info` — أدلة القلعة وتشكيلات الأبطال والمعدات", inline=False)
             embed.add_field(name="🌾 الموارد والتجارة", value="• `/market` — بورصة موارد التحالف وحساب التبادلات\n• `/shop` — تصفح حسابات اللعبة المعروضة للبيع\n• `/sell` — عرض حسابك للبيع بتأمين الوساطة\n• `/middleman` — طلب وسيط معتمد لتأمين الصفقة", inline=False)
             embed.add_field(name="🏰 التحالف والمتابعة", value="• `/hunt_list` — متابعة صيد الأعضاء اليومي\n• `/board` — صدارة وترتيب مهرجان التحالف\n• `/help` — لوحة المساعدة التفاعلية الشاملة", inline=False)
-            embed.set_footer(text="نصيحة: اكتب / في الشات لتظهر لك كل الأوامر بوصفها وخياراتها فوراً.")
+            embed.set_footer(text="نصيحة: استخدم القائمة المنسدلة بالأسفل لاستعراض أي قسم أو أمر بالتفصيل.")
+        return embed
 
-        await interaction.response.send_message(embed=embed)
+    @app_commands.command(
+        name="help",
+        description="📖 مركز أوامر البوت والاختصارات السريعة | Alliance Command Center & Shortcuts"
+    )
+    @app_commands.describe(language="اختر لغة العرض | Select display language")
+    @app_commands.choices(language=[
+        app_commands.Choice(name="العربية", value="ar"),
+        app_commands.Choice(name="English", value="en"),
+    ])
+    async def help_command(self, interaction: discord.Interaction, language: Optional[app_commands.Choice[str]] = None):
+        """Slash command for /help showing both essential shortcuts and category selector."""
+        lang = language.value if language else get_lang(interaction.guild_id, interaction.user.id)
+        embed = self.build_shortcuts_embed(lang)
+        view = HelpView(self.bot, lang)
+        await interaction.response.send_message(embed=embed, view=view)
+
+    @app_commands.command(
+        name="shortcuts",
+        description="⚡ اختصارات سريعة لأهم أوامر البوت | Quick cheatsheet of essential commands"
+    )
+    @app_commands.describe(language="اختر لغة العرض | Select display language")
+    @app_commands.choices(language=[
+        app_commands.Choice(name="العربية", value="ar"),
+        app_commands.Choice(name="English", value="en"),
+    ])
+    async def shortcuts(self, interaction: discord.Interaction, language: Optional[app_commands.Choice[str]] = None):
+        """Alias for /help."""
+        await self.help_command(interaction, language)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(HelpCog(bot))
