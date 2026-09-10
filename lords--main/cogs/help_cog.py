@@ -183,6 +183,7 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "delete_info": "[Admin] Delete a custom /info entry.",
     "edit_info": "[Admin] Edit a custom /info entry or add an image.",
     "delete_monster": "[Admin] Delete a custom monster entry.",
+    "edit_monster": "[Admin] Update a monster's guide image.",
     "counter": "Find the ideal counter formation for an enemy formation.",
     "analyze": "Analyze a battle report image and its numbers.",
     "shield": "Start a smart shield alarm with a 15-minute warning and voice escalation.",
@@ -253,6 +254,7 @@ ARABIC_COMMAND_DESCRIPTIONS = {
     "delete_info": "🗑️ [إدارة] اختر شرحًا مضافًا واحذفه",
     "edit_info": "✏️ [إدارة] عدّل شرحًا مضافًا أو أضف له صورة",
     "delete_monster": "🗑️ [إدارة] اختر وحشًا مضافًا واحذفه",
+    "edit_monster": "🖼️ [إدارة] اختر وحشًا لتعديل وتحديث صورته",
     "counter": "⚔️ اعرف التشكيلة المضادة الأفضل لتشكيلة العدو",
     "analyze": "🖼️ حلّل صورة تقرير المعركة والأرقام الموجودة بها",
     "shield": "🛡️ شغّل منبه الدرع مع تنبيه قبل 15 دقيقة وتصعيد صوتي",
@@ -304,7 +306,7 @@ def command_category(path: str) -> str:
     root = path.split(" ", 1)[0]
     if root in {"ai", "scout", "optimize"} or path.startswith("gf optimize"):
         return "ai"
-    if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "delete_info", "edit_info", "delete_monster", "geartiers"}:
+    if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "delete_info", "edit_info", "delete_monster", "edit_monster", "geartiers"}:
         return "calculators"
     if root in {"shop", "sell", "view", "report", "middleman"}:
         return "market"
