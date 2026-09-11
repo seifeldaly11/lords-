@@ -191,7 +191,7 @@ class HuntCog(commands.Cog):
         # -- الوضع اليدوي --------------------------------------------------
         if hunted is not None:
             if hunted <= 0:
-                await interaction.response.send_message(t("hunt_manual_invalid_amount", lang), ephemeral=True)
+                await interaction.response.send_message(t("hunt_manual_invalid_amount", lang), ephemeral=False)
                 return
             target_member = member or interaction.user
             total_today, daily_target = self._apply_manual(interaction.guild_id, target_member, hunted)
@@ -293,7 +293,7 @@ class HuntCog(commands.Cog):
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if daily_target is not None and daily_target <= 0:
-            await interaction.response.send_message(t("hunt_channel_invalid_target", lang), ephemeral=True)
+            await interaction.response.send_message(t("hunt_channel_invalid_target", lang), ephemeral=False)
             return
         data = load(HUNT_FILE)
         bucket = get_bucket(data, interaction.guild_id)
@@ -305,15 +305,15 @@ class HuntCog(commands.Cog):
         msg = t("hunt_channel_success", lang, channel=channel.mention)
         if daily_target is not None:
             msg += t("hunt_channel_target_set", lang, target=daily_target)
-        await interaction.response.send_message(msg, ephemeral=True)
+        await interaction.response.send_message(msg, ephemeral=False)
 
     @hunt_channel.error
     async def hunt_channel_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("hunt_channel_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("hunt_channel_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("hunt_channel_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("hunt_channel_error", lang), ephemeral=False)
 
     # -- /hunt_list -------------------------------------------------------
 
