@@ -1217,7 +1217,7 @@ TRANSLATIONS = {
     },
 
     # ------------------------------------------------------------------
-    # guides_cog.py - /info (بقى يدعم صور) و /add_info
+    # guides_cog.py - category-based /info, /add_info, /edit_info
     # ------------------------------------------------------------------
     "info_prompt": {"ar": "اختر القسم:", "en": "Choose a category:"},
     "info_select_placeholder": {
@@ -1235,12 +1235,16 @@ TRANSLATIONS = {
     "info_custom_category": {"ar": "شروحات لوردس", "en": "Lords Guides"},
     "info_custom_prompt": {"ar": "اختار شرحًا من شروحات لوردس:", "en": "Choose a Lords guide:"},
     "info_empty": {
-        "ar": "📭 لسه مفيش معلومات مضافة. اطلب من الإدارة تستخدم `/add_info` عشان تضيف أول شرح.",
-        "en": "📭 No info entries added yet. Ask an admin to use `/add_info` to add the first one.",
+        "ar": "📭 لسه مفيش أقسام أو شروحات. اطلب من الإدارة تستخدم `/add_info` عشان تنشئ أول قسم وتضيف أول عنوان.",
+        "en": "📭 No categories or guides have been added yet. Ask an admin to use `/add_info` to create the first category and guide.",
     },
     "add_info_admin_only": {
         "ar": "❌ الأمر ده مخصص للإدارة فقط (صلاحية Manage Server).",
         "en": "❌ This command is for admins only (requires Manage Server permission).",
+    },
+    "add_info_required": {
+        "ar": "❌ لازم تملأ اسم القسم والعنوان والشرح بالعربي والإنجليزي.",
+        "en": "❌ Category name, title, and both Arabic and English descriptions are required.",
     },
     "add_info_success": {
         "ar": "✅ تم إضافة شرح **{title}** بنجاح. جرّب `/info` عشان تشوفه.",
@@ -1252,7 +1256,7 @@ TRANSLATIONS = {
     "delete_info_select_placeholder": {"ar": "اختار الشرح للحذف...", "en": "Choose an info entry to delete..."},
     "delete_info_selected": {"ar": "اخترت **{title}**. لو متأكد اضغط زر الحذف.", "en": "Selected **{title}**. Press delete if you are sure."},
     "delete_info_selection_needed": {"ar": "⚠️ اختار شرحًا من القائمة الأول.", "en": "⚠️ Choose an info entry first."},
-    "edit_info_prompt": {"ar": "✏️ اختار الشرح اللي عايز تعدله. لإضافة أو تغيير صورة، ارفعها مع أمر /edit_info في خانة image قبل الإرسال؛ Discord لا يسمح برفع ملف داخل نافذة التعديل.", "en": "✏️ Choose the info entry to edit. To add or replace an image, attach it to /edit_info in the image field before submitting; Discord does not allow file uploads inside the edit window."},
+    "edit_info_prompt": {"ar": "✏️ اختار العنوان من قسمه عشان تعدله. لإضافة أو تغيير صورة، ارفعها مع أمر /edit_info في خانة image قبل الإرسال؛ Discord لا يسمح برفع ملف داخل نافذة التعديل.", "en": "✏️ Choose a guide from its category to edit it. To add or replace an image, attach it to /edit_info in the image field before submitting; Discord does not allow file uploads inside the edit window."},
     "edit_info_select_placeholder": {"ar": "اختار الشرح للتعديل...", "en": "Choose an info entry to edit..."},
     "edit_info_modal_title": {"ar": "✏️ تعديل الشرح", "en": "✏️ Edit info entry"},
     "edit_info_title_field": {"ar": "عنوان الشرح", "en": "Info title"},
