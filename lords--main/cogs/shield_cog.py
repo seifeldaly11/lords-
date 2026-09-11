@@ -154,14 +154,14 @@ class ShieldAckView(discord.ui.View):
     async def ack(self, interaction: discord.Interaction, button: discord.ui.Button):
         lang = self.lang
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message(t("shield_ack_owner_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("shield_ack_owner_only", lang), ephemeral=False)
             return
         timer = self.cog.active.get(self.key)
         if not timer:
-            await interaction.response.send_message(t("shield_no_active_alarm", lang), ephemeral=True)
+            await interaction.response.send_message(t("shield_no_active_alarm", lang), ephemeral=False)
             return
         timer.ack_event.set()
-        await interaction.response.send_message(t("shield_ack_stopped", lang), ephemeral=True)
+        await interaction.response.send_message(t("shield_ack_stopped", lang), ephemeral=False)
         button.disabled = True
         try:
             await interaction.message.edit(view=self)
@@ -173,11 +173,11 @@ class ShieldAckView(discord.ui.View):
         """زر لمسة واحدة يعيد تشغيل منبه بنفس مدة الدرع الأصلية من غير ما تكتب /shield تاني."""
         lang = self.lang
         if interaction.user.id != self.owner_id:
-            await interaction.response.send_message(t("shield_ack_owner_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("shield_ack_owner_only", lang), ephemeral=False)
             return
         timer = self.cog.active.get(self.key)
         if not timer:
-            await interaction.response.send_message(t("shield_no_active_to_renew", lang), ephemeral=True)
+            await interaction.response.send_message(t("shield_no_active_to_renew", lang), ephemeral=False)
             return
         timer.ack_event.set()
         await self.cog.renew_timer(interaction, timer)
@@ -208,15 +208,15 @@ class ShieldCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
 
         if amount <= 0:
-            await interaction.response.send_message(t("shield_duration_invalid", lang), ephemeral=True)
+            await interaction.response.send_message(t("shield_duration_invalid", lang), ephemeral=False)
             return
         if repeat_every_hours is not None and repeat_every_hours <= 0:
-            await interaction.response.send_message(t("shield_repeat_invalid", lang), ephemeral=True)
+            await interaction.response.send_message(t("shield_repeat_invalid", lang), ephemeral=False)
             return
 
         key = timer_key(interaction.guild_id, interaction.user.id)
         if key in self.active:
-            await interaction.response.send_message(t("shield_already_active", lang), ephemeral=True)
+            await interaction.response.send_message(t("shield_already_active", lang), ephemeral=False)
             return
 
         # لو محدش حدد رتبة قيادة يدوياً، استخدم الرتبة الافتراضية اللي اتضبطت بـ /setup (لو موجودة)
@@ -584,7 +584,7 @@ class ShieldCog(commands.Cog):
                 async def _renew_callback(interaction: discord.Interaction, _timer=timer):
                     if interaction.user.id != _timer.user_id:
                         await interaction.response.send_message(
-                            t("shield_ack_owner_only", _timer.lang), ephemeral=True
+                            t("shield_ack_owner_only", _timer.lang), ephemeral=False
                         )
                         return
                     await self.renew_timer(interaction, _timer)
