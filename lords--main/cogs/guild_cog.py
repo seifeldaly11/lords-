@@ -233,7 +233,7 @@ class GfTaskModal(discord.ui.Modal):
             if minutes <= 0:
                 raise ValueError
         except ValueError:
-            await interaction.response.send_message(t("gf_invalid_minutes", lang), ephemeral=True)
+            await interaction.response.send_message(t("gf_invalid_minutes", lang), ephemeral=False)
             return
 
         data = load(GF_FILE)
@@ -279,9 +279,9 @@ async def gf_task(interaction: discord.Interaction, member: discord.Member):
 async def gf_task_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     lang = get_lang(interaction.guild_id, interaction.user.id)
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message(t("gf_leadership_only", lang), ephemeral=True)
+        await interaction.response.send_message(t("gf_leadership_only", lang), ephemeral=False)
     else:
-        await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+        await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
 
 @gf_group.command(name="done", description="✅ [إدارة] علّم مهمة مهرجان تحالف كمكتملة")
@@ -300,16 +300,16 @@ async def gf_done(interaction: discord.Interaction, member: discord.Member):
     uid = str(member.id)
     data[gid]["completed"][uid] = data[gid]["completed"].get(uid, 0) + 1
     save(GF_FILE, data)
-    await interaction.response.send_message(t("gf_task_done", lang, member=member.mention), ephemeral=True)
+    await interaction.response.send_message(t("gf_task_done", lang, member=member.mention), ephemeral=False)
 
 
 @gf_done.error
 async def gf_done_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     lang = get_lang(interaction.guild_id, interaction.user.id)
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message(t("gf_leadership_only", lang), ephemeral=True)
+        await interaction.response.send_message(t("gf_leadership_only", lang), ephemeral=False)
     else:
-        await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+        await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
 
 @gf_group.command(name="board", description="🏅 لوحة صدارة مهرجان التحالف")
@@ -318,7 +318,7 @@ async def gf_board(interaction: discord.Interaction):
     data = load(GF_FILE)
     completed = data.get(str(interaction.guild_id), {}).get("completed", {})
     if not completed:
-        await interaction.response.send_message(t("gf_no_completed_tasks", lang), ephemeral=True)
+        await interaction.response.send_message(t("gf_no_completed_tasks", lang), ephemeral=False)
         return
     ranked = sorted(completed.items(), key=lambda kv: kv[1], reverse=True)[:10]
     desc = "\n".join(
@@ -342,7 +342,7 @@ async def gf_calc(interaction: discord.Interaction, query: str):
 
     total_minutes, breakdown, errors = parse_speedup_text(query, lang)
     if not breakdown:
-        await interaction.response.send_message(t("speedup_invalid_numbers", lang), ephemeral=True)
+        await interaction.response.send_message(t("speedup_invalid_numbers", lang), ephemeral=False)
         return
 
     embed = discord.Embed(
@@ -356,7 +356,7 @@ async def gf_calc(interaction: discord.Interaction, query: str):
             value=", ".join(errors)[:1024],
             inline=False
         )
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.response.send_message(embed=embed, ephemeral=False)
 
 
 # ---------------------------------------------------------------------------
@@ -508,7 +508,7 @@ class GuildCog(commands.Cog):
         await interaction.response.send_message(
             t("log_activity_prompt", lang, member=member.mention),
             view=ActivityTypeView(member, lang),
-            ephemeral=True
+            ephemeral=False
         )
 
     @log_activity.error
@@ -517,16 +517,16 @@ class GuildCog(commands.Cog):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
                 t("log_activity_admin_only", lang),
-                ephemeral=True
+                ephemeral=False
             )
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     @app_commands.command(name="stats_event", description="📊 عرض تفاعلي لإحصائيات مشاركة الأعضاء")
     async def stats_event(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
-            t("stats_event_prompt", lang), view=StatsEventView(interaction.guild, lang), ephemeral=True
+            t("stats_event_prompt", lang), view=StatsEventView(interaction.guild, lang), ephemeral=False
         )
 
     @app_commands.command(
@@ -604,7 +604,7 @@ class GuildCog(commands.Cog):
     async def user_admin_check(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_message(
-            t("admin_check_prompt", lang), view=AdminCheckView(lang), ephemeral=True
+            t("admin_check_prompt", lang), view=AdminCheckView(lang), ephemeral=False
         )
 
     @user_admin_check.error
@@ -612,10 +612,10 @@ class GuildCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
-                t("admin_check_permission_denied", lang), ephemeral=True
+                t("admin_check_permission_denied", lang), ephemeral=False
             )
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     @app_commands.command(name="top5", description="🏆 أنشط 5 أعضاء في كل الفعاليات والحشود مجتمعة")
     async def top5(self, interaction: discord.Interaction):
@@ -623,7 +623,7 @@ class GuildCog(commands.Cog):
         gid = str(interaction.guild_id)
         scores = compute_all_members_scores(gid)
         if not scores:
-            await interaction.response.send_message(t("top5_no_data", lang), ephemeral=True)
+            await interaction.response.send_message(t("top5_no_data", lang), ephemeral=False)
             return
 
         ranked = sorted(scores.items(), key=lambda kv: kv[1]["score"], reverse=True)[:5]
@@ -739,16 +739,16 @@ class GuildCog(commands.Cog):
         await interaction.response.send_message(
             t("reset_confirm_prompt", lang),
             view=ResetConfirmView(lang),
-            ephemeral=True
+            ephemeral=False
         )
 
     @reset_stats.error
     async def reset_stats_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("reset_admin_only_full", lang), ephemeral=True)
+            await interaction.response.send_message(t("reset_admin_only_full", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
 
 class ResetConfirmView(discord.ui.View):
@@ -762,7 +762,7 @@ class ResetConfirmView(discord.ui.View):
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message(t("reset_confirm_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("reset_confirm_admin_only", lang), ephemeral=False)
             return
         gid = str(interaction.guild_id)
         for fname in (ACTIVITY_FILE, QUIZ_FILE, GF_FILE):
