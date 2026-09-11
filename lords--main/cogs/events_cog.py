@@ -87,7 +87,7 @@ class EventCalcModal(discord.ui.Modal):
                 )
                 await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة الحدث", description=answer[:3500], color=discord.Color.blurple()))
             else:
-                await (interaction.followup.send if question else interaction.response.send_message)(t("event_invalid_numbers", lang), ephemeral=True)
+                await (interaction.followup.send if question else interaction.response.send_message)(t("event_invalid_numbers", lang), ephemeral=False)
             return
 
         time_raw = self.time_per_action.value.strip()
@@ -96,7 +96,7 @@ class EventCalcModal(discord.ui.Modal):
             if per_time is not None and per_time <= 0:
                 raise ValueError
         except ValueError:
-            await (interaction.followup.send if question else interaction.response.send_message)(t("event_invalid_numbers", lang), ephemeral=True)
+            await (interaction.followup.send if question else interaction.response.send_message)(t("event_invalid_numbers", lang), ephemeral=False)
             return
 
         speedup_raw = self.available_speedups.value.strip()
@@ -330,7 +330,7 @@ class SpeedupModal(discord.ui.Modal):
                 answer = await ask_ai(question, extra_context=f"المدخلات التي كتبها المستخدم للتسريعات: {self.entries.value}", lang=lang, guild_id=interaction.guild_id)
                 await (interaction.followup.send if question else interaction.response.send_message)(embed=discord.Embed(title="🤖 مساعدة التسريعات", description=answer[:3500], color=discord.Color.blurple()))
             else:
-                await (interaction.followup.send if question else interaction.response.send_message)(t("speedup_invalid_numbers", lang), ephemeral=True)
+                await (interaction.followup.send if question else interaction.response.send_message)(t("speedup_invalid_numbers", lang), ephemeral=False)
             return
 
         embed = discord.Embed(
@@ -359,15 +359,6 @@ class EventsCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    @app_commands.command(name="event", description="🧮 حاسبة أحداث الجحيم/المنفرد - احسب هل تقدر تكمل المرحلة ولا لأ")
-    async def event(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        await interaction.response.send_message(
-            t("event_category_prompt", lang),
-            view=EventCategoryView(lang)
-            
-        )
 
     @app_commands.command(name="shelter", description="🛡️ مؤقت حماية الجيش في المخبأ مع تنبيه قبل الانتهاء بـ15 دقيقة")
     async def shelter(self, interaction: discord.Interaction):
@@ -400,11 +391,6 @@ class EventsCog(commands.Cog):
             await user.send(text)
         except discord.Forbidden:
             pass  # المستخدم مقفل الـ DMs
-
-    @app_commands.command(name="speedup", description="🚀 اجمع كل تسريعاتك في نص واحد (مثال: 4h, 6h, 1d×3) واعرف الإجمالي")
-    async def speedup(self, interaction: discord.Interaction):
-        lang = get_lang(interaction.guild_id, interaction.user.id)
-        await interaction.response.send_modal(SpeedupModal(lang))
 
 
 async def setup(bot: commands.Bot):
