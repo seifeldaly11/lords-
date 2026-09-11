@@ -71,7 +71,7 @@ class RepliesCog(commands.Cog):
 
         if not trig or not resp:
             msg = "❌ يجب إدخال الكلمة والرد المطلوب." if lang == "ar" else "❌ Both trigger and response are required."
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(msg, ephemeral=False)
             return
 
         replies = self._get_replies(interaction.guild_id)
@@ -99,7 +99,7 @@ class RepliesCog(commands.Cog):
                 ),
                 color=discord.Color.green()
             )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
     # -- Core Delete Logic --
     async def _handle_delete(self, interaction: discord.Interaction, trigger: str):
@@ -115,13 +115,13 @@ class RepliesCog(commands.Cog):
 
         if not target_key:
             msg = f"❌ لم يتم العثور على رد مسجل لـ `{trigger}`." if lang == "ar" else f"❌ No reply found for `{trigger}`."
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(msg, ephemeral=False)
             return
 
         del replies[target_key]
         self._save_replies(interaction.guild_id, replies)
         msg = f"🗑️ تم حذف الرد لـ `{target_key}` بنجاح." if lang == "ar" else f"🗑️ Reply for `{target_key}` deleted."
-        await interaction.response.send_message(msg, ephemeral=True)
+        await interaction.response.send_message(msg, ephemeral=False)
 
     # -- Core List Logic --
     async def _handle_list(self, interaction: discord.Interaction, language: Optional[app_commands.Choice[str]] = None):
@@ -130,7 +130,7 @@ class RepliesCog(commands.Cog):
 
         if not replies:
             msg = "ℹ️ لا توجد ردود مسجلة حتى الآن. استخدم `/add_reply` أو `/اضافة_رد`." if lang == "ar" else "ℹ️ No replies registered yet. Use `/add_reply` to create one."
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(msg, ephemeral=False)
             return
 
         embed = discord.Embed(
@@ -143,7 +143,7 @@ class RepliesCog(commands.Cog):
             preview = text[:80] + ("..." if len(text) > 80 else "")
             embed.add_field(name=f"💬 `{trig}`", value=f"↳ {preview}", inline=False)
 
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
     # -- Core Send Reply Logic --
     async def _handle_send_reply(self, interaction: discord.Interaction, trigger: str):
@@ -159,14 +159,14 @@ class RepliesCog(commands.Cog):
 
         if not target_text:
             msg = f"❌ لم يتم العثور على رد مسجل لـ `{trigger}`. استخدم `/replies` لعرض الردود." if lang == "ar" else f"❌ No reply found for `{trigger}`. Use `/replies` to view available replies."
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(msg, ephemeral=False)
             return
 
         if "@everyone" in target_text or "1" in target_text:
             perms = interaction.user.guild_permissions
             if not (perms.mention_everyone or perms.manage_messages or perms.administrator):
                 msg = "❌ ليس لديك صلاحية إرسال منشن الكل (@everyone)." if lang == "ar" else "❌ You do not have permission to mention everyone."
-                await interaction.response.send_message(msg, ephemeral=True)
+                await interaction.response.send_message(msg, ephemeral=False)
                 return
 
         expanded = expand_shortcuts(target_text, interaction.user, interaction.guild)
