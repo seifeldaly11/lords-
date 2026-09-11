@@ -42,7 +42,7 @@ class CounterModal(discord.ui.Modal):
                 siege_label: float(self.siege.value or 0),
             }
         except ValueError:
-            await interaction.response.send_message(t("err_invalid_numbers", lang), ephemeral=True)
+            await interaction.response.send_message(t("err_invalid_numbers", lang), ephemeral=False)
             return
 
         dominant = max(comp, key=comp.get)
@@ -143,9 +143,9 @@ async def report_add_error(interaction: discord.Interaction, error: app_commands
             if lang == "ar"
             else f"⏳ Please wait {error.retry_after:.0f}s before logging another report."
         )
-        await interaction.response.send_message(msg, ephemeral=True)
+        await interaction.response.send_message(msg, ephemeral=False)
     else:
-        await interaction.response.send_message(t("hunt_channel_error", lang), ephemeral=True)
+        await interaction.response.send_message(t("hunt_channel_error", lang), ephemeral=False)
 
 
 @report_group.command(name="list", description="📚 استدعاء آخر المعارك المسجلة في السيرفر")
@@ -228,7 +228,7 @@ class WarCog(commands.Cog):
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if not screenshot and not numbers and not question:
-            await interaction.response.send_message(t("analyze_need_input", lang), ephemeral=True)
+            await interaction.response.send_message(t("analyze_need_input", lang), ephemeral=False)
             return
         if screenshot and not (screenshot.content_type or "").lower().startswith("image/"):
             await interaction.response.send_message(t("analyze_bad_image", lang))
