@@ -156,6 +156,46 @@ async def on_tree_error(interaction: discord.Interaction, error: app_commands.Ap
         pass
 
 @bot.event
+async def on_guild_join(guild: discord.Guild):
+    """Notify subscription administrators whenever the bot is invited to a guild."""
+    from cogs.subscription_cog import SUBSCRIPTION_ADMIN_IDS, get_subscription
+
+    owner_text = f"غير معروف (ID: {guild.owner_id})"
+    if guild.owner is not None:
+        owner_text = f"{guild.owner} (ID: {guild.owner_id})"
+
+    inviter_text = "غير متاح؛ البوت لا يملك صلاحية قراءة سجل التدقيق"
+    try:
+        me = guild.me
+        if me is not None and me.guild_permissions.view_audit_log:
+            async for entry in guild.audit_logs(limit=25, action=discord.AuditLogAction.bot_add):
+                target_id = getattr(entry.target, "id", None)
+                if bot.user is not None and target_id == bot.user.id:
+                    inviter_text = f"{entry.user} (ID: {entry.user.id})"
+                    break
+    except (discord.Forbidden, discord.HTTPException):
+        pass
+
+    expires_at = get_subscription(str(guild.id))
+    subscription_text = expires_at or "لا يوجد اشتراك مسجل بعد"
+    message = (
+        "🚨 تم دخول البوت إلى سيرفر جديد\\n"
+        f"› السيرفر: {guild.name}\\n"
+        f"› ID السيرفر: {guild.id}\\n"
+        f"› مالك السيرفر: {owner_text}\\n"
+        f"› الشخص الذي دعا البوت: {inviter_text}\\n"
+        f"› عدد الأعضاء: {guild.member_count}\\n"
+        f"› الاشتراك: {subscription_text}"
+    )
+    log.info("دخل البوت سيرفراً جديداً: %s (%s)", guild.name, guild.id)
+    for admin_id in SUBSCRIPTION_ADMIN_IDS:
+        try:
+            admin = bot.get_user(admin_id) or await bot.fetch_user(admin_id)
+            await admin.send(message)
+        except (discord.Forbidden, discord.HTTPException):
+            log.warning("تعذر إرسال إشعار دخول السيرفر إلى مدير الاشتراكات %s", admin_id)
+
+@bot.event
 async def on_ready():
     apply_english_command_descriptions()
     log.info(f"✅ سجّل الدخول باسم: {bot.user} (ID: {bot.user.id})")
