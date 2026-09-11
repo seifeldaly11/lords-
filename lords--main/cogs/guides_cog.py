@@ -387,7 +387,7 @@ class MonsterEditSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer(ephemeral=False)
         key = self.values[0]
         selected = self.entries.get(key, {})
 
@@ -985,15 +985,15 @@ class GuidesCog(commands.Cog):
         save(CUSTOM_MONSTERS_FILE, data)
 
         shown_name = name_en if lang == "en" else name_ar
-        await interaction.response.send_message(t("add_monster_success", lang, name=shown_name), ephemeral=True)
+        await interaction.response.send_message(t("add_monster_success", lang, name=shown_name), ephemeral=False)
 
     @add_monster.error
     async def add_monster_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     @app_commands.command(name="delete_monster", description="🗑️ [إدارة/Admin] اختر وحشًا لحذفه من قائمة /monster")
     @app_commands.checks.has_permissions(manage_guild=True)
@@ -1006,16 +1006,16 @@ class GuidesCog(commands.Cog):
         await interaction.response.send_message(
             t("delete_monster_prompt", lang),
             view=MonsterDeleteView(custom, lang),
-            ephemeral=True
+            ephemeral=False
         )
 
     @delete_monster.error
     async def delete_monster_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     @app_commands.command(
         name="edit_monster",
@@ -1028,27 +1028,27 @@ class GuidesCog(commands.Cog):
     async def edit_monster(self, interaction: discord.Interaction, image: discord.Attachment):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if not (image.content_type or "").startswith("image/"):
-            await interaction.response.send_message(t("add_monster_bad_image", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_monster_bad_image", lang), ephemeral=False)
             return
 
         custom = self._get_monsters(interaction.guild_id)
         if not custom:
-            await interaction.response.send_message(t("edit_monster_empty", lang), ephemeral=True)
+            await interaction.response.send_message(t("edit_monster_empty", lang), ephemeral=False)
             return
 
         await interaction.response.send_message(
             t("edit_monster_prompt", lang),
             view=MonsterEditView(custom, lang, image),
-            ephemeral=True
+            ephemeral=False
         )
 
     @edit_monster.error
     async def edit_monster_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_monster_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     # -- /dict -------------------------------------------------------------
 
@@ -1139,15 +1139,15 @@ class GuidesCog(commands.Cog):
         save(CUSTOM_INFO_FILE, data)
 
         shown_title = title_en.strip() if lang == "en" else title.strip()
-        await interaction.response.send_message(t("add_info_success", lang, title=shown_title), ephemeral=True)
+        await interaction.response.send_message(t("add_info_success", lang, title=shown_title), ephemeral=False)
 
     @add_info.error
     async def add_info_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("add_info_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_info_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     @app_commands.command(name="delete_info", description="🗑️ [إدارة/Admin] احذف شرحًا | Delete a Lords guide")
     @app_commands.checks.has_permissions(manage_guild=True)
@@ -1160,16 +1160,16 @@ class GuidesCog(commands.Cog):
         await interaction.response.send_message(
             t("delete_info_prompt", lang),
             view=InfoDeleteView(custom, lang),
-            ephemeral=True
+            ephemeral=False
         )
 
     @delete_info.error
     async def delete_info_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("add_info_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_info_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     @app_commands.command(name="edit_info", description="✏️ [إدارة/Admin] عدّل شرحًا ثنائي اللغة | Edit a bilingual Lords guide")
     @app_commands.describe(
@@ -1196,16 +1196,16 @@ class GuidesCog(commands.Cog):
         await interaction.response.send_message(
             t("edit_info_prompt", lang),
             view=InfoEditView(custom, lang, image, image2),
-            ephemeral=True
+            ephemeral=False
         )
 
     @edit_info.error
     async def edit_info_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("add_info_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("add_info_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(GuidesCog(bot))
