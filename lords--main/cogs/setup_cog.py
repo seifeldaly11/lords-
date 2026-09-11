@@ -244,15 +244,15 @@ class SetupCog(commands.Cog):
                 value=interaction.guild.get_role(current_role_id).mention,
                 inline=False
             )
-        await interaction.response.send_message(embed=embed, view=SetupView(lang), ephemeral=True)
+        await interaction.response.send_message(embed=embed, view=SetupView(lang), ephemeral=False)
 
     @setup_cmd.error
     async def setup_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     @app_commands.command(
         name="setup_check",
@@ -261,15 +261,15 @@ class SetupCog(commands.Cog):
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setup_check(self, interaction: discord.Interaction):
         embed = build_diagnostics_embed(interaction)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message(embed=embed, ephemeral=False)
 
     @setup_check.error
     async def setup_check_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=True)
+            await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
 
 async def setup(bot: commands.Bot):
