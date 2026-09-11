@@ -35,21 +35,21 @@ LANGUAGE_CHOICES = [
 async def language_server(interaction: discord.Interaction, lang: app_commands.Choice[str]):
     set_lang(interaction.guild_id, lang.value)
     key = "lang_set_ar_full" if lang.value == "ar" else "lang_set_en_full"
-    await interaction.response.send_message(t(key, lang.value), ephemeral=True)
+    await interaction.response.send_message(t(key, lang.value), ephemeral=False)
 
 
 @language_server.error
 async def language_server_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     current = get_lang(interaction.guild_id, interaction.user.id)
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message(t("lang_admin_only", current), ephemeral=True)
+        await interaction.response.send_message(t("lang_admin_only", current), ephemeral=False)
     else:
-        await interaction.response.send_message(t("unexpected_error", current), ephemeral=True)
+        await interaction.response.send_message(t("unexpected_error", current), ephemeral=False)
 
 
 async def _set_personal_language(interaction: discord.Interaction, lang: app_commands.Choice[str]):
     set_user_lang(interaction.user.id, lang.value)
-    await interaction.response.send_message(t("lang_me_set", lang.value), ephemeral=True)
+    await interaction.response.send_message(t("lang_me_set", lang.value), ephemeral=False)
 
 
 @language_group.command(
@@ -85,7 +85,7 @@ async def bot_channel(
     lang = get_lang(interaction.guild_id, interaction.user.id)
     set_bot_channel_id(interaction.guild_id, channel.id)
     await interaction.response.send_message(
-        t("bot_channel_success", lang, channel=channel.mention), ephemeral=True
+        t("bot_channel_success", lang, channel=channel.mention), ephemeral=False
     )
 
 
@@ -93,9 +93,9 @@ async def bot_channel(
 async def bot_channel_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     lang = get_lang(interaction.guild_id, interaction.user.id)
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=True)
+        await interaction.response.send_message(t("bot_channel_admin_only", lang), ephemeral=False)
     else:
-        await interaction.response.send_message(t("bot_channel_error", lang), ephemeral=True)
+        await interaction.response.send_message(t("bot_channel_error", lang), ephemeral=False)
 
 
 class SettingsCog(commands.Cog):
