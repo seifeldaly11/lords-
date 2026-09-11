@@ -522,7 +522,7 @@ class SubscriptionCog(commands.Cog):
     async def before_check_subscriptions(self):
         await self.bot.wait_until_ready()
 
-    @app_commands.command(name="قائمة_السيرفرات", description="🔒 عرض كل السيرفرات الحالية مع المالك وحالة الاشتراك")
+    @app_commands.command(name="قائمة_السيرفرات", description="🔒 تقرير منظم عن كل السيرفرات وحالة الاشتراك")
     async def servers_list(self, interaction: discord.Interaction):
         if await deny_if_not_owner(interaction):
             return
@@ -534,7 +534,15 @@ class SubscriptionCog(commands.Cog):
 
         now = datetime.datetime.utcnow()
         current_ids = {str(guild.id) for guild in guilds}
-        lines = ["📡 **السيرفرات التي يوجد فيها البوت حالياً:**\\n"]
+        active_count = 0
+        inactive_count = 0
+        embeds = []
+
+        summary = discord.Embed(
+            title="📡 حالة البوت في السيرفرات",
+            description=f"البوت موجود حالياً في **{len(guilds)}** سيرفر. هذه القائمة توضح مكانه ومالك كل سيرفر وحالة الاشتراك.",
+            color=discord.Color.blue()
+        )
 
         for guild in guilds:
             owner = guild.owner
@@ -543,28 +551,44 @@ class SubscriptionCog(commands.Cog):
                     owner = await self.bot.fetch_user(guild.owner_id)
                 except Exception:
                     owner = None
-            owner_text = f"{owner} (ID: {guild.owner_id})" if owner else f"غير معروف (ID: {guild.owner_id})"
+            owner_text = f"{owner}" if owner else "غير معروف"
 
             expires_at = get_subscription(str(guild.id))
-            if not expires_at:
-                subscription_text = "❌ لا يوجد اشتراك مسجل"
-            else:
-                expiry_date = datetime.datetime.fromisoformat(expires_at)
-                if expiry_date > now:
-                    remaining_days = max((expiry_date - now).days, 0)
-                    subscription_text = f"✅ فعال حتى {expiry_date.strftime('%Y-%m-%d %H:%M UTC')} ({remaining_days} يوم متبقٍ)"
-                else:
-                    subscription_text = f"⏳ منتهي منذ {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}"
+            expiry_date = None
+            if expires_at:
+                try:
+                    expiry_date = datetime.datetime.fromisoformat(expires_at)
+                except (TypeError, ValueError):
+                    expiry_date = None
 
-            lines.append(
-                f"**{guild.name}**\\n"
-                f"› ID السيرفر: {guild.id}\\n"
-                f"› مالك/مستفيد الاشتراك: {owner_text}\\n"
-                f"› الأعضاء: {guild.member_count}\\n"
-                f"› الاشتراك: {subscription_text}\\n"
-                f"› للمغادرة: /طرد_البوت ثم server_id = {guild.id}\\n"
-                "━━━━━━━━━━━━━━━━━━━━\\n"
+            if expiry_date is None:
+                inactive_count += 1
+                subscription_text = "❌ لا يوجد اشتراك مسجل لهذا السيرفر"
+                color = discord.Color.red()
+            elif expiry_date > now:
+                active_count += 1
+                remaining_days = max((expiry_date - now).days, 0)
+                subscription_text = f"✅ فعال حتى {expiry_date.strftime('%Y-%m-%d %H:%M UTC')} ({remaining_days} يوم متبقٍ)"
+                color = discord.Color.green()
+            else:
+                inactive_count += 1
+                subscription_text = f"⚠️ منتهي منذ {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}"
+                color = discord.Color.orange()
+
+            server_embed = discord.Embed(
+                title=f"🏰 {guild.name[:240]}",
+                color=color
             )
+            server_embed.add_field(name="🆔 Server ID", value=str(guild.id), inline=False)
+            server_embed.add_field(name="👑 المالك / مستفيد الاشتراك", value=f"{owner_text}\\nID: {guild.owner_id}", inline=False)
+            server_embed.add_field(name="👥 الأعضاء", value=str(guild.member_count or 0), inline=True)
+            server_embed.add_field(name="📅 الاشتراك", value=subscription_text, inline=False)
+            server_embed.add_field(name="🚪 إخراج البوت", value=f"/طرد_البوت server_id: {guild.id}", inline=False)
+            embeds.append(server_embed)
+
+        summary.add_field(name="✅ اشتراك فعال", value=str(active_count), inline=True)
+        summary.add_field(name="⚠️ بدون اشتراك / منتهي", value=str(inactive_count), inline=True)
+        embeds.insert(0, summary)
 
         conn = get_connection()
         cur = conn.cursor()
@@ -573,15 +597,17 @@ class SubscriptionCog(commands.Cog):
         conn.close()
         missing = [(server_id, expires_at) for server_id, expires_at in stored_subscriptions if str(server_id) not in current_ids]
         if missing:
-            lines.append("\\n🗃️ **اشتراكات مسجلة والبوت غير موجود في سيرفراتها حالياً:**\\n")
-            for server_id, expires_at in missing:
-                lines.append(f"› سيرفر ID: {server_id} | ينتهي: {expires_at}\\n")
+            missing_embed = discord.Embed(
+                title="🗃️ اشتراكات مسجلة والبوت غير موجود في سيرفراتها",
+                description="\\n".join(f"• Server ID: {server_id} | ينتهي: {expires_at}" for server_id, expires_at in missing),
+                color=discord.Color.dark_gray()
+            )
+            embeds.append(missing_embed)
 
-        text = "".join(lines)
-        chunks = [text[i:i + 1900] for i in range(0, len(text), 1900)]
-        await interaction.response.send_message(chunks[0], ephemeral=True)
-        for chunk in chunks[1:]:
-            await interaction.followup.send(chunk, ephemeral=True)
+        embed_chunks = [embeds[i:i + 5] for i in range(0, len(embeds), 5)]
+        await interaction.response.send_message(embeds=embed_chunks[0], ephemeral=True)
+        for chunk in embed_chunks[1:]:
+            await interaction.followup.send(embeds=chunk, ephemeral=True)
 
 
     @app_commands.command(name="حالة_الاشتراكات", description="🔒 عرض حالة اشتراكات جميع السيرفرات المخزنة")
