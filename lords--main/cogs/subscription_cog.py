@@ -691,7 +691,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-        @app_commands.command(name="اضافة_ملاحظة", description="🔒 إضافة ملاحظة (آيدي السيرفر اختياري)")
+    @app_commands.command(name="اضافة_ملاحظة", description="🔒 إضافة ملاحظة (آيدي السيرفر اختياري)")
     @app_commands.describe(note_text="نص الملاحظة", server_id="آيدي السيرفر (اختياري؛ يستخدم سيرفر الأمر تلقائياً)")
     async def add_note_cmd(self, interaction: discord.Interaction, note_text: str, server_id: str = None):
         if await deny_if_not_owner(interaction):
