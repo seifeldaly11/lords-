@@ -149,9 +149,9 @@ async def on_tree_error(interaction: discord.Interaction, error: app_commands.Ap
     
     try:
         if interaction.response.is_done():
-            await interaction.followup.send(msg, ephemeral=True)
+            await interaction.followup.send(msg, ephemeral=False)
         else:
-            await interaction.response.send_message(msg, ephemeral=True)
+            await interaction.response.send_message(msg, ephemeral=False)
     except Exception:
         pass
 
