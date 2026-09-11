@@ -209,7 +209,7 @@ async def on_guild_join(guild: discord.Guild):
         description="تمت إضافة البوت إلى سيرفر جديد. استخدم /قائمة_السيرفرات لرؤية كل السيرفرات أو /طرد_البوت لإخراجه.",
         color=discord.Color.blurple()
     )
-    admin_embed.add_field(name="🏰 السيرفر", value=f"{guild.name}\\nID: {guild.id}", inline=False)
+    admin_embed.add_field(name="🏰 السيرفر", value=f"{guild.name}\nID: {guild.id}", inline=False)
     admin_embed.add_field(name="👑 المالك", value=owner_text, inline=False)
     admin_embed.add_field(name="📨 الداعي", value=inviter_text, inline=False)
     admin_embed.add_field(name="👥 الأعضاء", value=str(guild.member_count or 0), inline=True)
