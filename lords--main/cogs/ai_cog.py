@@ -109,7 +109,7 @@ async def ask_ai(
 # نافذة حاسبة التسريعات (Speedup Calculator Modal)
 # ---------------------------------------------------------------------------
 
-class SpeedupCalcModal(discord.ui.Modal, title="⏱️ حاسبة التسريعات الذكية"):
+class SpeedupCalcModal(discord.ui.Modal):
     speedups = discord.ui.TextInput(
         label="⚡ التسريعات المتاحة لديك",
         placeholder="مثال: 15 تسريع 3 أيام، 30 تسريع 24 ساعة، 50 تسريع 3 ساعات، 120 تسريع ساعة...",
@@ -123,6 +123,15 @@ class SpeedupCalcModal(discord.ui.Modal, title="⏱️ حاسبة التسريع
         required=False,
         max_length=500
     )
+
+    def __init__(self, lang: str = "ar"):
+        super().__init__(title="⏱️ حاسبة التسريعات الذكية" if lang == "ar" else "⏱️ Smart Speedup Calculator")
+        self.lang = lang
+        if lang == "en":
+            self.speedups.label = "⚡ Your available speedups"
+            self.speedups.placeholder = "Example: 15 speedups of 3 days, 30 of 24 hours, 50 of 3 hours..."
+            self.goal.label = "🎯 Goal or required time (optional)"
+            self.goal.placeholder = "Example: T4 research has 75 days left, Castle 25, or a training event..."
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
@@ -166,7 +175,7 @@ class SpeedupCalcModal(discord.ui.Modal, title="⏱️ حاسبة التسريع
 # نافذة حاسبة الأحداث (Event Calculator Modal)
 # ---------------------------------------------------------------------------
 
-class EventCalcModal(discord.ui.Modal, title="🏆 حاسبة الأحداث الذكية"):
+class EventCalcModal(discord.ui.Modal):
     event_type = discord.ui.TextInput(
         label="🎪 نوع الحدث والنقاط المطلوبة",
         placeholder="مثال: حدث جحيم تدريب 950 ألف نقطة، أو حدث فردي أبحاث، أو KvK...",
@@ -186,6 +195,17 @@ class EventCalcModal(discord.ui.Modal, title="🏆 حاسبة الأحداث ا�
         required=False,
         max_length=200
     )
+
+    def __init__(self, lang: str = "ar"):
+        super().__init__(title="🏆 حاسبة الأحداث الذكية" if lang == "ar" else "🏆 Smart Event Calculator")
+        self.lang = lang
+        if lang == "en":
+            self.event_type.label = "🎪 Event type and required points"
+            self.event_type.placeholder = "Example: Hell training event, 950K points, Solo research, or KvK..."
+            self.resources.label = "📦 What you can spend (speedups / troops / resources)"
+            self.resources.placeholder = "Example: 40 days of training speedups, 200K T4 troops, or gems..."
+            self.goal.label = "🎯 Your event goal"
+            self.goal.placeholder = "Example: Reach Phase 3, place top 3, or earn monster medals..."
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(thinking=True)
@@ -237,36 +257,22 @@ class AICog(commands.Cog):
         self.bot = bot
 
     @app_commands.command(
-        name="حساب_التسريعات",
-        description="⏱️ حاسبة التسريعات: تجمع لك التسريعات بدقة وتحسب إجمالي الأيام والساعات"
+        name="speedup",
+        description="⏱️ Bilingual AI speedup calculator"
     )
     @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
-    async def speedup_ar(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(SpeedupCalcModal())
+    async def speedup(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        await interaction.response.send_modal(SpeedupCalcModal(lang))
 
     @app_commands.command(
-        name="ai_speedup",
-        description="⏱️ Speedup calculator: aggregate days, hours and verify against your target"
+        name="event",
+        description="🏆 Bilingual AI event calculator"
     )
     @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
-    async def speedup_en(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(SpeedupCalcModal())
-
-    @app_commands.command(
-        name="حاسبة_الاحداث",
-        description="🏆 حاسبة الأحداث: تحسب لك نقاط الجحيم والفردي وتخبرك هل تكفي لإنهاء المرحلة 3"
-    )
-    @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
-    async def event_ar(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(EventCalcModal())
-
-    @app_commands.command(
-        name="ai_event",
-        description="🏆 Event calculator: calculate Hell/Solo points and Phase 3 completion plan"
-    )
-    @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
-    async def event_en(self, interaction: discord.Interaction):
-        await interaction.response.send_modal(EventCalcModal())
+    async def event(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        await interaction.response.send_modal(EventCalcModal(lang))
 
 
 # ---------------------------------------------------------------------------
