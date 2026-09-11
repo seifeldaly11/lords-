@@ -97,7 +97,7 @@ class IntelCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
 
         if not (image.content_type or "").lower().startswith("image/"):
-            await interaction.response.send_message(t("ai_bad_image", lang), ephemeral=True)
+            await interaction.response.send_message(t("ai_bad_image", lang), ephemeral=False)
             return
 
         await interaction.response.defer(thinking=True)
@@ -120,9 +120,9 @@ class IntelCog(commands.Cog):
     async def scout_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.CommandOnCooldown):
-            await interaction.response.send_message(t("ai_cooldown", lang, s=f"{error.retry_after:.0f}"), ephemeral=True)
+            await interaction.response.send_message(t("ai_cooldown", lang, s=f"{error.retry_after:.0f}"), ephemeral=False)
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
     @app_commands.command(name="geartiers", description="🧰 تصنيف العتاد الكامل (حرب / صيد / اقتصاد)")
     async def geartiers(self, interaction: discord.Interaction):
