@@ -29,7 +29,10 @@ def _parse_int(val, default: int) -> int:
     except (ValueError, TypeError):
         return default
 
-OWNER_ID = _parse_int(os.getenv("OWNER_ID"), 1527765325221990521)
+SUBSCRIPTION_ADMIN_IDS = frozenset({
+    1527692596598804565,
+    1527765325221990521,
+})
 CONTACT_USERNAME = (os.getenv("CONTACT_USERNAME") or "seifeldaly124").strip()
 CONTACT_LINE = f"للتجديد يرجى التواصل مع: **{CONTACT_USERNAME}**"
 GRACE_PERIOD_DAYS = _parse_int(os.getenv("GRACE_PERIOD_DAYS"), 3)
@@ -86,7 +89,7 @@ def init_db():
 
 
 def is_owner(user_id: int) -> bool:
-    return user_id == OWNER_ID
+    return user_id in SUBSCRIPTION_ADMIN_IDS
 
 
 def is_server_owner_or_bot_owner(interaction: discord.Interaction) -> bool:
@@ -100,7 +103,7 @@ def is_server_owner_or_bot_owner(interaction: discord.Interaction) -> bool:
 async def deny_if_not_owner(interaction: discord.Interaction) -> bool:
     if not is_owner(interaction.user.id):
         await interaction.response.send_message(
-            "🔒 هذا الأمر مخصص لمالك البوت فقط، لا تملك صلاحية استخدامه.",
+            "🔒 هذا الأمر مخصص لمديري الاشتراكات فقط، لا تملك صلاحية استخدامه.",
             ephemeral=True
         )
         return True
@@ -671,7 +674,12 @@ class SubscriptionCog(commands.Cog):
             )
             return
 
-        days = redeem_code_from_db(code.strip())
+        code = (code or "").strip().upper()
+        if not code:
+            await interaction.response.send_message("❌ يجب إدخال كود صالح.", ephemeral=True)
+            return
+
+        days = redeem_code_from_db(code)
         if days is None:
             await interaction.response.send_message("❌ الكود غير صحيح أو تم استخدامه من قبل.", ephemeral=True)
             return
@@ -683,16 +691,24 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="اضافة_ملاحظة", description="🔒 إضافة ملاحظة خاصة عن سيرفر معين")
-    @app_commands.describe(server_id="آيدي السيرفر", note_text="نص الملاحظة")
-    async def add_note_cmd(self, interaction: discord.Interaction, server_id: str, note_text: str):
+        @app_commands.command(name="اضافة_ملاحظة", description="🔒 إضافة ملاحظة (آيدي السيرفر اختياري)")
+    @app_commands.describe(note_text="نص الملاحظة", server_id="آيدي السيرفر (اختياري؛ يستخدم سيرفر الأمر تلقائياً)")
+    async def add_note_cmd(self, interaction: discord.Interaction, note_text: str, server_id: str = None):
         if await deny_if_not_owner(interaction):
             return
 
-        add_note_to_db(server_id, note_text)
+        target_server_id = (server_id or "").strip()
+        if not target_server_id:
+            if interaction.guild_id is None:
+                await interaction.response.send_message("❌ يجب تحديد آيدي السيرفر عند استخدام الأمر في الخاص.", ephemeral=True)
+                return
+            target_server_id = str(interaction.guild_id)
+
+        add_note_to_db(target_server_id, note_text)
         await interaction.response.send_message(
-            f"✅ تم إضافة الملاحظة للسيرفر `{server_id}`.", ephemeral=True
+            f"✅ تم إضافة الملاحظة للسيرفر {target_server_id}.", ephemeral=True
         )
+
 
     @app_commands.command(name="عرض_الملاحظات", description="🔒 عرض قائمة بالملاحظات المسجلة واختيار إحداها")
     @app_commands.describe(server_id="آيدي السيرفر (اختياري - اتركه فارغاً لعرض كل الملاحظات)")
