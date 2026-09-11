@@ -580,7 +580,7 @@ class SubscriptionCog(commands.Cog):
                 color=color
             )
             server_embed.add_field(name="🆔 Server ID", value=str(guild.id), inline=False)
-            server_embed.add_field(name="👑 المالك / مستفيد الاشتراك", value=f"{owner_text}\\nID: {guild.owner_id}", inline=False)
+            server_embed.add_field(name="👑 المالك / مستفيد الاشتراك", value=f"{owner_text}\nID: {guild.owner_id}", inline=False)
             server_embed.add_field(name="👥 الأعضاء", value=str(guild.member_count or 0), inline=True)
             server_embed.add_field(name="📅 الاشتراك", value=subscription_text, inline=False)
             server_embed.add_field(name="🚪 إخراج البوت", value=f"/طرد_البوت server_id: {guild.id}", inline=False)
@@ -599,7 +599,7 @@ class SubscriptionCog(commands.Cog):
         if missing:
             missing_embed = discord.Embed(
                 title="🗃️ اشتراكات مسجلة والبوت غير موجود في سيرفراتها",
-                description="\\n".join(f"• Server ID: {server_id} | ينتهي: {expires_at}" for server_id, expires_at in missing),
+                description="\n".join(f"• Server ID: {server_id} | ينتهي: {expires_at}" for server_id, expires_at in missing),
                 color=discord.Color.dark_gray()
             )
             embeds.append(missing_embed)
