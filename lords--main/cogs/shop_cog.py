@@ -73,7 +73,7 @@ class MiddlemanView(discord.ui.View):
         is_leader = bool(role_id) and any(r.id == role_id for r in getattr(member, "roles", []))
         is_admin = getattr(getattr(member, "guild_permissions", None), "manage_guild", False)
         if not (is_leader or is_admin):
-            await interaction.response.send_message(t("middleman_admin_only_take", lang), ephemeral=True)
+            await interaction.response.send_message(t("middleman_admin_only_take", lang), ephemeral=False)
             return
 
         data, entries = _guild_entries(MIDDLEMAN_FILE, interaction.guild_id)
@@ -148,7 +148,7 @@ class ShopCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
 
         if image is not None and not (image.content_type or "").startswith("image/"):
-            await interaction.response.send_message(t("sell_bad_image", lang), ephemeral=True)
+            await interaction.response.send_message(t("sell_bad_image", lang), ephemeral=False)
             return
 
         data, entries = _guild_entries(SHOP_FILE, interaction.guild_id)
