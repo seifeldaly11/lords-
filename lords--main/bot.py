@@ -157,14 +157,14 @@ async def on_tree_error(interaction: discord.Interaction, error: app_commands.Ap
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-    """Notify subscription administrators whenever the bot is invited to a guild."""
+    """Notify admins and welcome members when the bot is invited to a guild."""
     from cogs.subscription_cog import SUBSCRIPTION_ADMIN_IDS, get_subscription
 
     owner_text = f"غير معروف (ID: {guild.owner_id})"
     if guild.owner is not None:
         owner_text = f"{guild.owner} (ID: {guild.owner_id})"
 
-    inviter_text = "غير متاح؛ البوت لا يملك صلاحية قراءة سجل التدقيق"
+    inviter_text = "غير متاح؛ لا توجد صلاحية لسجل التدقيق"
     try:
         me = guild.me
         if me is not None and me.guild_permissions.view_audit_log:
@@ -177,21 +177,49 @@ async def on_guild_join(guild: discord.Guild):
         pass
 
     expires_at = get_subscription(str(guild.id))
-    subscription_text = expires_at or "لا يوجد اشتراك مسجل بعد"
-    message = (
-        "🚨 تم دخول البوت إلى سيرفر جديد\\n"
-        f"› السيرفر: {guild.name}\\n"
-        f"› ID السيرفر: {guild.id}\\n"
-        f"› مالك السيرفر: {owner_text}\\n"
-        f"› الشخص الذي دعا البوت: {inviter_text}\\n"
-        f"› عدد الأعضاء: {guild.member_count}\\n"
-        f"› الاشتراك: {subscription_text}"
+    if expires_at:
+        subscription_text = f"✅ اشتراك مسجل حتى {expires_at}"
+        welcome_color = discord.Color.green()
+        welcome_description = "تمت إضافتي إلى هذا السيرفر. الاشتراك مسجل ويمكن استخدام أوامر البوت حسب صلاحيته."
+    else:
+        subscription_text = "❌ لا يوجد اشتراك مسجل"
+        welcome_color = discord.Color.orange()
+        welcome_description = "تمت إضافتي إلى هذا السيرفر، لكن لا يوجد اشتراك فعال حالياً. مالك السيرفر يمكنه استخدام /redeem لتفعيل كود اشتراك."
+
+    welcome_embed = discord.Embed(
+        title="🤖 تم إضافة LordsMobile إلى السيرفر",
+        description=welcome_description,
+        color=welcome_color
     )
+    welcome_embed.add_field(name="🆔 Server ID", value=str(guild.id), inline=False)
+    welcome_embed.add_field(name="📅 حالة الاشتراك", value=subscription_text, inline=False)
+    welcome_embed.set_footer(text="للمساعدة استخدم /help")
+
+    welcome_channel = guild.system_channel
+    if welcome_channel is None or guild.me is None or not welcome_channel.permissions_for(guild.me).send_messages:
+        welcome_channel = next((channel for channel in guild.text_channels if guild.me and channel.permissions_for(guild.me).send_messages), None)
+    if welcome_channel is not None:
+        try:
+            await welcome_channel.send(embed=welcome_embed)
+        except (discord.Forbidden, discord.HTTPException):
+            pass
+
+    admin_embed = discord.Embed(
+        title="🚨 دخل البوت إلى سيرفر جديد",
+        description="تمت إضافة البوت إلى سيرفر جديد. استخدم /قائمة_السيرفرات لرؤية كل السيرفرات أو /طرد_البوت لإخراجه.",
+        color=discord.Color.blurple()
+    )
+    admin_embed.add_field(name="🏰 السيرفر", value=f"{guild.name}\\nID: {guild.id}", inline=False)
+    admin_embed.add_field(name="👑 المالك", value=owner_text, inline=False)
+    admin_embed.add_field(name="📨 الداعي", value=inviter_text, inline=False)
+    admin_embed.add_field(name="👥 الأعضاء", value=str(guild.member_count or 0), inline=True)
+    admin_embed.add_field(name="📅 الاشتراك", value=subscription_text, inline=False)
+
     log.info("دخل البوت سيرفراً جديداً: %s (%s)", guild.name, guild.id)
     for admin_id in SUBSCRIPTION_ADMIN_IDS:
         try:
             admin = bot.get_user(admin_id) or await bot.fetch_user(admin_id)
-            await admin.send(message)
+            await admin.send(embed=admin_embed)
         except (discord.Forbidden, discord.HTTPException):
             log.warning("تعذر إرسال إشعار دخول السيرفر إلى مدير الاشتراكات %s", admin_id)
 
