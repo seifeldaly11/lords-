@@ -5,7 +5,7 @@
 - تم تحويلها للعمل كوحدة (Cog) داخل بوت لوردس
 - تستخدم discord.py (Slash Commands & Tasks)
 - تستخدم SQLite لتخزين الاشتراكات والأكواد والملاحظات
-- الأوامر الإدارية مقفلة على مالك البوت فقط (OWNER_ID)
+- أوامر إدارة الاشتراكات مقفلة على مديري الاشتراكات المحددين فقط
 - أمر /redeem متاح لأصحاب السيرفرات لتفعيل كود التجديد
 """
 
@@ -522,29 +522,67 @@ class SubscriptionCog(commands.Cog):
     async def before_check_subscriptions(self):
         await self.bot.wait_until_ready()
 
-    @app_commands.command(name="قائمة_السيرفرات", description="🔒 عرض قائمة كل السيرفرات التي ينتمي إليها البوت")
+    @app_commands.command(name="قائمة_السيرفرات", description="🔒 عرض كل السيرفرات الحالية مع المالك وحالة الاشتراك")
     async def servers_list(self, interaction: discord.Interaction):
         if await deny_if_not_owner(interaction):
             return
 
-        guilds = self.bot.guilds
+        guilds = sorted(self.bot.guilds, key=lambda guild: guild.name.lower())
         if not guilds:
             await interaction.response.send_message("البوت لا ينتمي إلى أي سيرفر حالياً.", ephemeral=True)
             return
 
-        lines = []
-        for g in guilds:
-            owner = g.owner if g.owner else await self.bot.fetch_user(g.owner_id)
+        now = datetime.datetime.utcnow()
+        current_ids = {str(guild.id) for guild in guilds}
+        lines = ["📡 **السيرفرات التي يوجد فيها البوت حالياً:**\\n"]
+
+        for guild in guilds:
+            owner = guild.owner
+            if owner is None:
+                try:
+                    owner = await self.bot.fetch_user(guild.owner_id)
+                except Exception:
+                    owner = None
+            owner_text = f"{owner} (ID: {guild.owner_id})" if owner else f"غير معروف (ID: {guild.owner_id})"
+
+            expires_at = get_subscription(str(guild.id))
+            if not expires_at:
+                subscription_text = "❌ لا يوجد اشتراك مسجل"
+            else:
+                expiry_date = datetime.datetime.fromisoformat(expires_at)
+                if expiry_date > now:
+                    remaining_days = max((expiry_date - now).days, 0)
+                    subscription_text = f"✅ فعال حتى {expiry_date.strftime('%Y-%m-%d %H:%M UTC')} ({remaining_days} يوم متبقٍ)"
+                else:
+                    subscription_text = f"⏳ منتهي منذ {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}"
+
             lines.append(
-                f"**{g.name}**\n› ID السيرفر: `{g.id}`\n› عدد الأعضاء: {g.member_count}\n› مالك السيرفر: {owner} (`{g.owner_id}`)\n"
+                f"**{guild.name}**\\n"
+                f"› ID السيرفر: {guild.id}\\n"
+                f"› مالك/مستفيد الاشتراك: {owner_text}\\n"
+                f"› الأعضاء: {guild.member_count}\\n"
+                f"› الاشتراك: {subscription_text}\\n"
+                f"› للمغادرة: /طرد_البوت ثم server_id = {guild.id}\\n"
+                "━━━━━━━━━━━━━━━━━━━━\\n"
             )
 
-        text = "\n".join(lines)
-        chunks = [text[i:i + 1900] for i in range(0, len(text), 1900)]
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT server_id, expires_at FROM subscriptions")
+        stored_subscriptions = cur.fetchall()
+        conn.close()
+        missing = [(server_id, expires_at) for server_id, expires_at in stored_subscriptions if str(server_id) not in current_ids]
+        if missing:
+            lines.append("\\n🗃️ **اشتراكات مسجلة والبوت غير موجود في سيرفراتها حالياً:**\\n")
+            for server_id, expires_at in missing:
+                lines.append(f"› سيرفر ID: {server_id} | ينتهي: {expires_at}\\n")
 
+        text = "".join(lines)
+        chunks = [text[i:i + 1900] for i in range(0, len(text), 1900)]
         await interaction.response.send_message(chunks[0], ephemeral=True)
         for chunk in chunks[1:]:
             await interaction.followup.send(chunk, ephemeral=True)
+
 
     @app_commands.command(name="حالة_الاشتراكات", description="🔒 عرض حالة اشتراكات جميع السيرفرات المخزنة")
     async def subscriptions_status(self, interaction: discord.Interaction):
@@ -750,20 +788,35 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="مغادرة_اجبارية", description="🔒 مغادرة سيرفر فوراً بدون حذف بيانات اشتراكه")
-    @app_commands.describe(server_id="آيدي السيرفر")
+    async def _leave_guild_by_id(self, interaction: discord.Interaction, server_id: str):
+        try:
+            guild_id = int(str(server_id).strip())
+        except (TypeError, ValueError):
+            await interaction.response.send_message("❌ آيدي السيرفر غير صحيح.", ephemeral=True)
+            return
+
+        guild = self.bot.get_guild(guild_id)
+        if guild is None:
+            await interaction.response.send_message(f"⚠️ البوت غير موجود حالياً في السيرفر {guild_id}.", ephemeral=True)
+            return
+
+        await interaction.response.send_message(f"⏳ جاري إخراج البوت من السيرفر {guild.name}...", ephemeral=True)
+        await guild.leave()
+        await interaction.followup.send(f"✅ غادر البوت السيرفر {guild.name} (ID: {guild_id}) بدون حذف بيانات الاشتراك.", ephemeral=True)
+
+    @app_commands.command(name="مغادرة_اجبارية", description="🔒 إخراج البوت من سيرفر محدد بدون حذف اشتراكه")
+    @app_commands.describe(server_id="آيدي السيرفر الذي سيغادره البوت")
     async def force_leave_cmd(self, interaction: discord.Interaction, server_id: str):
         if await deny_if_not_owner(interaction):
             return
+        await self._leave_guild_by_id(interaction, server_id)
 
-        guild = self.bot.get_guild(int(server_id))
-        if guild is None:
-            await interaction.response.send_message(f"⚠️ البوت غير موجود حالياً في السيرفر `{server_id}`.", ephemeral=True)
+    @app_commands.command(name="طرد_البوت", description="🔒 إخراج البوت من سيرفر محدد بدون حذف اشتراكه")
+    @app_commands.describe(server_id="آيدي السيرفر الذي سيغادره البوت")
+    async def kick_bot_cmd(self, interaction: discord.Interaction, server_id: str):
+        if await deny_if_not_owner(interaction):
             return
-
-        await interaction.response.send_message(f"⏳ جاري مغادرة السيرفر **{guild.name}**...", ephemeral=True)
-        await guild.leave()
-        await interaction.followup.send(f"✅ تمت مغادرة السيرفر `{server_id}` (بدون حذف بيانات الاشتراك).", ephemeral=True)
+        await self._leave_guild_by_id(interaction, server_id)
 
 
 async def setup(bot: commands.Bot):
