@@ -3,12 +3,12 @@
 /add_monster — (إدارة) يضيف وحش جديد: اسمه، نوع الضرر المطلوب، الأبطال المقترحين،
                 وملاحظة دفاع اختيارية، مع إمكانية إرفاق صورة أو صورتين للوحش/التشكيلة.
 /dict       — قاموس مصطلحات اللعبة السريع (ثابت من data/dict.json).
-/info       — قائمة منسدلة بشرح الأحداث. بتجمع بين شروحات جاهزة (data/info.json)
-               وشروحات أضافتها الإدارة بـ /add_info (ممكن تتضمن صورة أو صورتين).
-/add_info   — (إدارة) يضيف شرح جديد: عنوان + نص، مع إمكانية إرفاق صورة أو صورتين.
+/info       — قائمة منسدلة بأقسام الإدارة، وكل قسم يحتوي عناوين وشروحات عربية وإنجليزية.
+/add_info   — (إدارة) ينشئ قسمًا أو يستخدم قسمًا موجودًا ويضيف بداخله عنوانًا وشرحًا باللغتين، مع صور اختيارية.
+/edit_info  — (إدارة) يختار عنوانًا من قسمه لتعديل النصوص والصور.
 
-بيانات /monster و/info المضافة يدوياً بتتخزن في storage (custom_monsters / custom_info)
-منفصلة تماماً عن البيانات الجاهزة في data/*.json، فمفيش خطر إنها تتمسح لو حدّثنا الكود.
+بيانات /info المضافة يدويًا بتتخزن في storage/custom_info بصيغة أقسام وعناوين،
+منفصلة عن data/info.json.
 """
 from typing import Optional
 import os
@@ -554,86 +554,133 @@ def _legacy_translation(entry_key: str, title: str, desc: str):
     return "", ""
 
 
+# ---------------------------------------------------------------------------
+# /info — نظام الأقسام والعناوين الثنائية اللغة
+# ---------------------------------------------------------------------------
+
+def _bilingual_pair(value, fallback: str) -> dict:
+    if isinstance(value, dict):
+        ar = str(value.get("ar") or value.get("en") or fallback).strip()
+        en = str(value.get("en") or value.get("ar") or fallback).strip()
+    else:
+        ar = str(value or fallback).strip()
+        en = ar
+    return {"ar": ar, "en": en}
+
+
+def _info_slug(value: str, fallback: str) -> str:
+    slug = re.sub(r"[^0-9a-zA-Z\u0600-\u06FF]+", "_", str(value or "").strip().lower()).strip("_")
+    return slug or fallback
+
+
+def _unique_info_key(container: dict, base: str) -> str:
+    if base not in container:
+        return base
+    index = 2
+    while f"{base}_{index}" in container:
+        index += 1
+    return f"{base}_{index}"
+
+
+def _normalize_info_entry(key: str, raw_entry) -> dict:
+    entry = dict(raw_entry) if isinstance(raw_entry, dict) else {}
+    title = _bilingual_pair(entry.get("title", key), str(key).replace("_", " ").title())
+    desc = _bilingual_pair(entry.get("desc", ""), "")
+    translated_title, translated_desc = _legacy_translation(key, title["ar"], desc["ar"])
+    if translated_title and title["en"] == title["ar"]:
+        title["en"] = translated_title
+    if translated_desc and desc["en"] == desc["ar"]:
+        desc["en"] = translated_desc
+    entry["key"] = str(key)
+    entry["title"] = title
+    entry["desc"] = desc
+    entry["emoji"] = _info_emoji(entry, INFO_CUSTOM_FALLBACK_EMOJI)
+    return entry
+
+
 def _prepare_custom_info(entries: dict) -> dict:
-    """يحوّل الشروحات القديمة ذات النص الواحد إلى صيغة ar/en وقت العرض."""
+    """يدعم التخزين القديم ويحوله إلى أقسام ثنائية اللغة قابلة للتعديل."""
+    if not isinstance(entries, dict) or not entries:
+        return {}
+    nested = {}
+    legacy_items = {}
+    for key, value in entries.items():
+        if isinstance(value, dict) and "items" in value:
+            nested[str(key)] = value
+        elif isinstance(value, dict):
+            legacy_items[str(key)] = value
+    if legacy_items:
+        nested.setdefault("general_guides", {
+            "title": {"ar": "شروحات عامة", "en": "General Guides"},
+            "emoji": INFO_CUSTOM_FALLBACK_EMOJI,
+            "items": legacy_items,
+        })
     prepared = {}
-    for key, raw_entry in entries.items():
-        entry = dict(raw_entry)
-        raw_title = entry.get("title", key)
-        raw_desc = entry.get("desc", "")
-        if isinstance(raw_title, dict):
-            title_ar = raw_title.get("ar") or raw_title.get("en") or key
-            title_en = raw_title.get("en") or raw_title.get("ar") or key
-        else:
-            title_ar = _clean_legacy_arabic(raw_title)
-            title_en = _extract_legacy_english(raw_title)
-        if isinstance(raw_desc, dict):
-            desc_ar = raw_desc.get("ar") or raw_desc.get("en") or ""
-            desc_en = raw_desc.get("en") or raw_desc.get("ar") or ""
-        else:
-            desc_ar = _clean_legacy_arabic(raw_desc)
-            desc_en = _extract_legacy_english(raw_desc)
-
-        translated_title, translated_desc = _legacy_translation(key, title_ar, desc_ar)
-        if translated_title:
-            title_en = translated_title
-        if translated_desc:
-            desc_en = translated_desc
-        if not title_en:
-            title_en = f"Lords Guide: {str(key).replace('_', ' ').title()}"
-        if not desc_en:
-            desc_en = "English translation not added yet. Use /edit_info to add the English title and description."
-
-        entry["title"] = {"ar": title_ar, "en": title_en}
-        entry["desc"] = {"ar": desc_ar, "en": desc_en}
-        prepared[key] = entry
+    for category_key, raw_category in nested.items():
+        if not isinstance(raw_category, dict):
+            continue
+        raw_items = raw_category.get("items", {})
+        if isinstance(raw_items, list):
+            raw_items = {
+                str(item.get("key", index)): item
+                for index, item in enumerate(raw_items)
+                if isinstance(item, dict)
+            }
+        if not isinstance(raw_items, dict):
+            raw_items = {}
+        prepared[str(category_key)] = {
+            "key": str(category_key),
+            "title": _bilingual_pair(raw_category.get("title", category_key), str(category_key).replace("_", " ").title()),
+            "emoji": _info_emoji(raw_category, "📁"),
+            "items": {
+                str(item_key): _normalize_info_entry(str(item_key), item)
+                for item_key, item in raw_items.items()
+                if isinstance(item, dict)
+            },
+        }
     return prepared
+
+
+def _flatten_custom_info(categories: dict) -> dict:
+    flattened = {}
+    for category_key, category in categories.items():
+        for item_key, item in category.get("items", {}).items():
+            flattened[f"{category_key}::{item_key}"] = {
+                "category_key": category_key,
+                "item_key": item_key,
+                "category": category,
+                "entry": item,
+            }
+    return flattened
 
 
 def _info_emoji(value: dict, fallback: str = INFO_CUSTOM_FALLBACK_EMOJI) -> str:
     emoji = value.get("emoji")
     return fallback if not emoji or emoji in {"👑", "ℹ️", "ℹ"} else emoji
 
-
 class InfoCategorySelect(discord.ui.Select):
-    def __init__(self, categories: list[dict], custom_info: dict, lang: str):
+    def __init__(self, categories: list[dict], lang: str):
         self.categories = {str(category["key"]): category for category in categories}
-        self.custom_info = custom_info
         self.lang = lang
         options = [
             discord.SelectOption(
                 label=_localized(category.get("title"), lang)[:100],
                 value=key,
-                emoji=_info_emoji(category, "📚")
+                emoji=_info_emoji(category, "📁")
             )
             for key, category in self.categories.items()
         ]
-        if custom_info:
-            options.append(
-                discord.SelectOption(
-                    label=t("info_custom_category", lang),
-                    value="__custom__",
-                    emoji="📝"
-                )
-            )
         super().__init__(placeholder=t("info_select_placeholder", lang), options=options[:25])
 
     async def callback(self, interaction: discord.Interaction):
-        selected = self.values[0]
-        if selected == "__custom__":
-            await interaction.response.edit_message(
-                content=t("info_custom_prompt", self.lang),
-                view=InfoItemView(self.custom_info, self.lang, self.categories.values(), self.custom_info)
-            )
-            return
-        category = self.categories[selected]
+        category = self.categories[self.values[0]]
         await interaction.response.edit_message(
             content=t(
                 "info_category_prompt",
                 self.lang,
                 category=_localized(category.get("title"), self.lang)
             ),
-            view=InfoItemView(category.get("items", []), self.lang, self.categories.values(), self.custom_info)
+            view=InfoItemView(category.get("items", {}), self.lang, self.categories.values())
         )
 
 
@@ -641,8 +688,7 @@ class InfoItemSelect(discord.ui.Select):
     def __init__(self, items, lang: str):
         self.lang = lang
         if isinstance(items, dict):
-            item_pairs = list(items.items())
-            self.items = {key: value for key, value in item_pairs}
+            self.items = {str(key): value for key, value in items.items()}
         else:
             self.items = {str(item.get("key", index)): item for index, item in enumerate(items)}
         options = [
@@ -672,39 +718,34 @@ class InfoItemSelect(discord.ui.Select):
 
 
 class InfoView(discord.ui.View):
-    def __init__(self, categories: list[dict], custom_info: dict, lang: str):
+    def __init__(self, categories: list[dict], lang: str):
         super().__init__(timeout=180)
-        self.add_item(InfoCategorySelect(list(categories), custom_info, lang))
+        self.add_item(InfoCategorySelect(list(categories), lang))
 
 
 class InfoItemView(discord.ui.View):
-    def __init__(self, items, lang: str, categories, custom_info: dict):
+    def __init__(self, items, lang: str, categories):
         super().__init__(timeout=180)
         self.lang = lang
         self.categories = list(categories)
-        self.custom_info = custom_info
         self.add_item(InfoItemSelect(items, lang))
 
     @discord.ui.button(label="↩️", style=discord.ButtonStyle.secondary, row=1)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(
             content=t("info_prompt", self.lang),
-            view=InfoView(self.categories, self.custom_info, self.lang)
+            view=InfoView(self.categories, self.lang)
         )
-
-
-# ---------------------------------------------------------------------------
-# الـ Cog
-# ---------------------------------------------------------------------------
 
 class InfoDeleteSelect(discord.ui.Select):
     def __init__(self, entries: dict, lang: str):
+        self.entries = entries
         self.lang = lang
         options = [
             discord.SelectOption(
-                label=_localized(value.get("title", key), lang)[:100],
+                label=f"{_localized(value['category'].get('title'), lang)} › {_localized(value['entry'].get('title'), lang)}"[:100],
                 value=key,
-                emoji=_info_emoji(value)
+                emoji=_info_emoji(value["entry"])
             )
             for key, value in entries.items()
         ]
@@ -712,8 +753,8 @@ class InfoDeleteSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         self.view.selected_key = self.values[0]
-        entry = self.view.entries[self.view.selected_key]
-        title = _localized(entry.get("title", self.view.selected_key), self.lang)
+        selected = self.view.entries[self.view.selected_key]
+        title = _localized(selected["entry"].get("title", self.view.selected_key), self.lang)
         await interaction.response.send_message(t("delete_info_selected", self.lang, title=title))
 
 
@@ -731,21 +772,27 @@ class InfoDeleteView(discord.ui.View):
         if not self.selected_key:
             await interaction.response.send_message(t("delete_info_selection_needed", self.lang))
             return
+        selected = self.entries[self.selected_key]
         data = load(CUSTOM_INFO_FILE)
         gid = str(interaction.guild_id)
-        bucket = data.get(gid, {})
-        removed = bucket.pop(self.selected_key, None)
+        categories = _prepare_custom_info(data.get(gid, {}))
+        category = categories.get(selected["category_key"])
+        removed = None
+        if category:
+            removed = category.get("items", {}).pop(selected["item_key"], None)
+            if not category.get("items"):
+                categories.pop(selected["category_key"], None)
         if removed is None:
-            await interaction.response.send_message(t("delete_info_not_found", self.lang, title=self.selected_key))
+            await interaction.response.send_message(t("delete_info_not_found", self.lang, title=selected["item_key"]))
             return
-        if bucket:
-            data[gid] = bucket
+        if categories:
+            data[gid] = categories
         else:
             data.pop(gid, None)
         save(CUSTOM_INFO_FILE, data)
         for child in self.children:
             child.disabled = True
-        removed_title = _localized(removed.get("title", self.selected_key), self.lang)
+        removed_title = _localized(removed.get("title", selected["item_key"]), self.lang)
         await interaction.response.edit_message(
             content=t("delete_info_success", self.lang, title=removed_title),
             embed=None,
@@ -761,18 +808,21 @@ class InfoEditSelect(discord.ui.Select):
         self.image2 = image2
         options = [
             discord.SelectOption(
-                label=_localized(value.get("title", key), lang)[:100],
+                label=f"{_localized(value['category'].get('title'), lang)} › {_localized(value['entry'].get('title'), lang)}"[:100],
                 value=key,
-                emoji=_info_emoji(value)
+                emoji=_info_emoji(value["entry"])
             )
             for key, value in entries.items()
         ]
         super().__init__(placeholder=t("edit_info_select_placeholder", lang), options=options[:25])
 
     async def callback(self, interaction: discord.Interaction):
-        key = self.values[0]
+        selected = self.entries[self.values[0]]
         await interaction.response.send_modal(
-            InfoEditModal(key, self.entries[key], self.lang, self.image, self.image2)
+            InfoEditModal(
+                selected["category_key"], selected["item_key"], selected["entry"],
+                self.lang, self.image, self.image2
+            )
         )
 
 
@@ -783,10 +833,10 @@ class InfoEditView(discord.ui.View):
 
 
 class InfoEditModal(discord.ui.Modal):
-    def __init__(self, key: str, entry: dict, lang: str, image: Optional[discord.Attachment], image2: Optional[discord.Attachment]):
+    def __init__(self, category_key: str, item_key: str, entry: dict, lang: str, image: Optional[discord.Attachment], image2: Optional[discord.Attachment]):
         super().__init__(title=t("edit_info_modal_title", lang))
-        self.key = key
-        self.entry = entry
+        self.category_key = category_key
+        self.item_key = item_key
         self.lang = lang
         self.image = image
         self.image2 = image2
@@ -824,10 +874,11 @@ class InfoEditModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         data = load(CUSTOM_INFO_FILE)
         gid = str(interaction.guild_id)
-        bucket = data.get(gid, {})
-        entry = bucket.get(self.key)
+        categories = _prepare_custom_info(data.get(gid, {}))
+        category = categories.get(self.category_key)
+        entry = category.get("items", {}).get(self.item_key) if category else None
         if entry is None:
-            await interaction.response.send_message(t("delete_info_not_found", self.lang, title=self.key))
+            await interaction.response.send_message(t("delete_info_not_found", self.lang, title=self.item_key))
             return
         entry["title"] = {
             "ar": self.title_ar_input.value.strip(),
@@ -841,12 +892,18 @@ class InfoEditModal(discord.ui.Modal):
             entry["image_url"] = self.image.url
         if self.image2:
             entry["image_url_2"] = self.image2.url
+        data[gid] = categories
         save(CUSTOM_INFO_FILE, data)
         saved_title = _localized(entry["title"], self.lang)
         await interaction.response.send_message(
             t("edit_info_success", self.lang, title=saved_title)
-            
         )
+
+
+
+# ---------------------------------------------------------------------------
+# الـ Cog
+# ---------------------------------------------------------------------------
 
 class GuidesCog(commands.Cog):
     """الأدلة والمصطلحات (وحوش وشروحات أحداث قابلة للإضافة من الإدارة)."""
@@ -882,11 +939,11 @@ class GuidesCog(commands.Cog):
         return deduped
 
     def _get_info(self, guild_id: int) -> dict:
-        """يرجع الأقسام الجاهزة وإضافات الإدارة بصيغة ثنائية اللغة."""
+        """يرجع الأقسام الجاهزة وأقسام الإدارة بصيغة ثنائية اللغة."""
         data = load(CUSTOM_INFO_FILE)
         custom = _prepare_custom_info(data.get(str(guild_id), {}))
         return {
-            "categories": self.static_info_data.get("categories", []),
+            "categories": list(self.static_info_data.get("categories", [])) + list(custom.values()),
             "custom": custom,
         }
 
@@ -1080,28 +1137,32 @@ class GuidesCog(commands.Cog):
 
     @app_commands.command(
         name="info",
-        description="ℹ️ شرح الأدلة والفعاليات | Lords guides and events"
+        description="ℹ️ اختر قسمًا واشرح أي عنوان | Browse guide categories"
     )
     async def info(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         info_data = self._get_info(interaction.guild_id)
-        if not info_data["categories"] and not info_data["custom"]:
+        if not info_data["categories"]:
             await interaction.response.send_message(t("info_empty", lang))
             return
         await interaction.response.send_message(
             t("info_prompt", lang),
-            view=InfoView(info_data["categories"], info_data["custom"], lang)
+            view=InfoView(info_data["categories"], lang)
         )
 
     @app_commands.command(
         name="add_info",
-        description="ℹ️ [إدارة/Admin] أضف شرحًا ثنائي اللغة | Add a bilingual Lords guide"
+        description="ℹ️ [إدارة/Admin] أضف قسمًا وعنوانًا ثنائي اللغة | Add a bilingual guide"
     )
     @app_commands.describe(
+        category_ar="اسم القسم بالعربي | Arabic category name",
+        category_en="اسم القسم بالإنجليزي | English category name",
         title="عنوان الشرح بالعربي | Arabic guide title",
         desc="نص الشرح بالعربي | Arabic guide text",
         title_en="عنوان الشرح بالإنجليزي | English guide title",
         desc_en="نص الشرح بالإنجليزي | English guide text",
+        category_emoji="إيموجي القسم (اختياري) | Category emoji (optional)",
+        emoji="إيموجي العنوان (اختياري) | Guide emoji (optional)",
         image="صورة اختيارية | Optional reference image",
         image2="صورة ثانية اختيارية | Optional second image"
     )
@@ -1109,37 +1170,82 @@ class GuidesCog(commands.Cog):
     async def add_info(
         self,
         interaction: discord.Interaction,
+        category_ar: str,
+        category_en: str,
         title: str,
         desc: str,
         title_en: str,
         desc_en: str,
+        category_emoji: Optional[str] = None,
+        emoji: Optional[str] = None,
         image: Optional[discord.Attachment] = None,
         image2: Optional[discord.Attachment] = None
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         for att in (image, image2):
-            if att and not (att.content_type or "").startswith("image/"):
+            if att and not (att.content_type or "").lower().startswith("image/"):
                 await interaction.response.send_message(t("add_info_bad_image", lang))
                 return
 
+        category_ar = category_ar.strip()
+        category_en = category_en.strip()
+        title = title.strip()
+        title_en = title_en.strip()
+        if not all((category_ar, category_en, title, title_en, desc.strip(), desc_en.strip())):
+            await interaction.response.send_message(t("add_info_required", lang))
+            return
+
         data = load(CUSTOM_INFO_FILE)
         gid = str(interaction.guild_id)
-        data.setdefault(gid, {})
-        key = title.strip().lower().replace(" ", "_")
+        categories = _prepare_custom_info(data.get(gid, {}))
+        category_key = next(
+            (
+                key for key, value in categories.items()
+                if category_ar.casefold() in {
+                    _localized(value.get("title"), "ar").casefold(),
+                    _localized(value.get("title"), "en").casefold(),
+                }
+                or category_en.casefold() in {
+                    _localized(value.get("title"), "ar").casefold(),
+                    _localized(value.get("title"), "en").casefold(),
+                }
+            ),
+            None
+        )
+        if category_key is None:
+            category_key = _unique_info_key(categories, _info_slug(category_en, "category"))
+            categories[category_key] = {
+                "key": category_key,
+                "title": {"ar": category_ar, "en": category_en},
+                "emoji": (category_emoji or "📁").strip(),
+                "items": {},
+            }
+        else:
+            categories[category_key]["title"] = {"ar": category_ar, "en": category_en}
+            if category_emoji:
+                categories[category_key]["emoji"] = category_emoji.strip()
+
+        items = categories[category_key].setdefault("items", {})
+        item_key = _unique_info_key(items, _info_slug(title_en, "guide"))
         entry = {
-            "title": {"ar": title.strip(), "en": title_en.strip()},
+            "key": item_key,
+            "title": {"ar": title, "en": title_en},
             "desc": {"ar": desc.strip(), "en": desc_en.strip()},
-            "emoji": INFO_CUSTOM_FALLBACK_EMOJI,
+            "emoji": (emoji or "📝").strip(),
         }
         if image:
             entry["image_url"] = image.url
         if image2:
             entry["image_url_2"] = image2.url
-        data[gid][key] = entry
+        items[item_key] = entry
+        data[gid] = categories
         save(CUSTOM_INFO_FILE, data)
 
-        shown_title = title_en.strip() if lang == "en" else title.strip()
-        await interaction.response.send_message(t("add_info_success", lang, title=shown_title), ephemeral=False)
+        shown_title = title_en if lang == "en" else title
+        await interaction.response.send_message(
+            t("add_info_success", lang, title=shown_title),
+            ephemeral=False
+        )
 
     @add_info.error
     async def add_info_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -1149,17 +1255,18 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
-    @app_commands.command(name="delete_info", description="🗑️ [إدارة/Admin] احذف شرحًا | Delete a Lords guide")
+    @app_commands.command(name="delete_info", description="🗑️ [إدارة/Admin] احذف عنوانًا من قسم | Delete a guide")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def delete_info(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
-        custom = load(CUSTOM_INFO_FILE).get(str(interaction.guild_id), {})
-        if not custom:
+        data = load(CUSTOM_INFO_FILE)
+        entries = _flatten_custom_info(_prepare_custom_info(data.get(str(interaction.guild_id), {})))
+        if not entries:
             await interaction.response.send_message(t("edit_info_empty", lang))
             return
         await interaction.response.send_message(
             t("delete_info_prompt", lang),
-            view=InfoDeleteView(custom, lang),
+            view=InfoDeleteView(entries, lang),
             ephemeral=False
         )
 
@@ -1171,7 +1278,7 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
-    @app_commands.command(name="edit_info", description="✏️ [إدارة/Admin] عدّل شرحًا ثنائي اللغة | Edit a bilingual Lords guide")
+    @app_commands.command(name="edit_info", description="✏️ [إدارة/Admin] عدّل عنوانًا ثنائي اللغة | Edit a bilingual guide")
     @app_commands.describe(
         image="صورة جديدة اختيارية | Optional replacement image",
         image2="صورة ثانية جديدة اختيارية | Optional second replacement image"
@@ -1189,13 +1296,14 @@ class GuidesCog(commands.Cog):
                 await interaction.response.send_message(t("add_info_bad_image", lang))
                 return
 
-        custom = load(CUSTOM_INFO_FILE).get(str(interaction.guild_id), {})
-        if not custom:
+        data = load(CUSTOM_INFO_FILE)
+        entries = _flatten_custom_info(_prepare_custom_info(data.get(str(interaction.guild_id), {})))
+        if not entries:
             await interaction.response.send_message(t("edit_info_empty", lang))
             return
         await interaction.response.send_message(
             t("edit_info_prompt", lang),
-            view=InfoEditView(custom, lang, image, image2),
+            view=InfoEditView(entries, lang, image, image2),
             ephemeral=False
         )
 
