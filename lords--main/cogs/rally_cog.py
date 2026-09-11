@@ -199,7 +199,7 @@ class RallyCog(commands.Cog):
         await interaction.response.send_message(
             t("rally_log_prompt", lang),
             view=view,
-            ephemeral=True
+            ephemeral=False
         )
 
     @rally_log.error
@@ -207,10 +207,10 @@ class RallyCog(commands.Cog):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
-                t("rally_log_admin_only", lang), ephemeral=True
+                t("rally_log_admin_only", lang), ephemeral=False
             )
         else:
-            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=True)
+            await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
 
 class RallyLogView(discord.ui.View):
