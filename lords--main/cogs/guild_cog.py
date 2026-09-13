@@ -11,6 +11,8 @@ from utils.storage import load, save, load_json_data
 from utils.i18n import get_lang, t, ACTIVITY_TYPE_LABELS_I18N
 from cogs.rally_cog import RALLY_LOG_FILE, rally_type_label, rally_result_label
 from cogs.war_cog import REPORTS_FILE
+from utils.command_groups import admin_track_group
+from utils.ui import styled_embed, ROYAL_BLUE
 
 ACTIVITY_FILE = "activity"
 QUIZ_FILE = "quiz_scores"
@@ -501,7 +503,7 @@ class GuildCog(commands.Cog):
         self.bot = bot
         self.quiz_questions = load_json_data("quiz.json")
 
-    @app_commands.command(name="log_activity", description="📋 [إدارة] سجّل مشاركة عضو في نشاط (حشود، مهرجان، ساحة تنين، KvK)")
+    @admin_track_group.command(name="log", description="📋 [إدارة] سجّل مشاركة عضو في نشاط (حشود، مهرجان، ساحة تنين، KvK)")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def log_activity(self, interaction: discord.Interaction, member: discord.Member):
         lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -522,11 +524,12 @@ class GuildCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
-    @app_commands.command(name="stats_event", description="📊 عرض تفاعلي لإحصائيات مشاركة الأعضاء")
+    @admin_track_group.command(name="stats", description="📊 عرض تفاعلي لإحصائيات مشاركة الأعضاء")
     async def stats_event(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
+        embed = styled_embed(title=t("stats_event_prompt", lang), color=ROYAL_BLUE, lang=lang)
         await interaction.response.send_message(
-            t("stats_event_prompt", lang), view=StatsEventView(interaction.guild, lang), ephemeral=False
+            embed=embed, view=StatsEventView(interaction.guild, lang), ephemeral=False
         )
 
     @app_commands.command(
@@ -596,8 +599,8 @@ class GuildCog(commands.Cog):
         embed.set_footer(text=t("info_footer", lang, user=interaction.user.display_name))
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(
-        name="user_admin_check",
+    @admin_track_group.command(
+        name="check",
         description="🛡️ (إدارة) لوحة متابعة شاملة: اختر عضو من قائمة واستعرض سجل مشاركته في كل الأحداث"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
@@ -641,7 +644,7 @@ class GuildCog(commands.Cog):
         embed.set_footer(text=t("top5_footer", lang))
         await interaction.response.send_message(embed=embed)
 
-    @app_commands.command(name="event_stats", description="📊 تقرير شامل عن نسبة مشاركة أعضاء التحالف في فعالية معينة")
+    @admin_track_group.command(name="weekly", description="📊 تقرير شامل عن نسبة مشاركة أعضاء التحالف في فعالية معينة")
     @app_commands.describe(event_type="Event to report on")
     @app_commands.choices(
         event_type=[
@@ -732,7 +735,7 @@ class GuildCog(commands.Cog):
         embed.set_footer(text=t("quiz_embed_footer", lang))
         await interaction.response.send_message(embed=embed, view=view)
 
-    @app_commands.command(name="reset_stats", description="🔄 [إدارة فقط] تصفير سجلات النشاط والمسابقة لبدء أسبوع جديد")
+    @admin_track_group.command(name="reset", description="🔄 [إدارة فقط] تصفير سجلات النشاط والمسابقة لبدء أسبوع جديد")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_stats(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
