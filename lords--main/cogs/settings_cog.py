@@ -11,6 +11,7 @@ from discord.ext import commands
 
 from utils.i18n import get_lang, set_lang, set_user_lang, t
 from utils.storage import set_bot_channel_id
+from utils.command_groups import admin_group
 
 
 language_group = app_commands.Group(
@@ -112,7 +113,7 @@ async def setup(bot: commands.Bot):
     await bot.add_cog(SettingsCog(bot))
 
 
-@app_commands.command(name="say", description="📢 إرسال رسالة باسم البوت في روم محدد | Speak as the bot")
+@admin_group.command(name="say", description="📢 إرسال رسالة باسم البوت في روم محدد | Speak as the bot")
 @app_commands.describe(
     message="نص الرسالة التي سيقولها البوت",
     channel="الروم المراد الإرسال فيه (اختياري)",
