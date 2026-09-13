@@ -26,16 +26,20 @@ COMMAND_REFERENCE = """### أوامر البوت
 - /event، /shelter، /cost، /speedup، /jewel_calc: حواسب الأحداث والحماية والتكلفة والتسريعات والجواهر.
 - /counter، /report add|list|user، /darknest، /colo، /analyze: أدوات الحرب والتكتيك.
 - /wiki أو /guide، /play، /gear، /monster، /dict، /info، /heroes، /geartiers، /scout: أدلة اللعبة والتحديات.
-- /log_activity، /rally_log، /information، /user_admin_check، /top5، /event_stats، /stats_event: متابعة نشاط التحالف والأعضاء.
+- /admin monster add|delete، /admin guide add|delete|edit: إدارة دليل الوحوش والشروحات.
+- /admin track log|rally|check|weekly|stats|reset: متابعة نشاط التحالف والأعضاء.
 - /gf task|done|board|optimize، /quiz: مهرجان التحالف والمسابقات.
-- /reset_stats: تصفير سجلات الإحصاءات (إدارة).
+- /admin channel hunt|shop|middleman، /admin welcome channel|image|color|message|reset: إعداد قنوات البوت والترحيب.
+- /admin reply add|delete، /admin say: إدارة الردود والإعلانات.
+- /shop browse|sell|view|report|middleman: متجر الحسابات والوساطة.
+- /redeem عالمي؛ وأوامر الاشتراكات (/قائمة_السيرفرات، /حالة_الاشتراكات، /تحديد_اشتراك، /تجديد_اشتراك، /ايقاف_اشتراك، /انشاء_كود، /اضافة_ملاحظة، /عرض_الملاحظات، /مسح_ملاحظة، /مغادرة_اجبارية، /طرد_البوت) على ADMIN_GUILD_ID فقط.
 - /market offer|list|cancel: سوق تبادل الموارد.
 - /ai: سؤال مستشار لوردس أو تحليل صورة عتاد/تقرير، ومعه might اختياري.
 - @LordsMobile [سؤال]: نفس مستشار الـAI بالمنشن.
 - /troop set، /rally set: تسجيل نوع القوات وفتح نداء حشد ذكي.
-- /hunt_log، /hunt_channel، /hunt_list: تسجيل ومتابعة صيد الوحوش.
+- /hunt_log، /admin channel hunt، /hunt_list: تسجيل ومتابعة صيد الوحوش.
 - /shield أو /voice_rescue: منبه الدرع الصوتي.
-- أوامر الإدارة: /add_monster، /delete_monster، /add_info، /delete_info، /edit_info، /hunt_channel، /reset_stats، /user_admin_check.
+- أوامر الإدارة: /admin monster add|delete، /admin guide add|delete|edit، /admin channel hunt، /admin track check|reset.
 استخدم أسماء الأوامر كما هي مع الشرطة المائلة، واشرح للمستخدم المدخلات المطلوبة فقط إذا كانت معروفة من القائمة. إذا سأل عن أمر غير موجود هنا، قل إنك لا تملك تفاصيل مؤكدة عنه بدل اختراعه."""
 
 KNOWN_DATA_FILES = {
