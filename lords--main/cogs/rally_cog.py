@@ -14,6 +14,7 @@ from discord.ext import commands
 
 from utils.storage import load, save, get_game_link
 from utils.i18n import get_lang, t, RALLY_TYPE_LABELS_I18N, RALLY_RESULT_LABELS_I18N
+from utils.command_groups import admin_track_group
 
 TROOP_FILE = "member_troops"
 RALLY_LOG_FILE = "rally_log"
@@ -164,8 +165,8 @@ class RallyCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(
-        name="rally_log",
+    @admin_track_group.command(
+        name="rally",
         description="👥 (إدارة) سجّل حضور حشد: الأعضاء المشاركين ونوعه (هجوم/دفاع) ونتيجته"
     )
     @app_commands.describe(
