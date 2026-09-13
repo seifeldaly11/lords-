@@ -258,6 +258,21 @@ async def on_ready():
     )
 
 
+
+
+@bot.command(name="sync")
+async def sync_now(ctx: commands.Context):
+    """أمر فوري لمالك البوت لمزامنة الأوامر على هذا السيرفر فوراً في ثانية واحدة."""
+    owner_id_env = os.getenv("OWNER_ID")
+    owner_id = int(owner_id_env) if owner_id_env and owner_id_env.isdigit() else 1527765325221990521
+    if ctx.author.id != owner_id:
+        return
+    msg = await ctx.send("⏳ جاري مزامنة 68 أمر فورياً على هذا السيرفر...")
+    bot.tree.copy_global_to(guild=ctx.guild)
+    synced = await bot.tree.sync(guild=ctx.guild)
+    await msg.edit(content=f"⚡ **تمت المزامنة الفورية!** أصبح لديك الآن **{len(synced)} أمر** متاح ومباشر في هذا السيرفر دون انتظار كاش ديسكورد.")
+
+
 async def main():
     if not TOKEN:
         raise SystemExit("❌ لم يتم العثور على DISCORD_BOT_TOKEN. أضفه إلى Secrets.")
