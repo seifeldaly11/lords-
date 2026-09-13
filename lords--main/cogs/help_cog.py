@@ -160,6 +160,10 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "admin channel hunt": "[Admin] Configure the channel and daily target for hunt reports.",
     "admin channel shop": "[Admin] Set the accounts shop channel.",
     "admin channel middleman": "[Admin] Set the middleman requests channel.",
+    "admin channel market": "[Admin] Set the resource exchange channel.",
+    "admin channel bot": "[Admin] Set the bot communication channel.",
+    "admin setup": "[Admin] Open the complete server settings panel.",
+    "admin check": "[Admin] Run a full bot diagnostics check.",
     "admin say": "[Admin] Send an announcement or message in the bot's name to a specific channel.",
     "shop browse": "Browse every account currently listed for sale in the shop.",
     "shop sell": "List your account for sale inside the shop.",
@@ -238,6 +242,10 @@ ARABIC_COMMAND_DESCRIPTIONS = {
     "admin channel hunt": "📍 [إدارة] حدد قناة تقارير الصيد والهدف اليومي",
     "admin channel shop": "🛍️ [إدارة] حدد قناة متجر الحسابات",
     "admin channel middleman": "🛡️ [إدارة] حدد قناة طلبات الوساطة",
+    "admin channel market": "💱 [إدارة] حدد قناة تبادل الموارد",
+    "admin channel bot": "🤖 [إدارة] حدد قناة تواصل البوت",
+    "admin setup": "⚙️ [إدارة] افتح لوحة ضبط إعدادات البوت",
+    "admin check": "🩺 [إدارة] افحص جاهزية إعدادات البوت",
     "admin say": "📢 [إدارة] أرسل إعلانًا أو رسالة باسم البوت",
     "shop browse": "🛍️ اعرض جميع الحسابات المتاحة حاليًا في المتجر",
     "shop sell": "🏷️ قدّم طلب إدراج حساب للبيع داخل المتجر",
@@ -334,7 +342,7 @@ def command_category(path: str) -> str:
             return "welcome"
         if path.startswith("admin channel hunt"):
             return "hunt"
-        if path.startswith(("admin channel shop", "admin channel middleman")):
+        if path.startswith(("admin channel shop", "admin channel middleman", "admin channel market")):
             return "accounts_shop"
         return "general"
     if root == "shop":
