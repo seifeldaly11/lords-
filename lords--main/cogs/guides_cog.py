@@ -1,11 +1,11 @@
 """
-/monster    — قائمة منسدلة بالوحوش المضافة (تبدأ فاضية، الإدارة تضيفها بـ /add_monster).
-/add_monster — (إدارة) يضيف وحش جديد: اسمه، نوع الضرر المطلوب، الأبطال المقترحين،
+/monster    — قائمة منسدلة بالوحوش المضافة (تبدأ فاضية، الإدارة تضيفها بـ /admin monster add).
+/admin monster add — (إدارة) يضيف وحش جديد: اسمه، نوع الضرر المطلوب، الأبطال المقترحين،
                 وملاحظة دفاع اختيارية، مع إمكانية إرفاق صورة أو صورتين للوحش/التشكيلة.
 /dict       — قاموس مصطلحات اللعبة السريع (ثابت من data/dict.json).
 /info       — قائمة منسدلة بأقسام الإدارة، وكل قسم يحتوي عناوين وشروحات عربية وإنجليزية.
-/add_info   — (إدارة) ينشئ قسمًا أو يستخدم قسمًا موجودًا ويضيف بداخله عنوانًا وشرحًا باللغتين، مع صور اختيارية.
-/edit_info  — (إدارة) يختار عنوانًا من قسمه لتعديل النصوص والصور.
+/admin guide add   — (إدارة) ينشئ قسمًا أو يستخدم قسمًا موجودًا ويضيف بداخله عنوانًا وشرحًا باللغتين، مع صور اختيارية.
+/admin guide edit  — (إدارة) يختار عنوانًا من قسمه لتعديل النصوص والصور.
 
 بيانات /info المضافة يدويًا بتتخزن في storage/custom_info بصيغة أقسام وعناوين،
 منفصلة عن data/info.json.
@@ -22,6 +22,7 @@ from discord.ext import commands
 
 from utils.i18n import get_lang, t
 from utils.storage import load, save, load_json_data
+from utils.command_groups import admin_monster_group, admin_guide_group
 
 CUSTOM_MONSTERS_FILE = "custom_monsters"
 CUSTOM_INFO_FILE = "custom_info"
@@ -969,7 +970,7 @@ class GuidesCog(commands.Cog):
             "custom": custom,
         }
 
-    # -- /monster + /add_monster ----------------------------------------
+    # -- /monster + /admin monster add ----------------------------------------
 
     @app_commands.command(name="monster", description="🐲 اختر اللغة واعرف أفضل أبطال الصيد | Choose language and find the best hunt heroes")
     @app_commands.describe(language="اختر لغة الرد | Choose response language")
@@ -988,8 +989,8 @@ class GuidesCog(commands.Cog):
             t("monster_prompt", lang), view=MonsterView(monsters, lang)
         )
 
-    @app_commands.command(
-        name="add_monster",
+    @admin_monster_group.command(
+        name="add",
         description="🐲 [إدارة/Admin] أضف وحشًا ببيانات عربية وإنجليزية | Add a bilingual monster"
     )
     @app_commands.describe(
@@ -1074,7 +1075,7 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
-    @app_commands.command(name="delete_monster", description="🗑️ [إدارة/Admin] اختر وحشًا لحذفه من قائمة /monster")
+    @admin_monster_group.command(name="delete", description="🗑️ [إدارة/Admin] اختر وحشًا لحذفه من قائمة /monster")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def delete_monster(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -1155,7 +1156,7 @@ class GuidesCog(commands.Cog):
         matches = [k for k in self.dict_data.keys() if current in k.lower()]
         return [app_commands.Choice(name=k, value=k) for k in matches[:25]]
 
-    # -- /info + /add_info --------------------------------------------------
+    # -- /info + /admin guide add --------------------------------------------------
 
     @app_commands.command(
         name="info",
@@ -1172,8 +1173,8 @@ class GuidesCog(commands.Cog):
             view=InfoView(info_data["categories"], lang)
         )
 
-    @app_commands.command(
-        name="add_info",
+    @admin_guide_group.command(
+        name="add",
         description="ℹ️ [إدارة/Admin] أضف قسمًا وعنوانًا ثنائي اللغة | Add a bilingual guide"
     )
     @app_commands.describe(
@@ -1277,7 +1278,7 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
-    @app_commands.command(name="delete_info", description="🗑️ [إدارة/Admin] احذف عنوانًا من قسم | Delete a guide")
+    @admin_guide_group.command(name="delete", description="🗑️ [إدارة/Admin] احذف عنوانًا من قسم | Delete a guide")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def delete_info(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -1300,7 +1301,7 @@ class GuidesCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
-    @app_commands.command(name="edit_info", description="✏️ [إدارة/Admin] عدّل عنوانًا ثنائي اللغة | Edit a bilingual guide")
+    @admin_guide_group.command(name="edit", description="✏️ [إدارة/Admin] عدّل عنوانًا ثنائي اللغة | Edit a bilingual guide")
     @app_commands.describe(
         image="صورة جديدة اختيارية | Optional replacement image",
         image2="صورة ثانية جديدة اختيارية | Optional second replacement image"
