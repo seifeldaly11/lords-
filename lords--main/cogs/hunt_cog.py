@@ -4,7 +4,7 @@
 - /hunt_log      — تسجيل صيد بثلاث طرق: يدوي (عضو + رقم)، أو صورة لجدول/تقرير الصيد
                     (بيتحلل تلقائياً عن طريق نفس موديل الرؤية المستخدم في /ai)، أو قائمة
                     نصية مجمّعة (اسم + رقم في كل سطر) بتتفلتر وتتوزّع على الأعضاء تلقائياً.
-- /hunt_channel  — (إدارة) تحديد قناة إرسال تقارير/قوائم الصيد + التارجت اليومي المطلوب.
+- /admin channel hunt  — (إدارة) تحديد قناة إرسال تقارير/قوائم الصيد + التارجت اليومي المطلوب.
 - /hunt_list     — عرض شامل: كل عضو صيد كام وباقيله كام للوصول للتارجت اليومي.
 
 ملاحظة: تحليل الصورة بيستخدم نفس بنية تحاليل /ai (Cohere Vision)، فلازم يكون
@@ -24,6 +24,7 @@ from discord.ext import commands
 from utils.storage import load, save
 from utils.ui import progress_bar, GOLD
 from utils.i18n import get_lang, t
+from utils.command_groups import admin_channel_group
 
 HUNT_FILE = "hunt_log"
 DEFAULT_DAILY_TARGET = 100
@@ -274,10 +275,10 @@ class HuntCog(commands.Cog):
         embed.set_footer(text=t("hunt_report_footer", lang, target=daily_target))
         return embed
 
-    # -- /hunt_channel (إدارة) -------------------------------------------
+    # -- /admin channel hunt (إدارة) -------------------------------------------
 
-    @app_commands.command(
-        name="hunt_channel",
+    @admin_channel_group.command(
+        name="hunt",
         description="📍 (إدارة) حدد قناة إرسال تقارير وقوائم الصيد، وحدّث التارجت اليومي لو حبيت"
     )
     @app_commands.describe(
