@@ -333,7 +333,7 @@ class ShopCog(commands.Cog):
 
 
     # -------------------------------------------------- Admin Channels Setup
-    @app_commands.command(name="set_shop_channel", description="⚙️ [إدارة] تحديد روم متجر بيع وشراء الحسابات")
+    @app_commands.command(name="set_shop_channel", description="⚙️ [Admin / إدارة] Set account shop channel | تحديد روم متجر بيع وشراء الحسابات")
     @app_commands.describe(channel="الروم المخصص لإعلانات بيع الحسابات")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_shop_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
