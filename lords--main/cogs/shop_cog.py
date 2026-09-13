@@ -130,13 +130,18 @@ class ShopCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     # ---------------------------------------------------------------- /sell
-    @app_commands.command(name="sell", description="🏷️ List your account for sale in the shop")
+    @app_commands.command(name="sell", description="🏷️ List your account for sale in the shop | عرض حسابك للبيع في المتجر")
     @app_commands.describe(
         title="Short account title / عنوان مختصر للحساب",
         price="Asking price / السعر المطلوب",
         details="Account details: level, heroes, power… / تفاصيل الحساب",
         contact="How buyers reach you / طريقة التواصل معك",
-        image="Optional screenshot / صورة اختيارية",
+        image1="Main screenshot / صورة الحساب الأساسية",
+        image2="Second screenshot / صورة ثانية اختيارية",
+        image3="Third screenshot / صورة ثالثة اختيارية",
+        image4="Fourth screenshot / صورة رابعة اختيارية",
+        image5="Fifth screenshot / صورة خامسة اختيارية",
+        more_images_urls="Optional external image links / روابط صور إضافية",
     )
     async def sell(
         self,
@@ -154,11 +159,18 @@ class ShopCog(commands.Cog):
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
 
-        if image is not None and not (image.content_type or "").startswith("image/"):
-            await interaction.response.send_message(t("sell_bad_image", lang), ephemeral=False)
-            return
+        attachments = [img for img in [image1, image2, image3, image4, image5] if img is not None]
+        for img in attachments:
+            if not (img.content_type or "").startswith("image/"):
+                await interaction.response.send_message(t("sell_bad_image", lang), ephemeral=False)
+                return
 
         data, entries = _guild_entries(SHOP_FILE, interaction.guild_id)
+        main_img = attachments[0].url if attachments else None
+        extra_imgs = [img.url for img in attachments[1:]]
+        if more_images_urls:
+            extra_imgs.extend([u.strip() for u in more_images_urls.split() if u.strip().startswith("http")])
+
         entry = {
             "id": _next_id(entries, "A"),
             "seller_id": interaction.user.id,
@@ -167,7 +179,8 @@ class ShopCog(commands.Cog):
             "price": price,
             "details": details,
             "contact": contact,
-            "image_url": image.url if image else None,
+            "image_url": main_img,
+            "extra_images": extra_imgs,
             "status": "open",
             "timestamp": _now_iso(),
         }
