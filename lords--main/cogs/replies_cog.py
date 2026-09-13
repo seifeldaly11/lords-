@@ -5,6 +5,7 @@ from discord.ext import commands
 from typing import Optional, List
 from utils.storage import load, save
 from utils.i18n import get_lang
+from utils.command_groups import admin_reply_group
 
 STORAGE_REPLIES_KEY = "canned_replies"
 
@@ -190,7 +191,7 @@ class RepliesCog(commands.Cog):
     async def replies(self, interaction: discord.Interaction, language: Optional[app_commands.Choice[str]] = None):
         await self._handle_list(interaction, language)
 
-    @app_commands.command(name="add_reply", description="➕ [Admin] Add an auto-reply or canned reply | إضافة رد تلقائي")
+    @admin_reply_group.command(name="add", description="➕ [Admin] Add an auto-reply or canned reply | إضافة رد تلقائي")
     @app_commands.describe(
         trigger="الكلمة أو الجملة (مثال: السلام عليكم أو war) | Trigger phrase",
         response="الرد الذي سيرسله البوت (1 لمنشن everyone) | Bot response (1 for @everyone)"
@@ -199,7 +200,7 @@ class RepliesCog(commands.Cog):
     async def add_reply(self, interaction: discord.Interaction, trigger: str, response: str):
         await self._handle_add(interaction, trigger, response)
 
-    @app_commands.command(name="delete_reply", description="🗑️ [Admin] Delete a registered reply | حذف رد مسجل")
+    @admin_reply_group.command(name="delete", description="🗑️ [Admin] Delete a registered reply | حذف رد مسجل")
     @app_commands.describe(trigger="الكلمة المراد حذفها | Trigger phrase to delete")
     @app_commands.autocomplete(trigger=reply_autocomplete)
     @app_commands.checks.has_permissions(manage_messages=True)
