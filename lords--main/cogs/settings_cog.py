@@ -110,3 +110,28 @@ async def setup(bot: commands.Bot):
     bot.tree.add_command(languageme)
     bot.tree.add_command(bot_channel)
     await bot.add_cog(SettingsCog(bot))
+
+
+@app_commands.command(name="say", description="📢 إرسال رسالة باسم البوت في روم محدد | Speak as the bot")
+@app_commands.describe(
+    message="نص الرسالة التي سيقولها البوت",
+    channel="الروم المراد الإرسال فيه (اختياري)",
+    image="صورة مرفقة مع الرسالة (اختياري)"
+)
+@app_commands.checks.has_permissions(manage_messages=True)
+async def say_cmd(
+    interaction: discord.Interaction,
+    message: str,
+    channel: discord.TextChannel = None,
+    image: discord.Attachment = None
+):
+    target_channel = channel or interaction.channel
+    files = []
+    if image:
+        if not (image.content_type or "").startswith("image/"):
+            await interaction.response.send_message("❌ الملف المرفق ليس صورة صالحة.", ephemeral=True)
+            return
+        files.append(await image.to_file())
+    
+    await target_channel.send(content=message, files=files)
+    await interaction.response.send_message(f"✅ تم إرسال الرسالة بنجاح في {target_channel.mention}.", ephemeral=True)
