@@ -20,8 +20,9 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.i18n import set_lang, get_lang, t
-from utils.storage import load, save, set_leadership_role_id, get_leadership_role_id, get_game_link
+from utils.storage import load, save, set_leadership_role_id, get_leadership_role_id, get_game_link, set_bot_channel_id
 from utils.ui import styled_embed, GOLD, EMERALD, CRIMSON
+from utils.command_groups import admin_group
 
 HUNT_FILE = "hunt_log"
 DEFAULT_DAILY_TARGET = 100
@@ -91,12 +92,94 @@ class SetupLeadershipRoleSelect(discord.ui.RoleSelect):
         )
 
 
+ADMIN_CHANNEL_TARGETS = {
+    "hunt": ("🏹 قناة تقارير الصيد", "hunt_log"),
+    "market": ("💱 قناة تبادل الموارد", "market_channel"),
+    "bot": ("🤖 قناة تواصل البوت", None),
+    "welcome": ("👋 قناة الترحيب", None),
+    "shop": ("🛍️ قناة متجر الحسابات", "shop_channel"),
+    "middleman": ("🛡️ قناة الوساطة", "middleman_channel"),
+}
+
+
+class SetupChannelTargetSelect(discord.ui.Select):
+    def __init__(self, lang: str):
+        self.lang = lang
+        options = [
+            discord.SelectOption(label=label, value=key)
+            for key, (label, _storage_key) in ADMIN_CHANNEL_TARGETS.items()
+        ]
+        super().__init__(
+            placeholder="🛠️ اختر الإعداد الذي تريد ضبط قناته | Choose a channel setting",
+            options=options,
+            min_values=1,
+            max_values=1,
+            row=3,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        target = self.values[0]
+        label = ADMIN_CHANNEL_TARGETS[target][0]
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        await interaction.response.send_message(
+            f"📍 اختر الآن القناة الخاصة بـ **{label}**.",
+            view=SetupChannelPickerView(target, lang),
+            ephemeral=True,
+        )
+
+
+class SetupChannelPickerSelect(discord.ui.ChannelSelect):
+    def __init__(self, target: str, lang: str):
+        self.target = target
+        self.lang = lang
+        super().__init__(
+            placeholder=ADMIN_CHANNEL_TARGETS[target][0],
+            channel_types=[discord.ChannelType.text],
+            min_values=1,
+            max_values=1,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        channel = self.values[0]
+        guild_id = interaction.guild_id
+        target = self.target
+
+        if target == "hunt":
+            data = load(HUNT_FILE)
+            bucket = _get_hunt_bucket(guild_id)
+            bucket["channel_id"] = channel.id
+            data[str(guild_id)] = bucket
+            save(HUNT_FILE, data)
+        elif target == "bot":
+            set_bot_channel_id(guild_id, channel.id)
+        elif target == "welcome":
+            from cogs.welcome_cog import set_setting
+            set_setting(guild_id, "welcome_channel_id", channel.id)
+        else:
+            storage_key = ADMIN_CHANNEL_TARGETS[target][1]
+            data = load(storage_key)
+            data[str(guild_id)] = channel.id
+            save(storage_key, data)
+
+        await interaction.response.send_message(
+            f"✅ تم ضبط **{ADMIN_CHANNEL_TARGETS[target][0]}** على {channel.mention}.",
+            ephemeral=True,
+        )
+
+
+class SetupChannelPickerView(discord.ui.View):
+    def __init__(self, target: str, lang: str):
+        super().__init__(timeout=180)
+        self.add_item(SetupChannelPickerSelect(target, lang))
+
+
 class SetupView(discord.ui.View):
     def __init__(self, lang: str):
         super().__init__(timeout=300)
         self.add_item(SetupLanguageSelect())
         self.add_item(SetupHuntChannelSelect(lang))
         self.add_item(SetupLeadershipRoleSelect(lang))
+        self.add_item(SetupChannelTargetSelect(lang))
         self.add_item(SetupDiagnosticsButton(lang))
 
 
@@ -104,7 +187,7 @@ class SetupDiagnosticsButton(discord.ui.Button):
     """زرار 🩺 فحص الإعدادات: بيتأكد إن كل حاجة اتضبطت فعلاً شغالة، مش بس متسجلة."""
 
     def __init__(self, lang: str):
-        super().__init__(label=t("setup_diagnostics_button_label", lang), style=discord.ButtonStyle.secondary, row=3)
+        super().__init__(label=t("setup_diagnostics_button_label", lang), style=discord.ButtonStyle.secondary, row=4)
 
     async def callback(self, interaction: discord.Interaction):
         embed = build_diagnostics_embed(interaction)
@@ -224,7 +307,7 @@ class SetupCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(
+    @admin_group.command(
         name="setup",
         description="⚙️ (إدارة) دليل التثبيت السريع: اللغة، قناة الصيد، رتبة القيادة - كله بضغطة زر"
     )
@@ -254,8 +337,8 @@ class SetupCog(commands.Cog):
         else:
             await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
-    @app_commands.command(
-        name="setup_check",
+    @admin_group.command(
+        name="check",
         description="🩺 (إدارة) فحص سريع: هل إعدادات البوت (قناة الصيد، رتبة القيادة، الصوت، الـAI...) شغالة فعلاً؟"
     )
     @app_commands.checks.has_permissions(manage_guild=True)
