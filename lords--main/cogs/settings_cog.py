@@ -11,7 +11,7 @@ from discord.ext import commands
 
 from utils.i18n import get_lang, set_lang, set_user_lang, t
 from utils.storage import set_bot_channel_id
-from utils.command_groups import admin_group
+from utils.command_groups import admin_group, admin_channel_group
 
 
 language_group = app_commands.Group(
@@ -73,8 +73,8 @@ async def languageme(interaction: discord.Interaction, lang: app_commands.Choice
     await _set_personal_language(interaction, lang)
 
 
-@app_commands.command(
-    name="bot_channel",
+@admin_channel_group.command(
+    name="bot",
     description="📍 حدد القناة أو الثريد اللي البوت يتواصل فيه (إدارة فقط) | Set the channel/thread the bot talks in"
 )
 @app_commands.describe(channel="Channel or thread")
