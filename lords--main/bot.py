@@ -55,7 +55,6 @@ INITIAL_EXTENSIONS = [
     "cogs.setup_cog",
     "cogs.help_cog",
     "cogs.events_cog",
-    "cogs.shield_cog",
     "cogs.war_cog",
     "cogs.guides_cog",
     "cogs.guild_cog",

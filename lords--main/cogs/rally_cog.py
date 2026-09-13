@@ -122,8 +122,6 @@ async def rally_set(
     embed.set_footer(text=t("rally_footer_v2", lang, leader=str(interaction.user)))
 
     view = RallyJoinView(embed, lang)
-    app_link = get_game_link(interaction.guild_id, default=DEFAULT_APP_LINK)
-    view.add_item(discord.ui.Button(label=t("rally_open_app", lang), style=discord.ButtonStyle.link, url=app_link, emoji="📲"))
 
     await interaction.response.send_message(
         content=f"@everyone {t('rally_everyone_ping', lang)}",

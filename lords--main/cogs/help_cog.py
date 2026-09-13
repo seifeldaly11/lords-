@@ -67,13 +67,7 @@ CATEGORY_META = {
         "en": "𝑯𝒖𝒏𝒕 𝑻𝒓𝒂𝒄𝒌𝒆𝒓",
         "color": discord.Color.dark_green(),
     },
-    "shield": {
-        "emoji": "🔔",
-        "ar": "منبه الدرع",
-        "en": "𝑺𝒉𝒊𝒆𝒍𝒅 𝑨𝒍𝒂𝒓𝒎",
-        "color": discord.Color.dark_orange(),
-    },
-    "settings": {
+        "settings": {
         "emoji": "⚙️",
         "ar": "الإعدادات واللغة",
         "en": "𝑺𝒆𝒕𝒕𝒊𝒏𝒈𝒔 & 𝑳𝒂𝒏𝒈𝒖𝒂𝒈𝒆",
@@ -122,8 +116,7 @@ CATEGORY_BLURBS = {
     "market": {"ar": "متابعة أسعار وبورصة الموارد وتبادلات التحالف.", "en": "Track alliance resource exchange rates and calculations."},
     "accounts_shop": {"ar": "سوق بيع وشراء الحسابات وتأمين المعاملات بالوسيط المعتمد.", "en": "Buy, sell, and trade Lords Mobile accounts securely with trusted middlemen."},
     "hunt": {"ar": "نظّم الصيد وسجّل النتائج بدون فوضى.", "en": "Organize hunts and track results effortlessly."},
-    "shield": {"ar": "تنبيهات الدرع والحماية في الوقت المناسب.", "en": "Shield and protection alerts at the right time."},
-    "settings": {"ar": "اضبط اللغة، الإعدادات، وروابط اللعبة.", "en": "Configure language, settings, and game links."},
+        "settings": {"ar": "اضبط اللغة، الإعدادات، وروابط اللعبة.", "en": "Configure language, settings, and game links."},
     "welcome": {"ar": "خلّي دخول الأعضاء الجدد احترافي ومنظم.", "en": "Make every new member feel welcome."},
     "games": {"ar": "ألعاب خفيفة وتفاعل يخلّي التحالف حي.", "en": "Light games and interaction for an active alliance."},
     "general": {"ar": "أدوات يومية مفيدة لكل أعضاء التحالف.", "en": "Everyday utilities for every alliance member."},
@@ -190,10 +183,7 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "edit_monster": "[Admin] Update a monster's guide image.",
     "counter": "Find the ideal counter formation for an enemy formation.",
     "analyze": "Analyze a battle report image and its numbers.",
-    "shield": "Start a smart shield alarm with a 15-minute warning and voice escalation.",
-    "voice_rescue": "Start a shield alarm with voice escalation if nobody responds.",
-    "shelter_done": "Stop the active shield or shelter alarm.",
-    "setup": "[Admin] Open the guided setup panel for the bot.",
+                "setup": "[Admin] Open the guided setup panel for the bot.",
     "setup_check": "[Admin] Check whether the bot settings and integrations are working.",
     "language": "[Admin] Set the bot reply language for this server.",
     "languageme": "Choose your personal bot reply language.",
@@ -261,10 +251,7 @@ ARABIC_COMMAND_DESCRIPTIONS = {
     "edit_monster": "🖼️ [إدارة] اختر وحشًا لتعديل وتحديث صورته",
     "counter": "⚔️ اعرف التشكيلة المضادة الأفضل لتشكيلة العدو",
     "analyze": "🖼️ حلّل صورة تقرير المعركة والأرقام الموجودة بها",
-    "shield": "🛡️ شغّل منبه الدرع مع تنبيه قبل 15 دقيقة وتصعيد صوتي",
-    "voice_rescue": "🔊 شغّل منبه الدرع مع تصعيد صوتي إذا لم يرد أحد",
-    "shelter_done": "✅ أوقف منبه الدرع أو الحماية الحالي",
-    "setup": "⚙️ [إدارة] افتح لوحة الإعداد السريع للبوت",
+                "setup": "⚙️ [إدارة] افتح لوحة الإعداد السريع للبوت",
     "setup_check": "🩺 [إدارة] افحص إعدادات البوت والتكاملات والصلاحيات",
     "language": "🌐 [إدارة] حدد لغة ردود البوت في هذا السيرفر",
     "languageme": "🌐 اختر لغة ردود البوت الخاصة بك",
@@ -322,7 +309,7 @@ def command_category(path: str) -> str:
         return "market"
     if root in {"hunt_log", "hunt_channel", "hunt_list"}:
         return "hunt"
-    if root in {"shield", "voice_rescue", "shelter_done"}:
+    if root in {""}:
         return "shield"
     if root in {"setup", "setup_check", "language", "languageme", "bot_channel", "server", "me"}:
         return "settings"
