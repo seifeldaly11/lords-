@@ -27,6 +27,8 @@ log = logging.getLogger("lordsbot.shop")
 SHOP_FILE = "shop_accounts"
 REPORTS_FILE = "shop_reports"
 MIDDLEMAN_FILE = "middleman_requests"
+SHOP_CHANNEL_KEY = "shop_channel"
+MIDDLEMAN_CHANNEL_KEY = "middleman_channel"
 
 MAX_SHOP_ENTRIES = 10
 
@@ -143,7 +145,12 @@ class ShopCog(commands.Cog):
         price: app_commands.Range[str, 1, 50],
         details: app_commands.Range[str, 3, 900],
         contact: Optional[app_commands.Range[str, 2, 100]] = None,
-        image: Optional[discord.Attachment] = None,
+        image1: Optional[discord.Attachment] = None,
+        image2: Optional[discord.Attachment] = None,
+        image3: Optional[discord.Attachment] = None,
+        image4: Optional[discord.Attachment] = None,
+        image5: Optional[discord.Attachment] = None,
+        more_images_urls: Optional[str] = None,
     ):
         lang = get_lang(interaction.guild_id, interaction.user.id)
 
@@ -323,6 +330,26 @@ class ShopCog(commands.Cog):
             view=MiddlemanView(lang, entry["id"]),
         )
 
+
+
+    # -------------------------------------------------- Admin Channels Setup
+    @app_commands.command(name="set_shop_channel", description="⚙️ [إدارة] تحديد روم متجر بيع وشراء الحسابات")
+    @app_commands.describe(channel="الروم المخصص لإعلانات بيع الحسابات")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def set_shop_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        data = load(SHOP_CHANNEL_KEY)
+        data[str(interaction.guild_id)] = channel.id
+        save(SHOP_CHANNEL_KEY, data)
+        await interaction.response.send_message(f"✅ تم تعيين {channel.mention} كروم رسمي لمتجر الحسابات.", ephemeral=False)
+
+    @app_commands.command(name="set_middleman_channel", description="⚙️ [إدارة] تحديد روم طلبات الوساطة والتواصل")
+    @app_commands.describe(channel="الروم المخصص لطلبات الوساطة بين البائع والمشتري")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def set_middleman_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        data = load(MIDDLEMAN_CHANNEL_KEY)
+        data[str(interaction.guild_id)] = channel.id
+        save(MIDDLEMAN_CHANNEL_KEY, data)
+        await interaction.response.send_message(f"✅ تم تعيين {channel.mention} كروم رسمي لطلبات الوسيط.", ephemeral=False)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(ShopCog(bot))
