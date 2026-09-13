@@ -17,10 +17,12 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from utils.command_groups import admin_group, shop_group
+
 load_dotenv()
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN") or os.getenv("DISCORD_TOKEN")
-GUILD_ID = os.getenv("GUILD_ID")
+ADMIN_GUILD_ID = os.getenv("ADMIN_GUILD_ID")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 log = logging.getLogger("lordsbot")
@@ -229,27 +231,25 @@ async def on_ready():
     try:
         log.info(
             f"📋 عدد الأوامر قبل المزامنة: {len(bot.tree.get_commands())} | "
-            f"GUILD_ID مضبوط: {bool(GUILD_ID)}"
+            f"ADMIN_GUILD_ID مضبوط: {bool(ADMIN_GUILD_ID)}"
         )
-        if GUILD_ID:
-            # وضع التطوير: أوامر Guild فقط، مع مسح النسخة العالمية القديمة حتى
-            # لا يظهر الأمر مرتين (نسخة Global + نسخة Guild).
-            guild_obj = discord.Object(id=int(GUILD_ID))
-            bot.tree.copy_global_to(guild=guild_obj)
-            synced = await bot.tree.sync(guild=guild_obj)
-            bot.tree.clear_commands(guild=None)
-            await bot.tree.sync()
-            log.info(f"🔄 تمت مزامنة {len(synced)} أمر على السيرفر المحدد (GUILD_ID).")
-        else:
-            # وضع البيع/الإنتاج: نسخة Global واحدة فقط. الأوامر القديمة التي
-            # كانت Guild-scoped تُمسح بإرسال قائمة فارغة، بدون نسخ الأوامر
-            # العالمية إليها مرة ثانية؛ النسخ كان سبب ظهور /ai وغيره مرتين.
-            synced = await bot.tree.sync()
-            log.info(f"🔄 تمت مزامنة {len(synced)} أمر عالمياً.")
-            for guild in bot.guilds:
-                bot.tree.clear_commands(guild=guild)
-                guild_synced = await bot.tree.sync(guild=guild)
-                log.info(f"🧹 تم تنظيف أوامر Guild القديمة في {guild.name} ({len(guild_synced)} متبقي).")
+        # Global commands stay global (including /redeem and the public shop).
+        synced = await bot.tree.sync()
+        log.info(f"🔄 تمت مزامنة {len(synced)} أمر عالمياً.")
+
+        # Only the subscription-management commands are registered on this guild.
+        admin_guild_id = int(ADMIN_GUILD_ID) if ADMIN_GUILD_ID and ADMIN_GUILD_ID.isdigit() else None
+        if admin_guild_id:
+            admin_synced = await bot.tree.sync(guild=discord.Object(id=admin_guild_id))
+            log.info(f"🔒 تمت مزامنة {len(admin_synced)} أمر إدارة اشتراكات على ADMIN_GUILD_ID.")
+
+        # Remove stale guild-scoped commands left by previous versions everywhere else.
+        for guild in bot.guilds:
+            if guild.id == admin_guild_id:
+                continue
+            bot.tree.clear_commands(guild=guild)
+            guild_synced = await bot.tree.sync(guild=guild)
+            log.info(f"🧹 تم تنظيف أوامر Guild القديمة في {guild.name} ({len(guild_synced)} متبقي).")
     except Exception as e:
         log.error(f"فشلت مزامنة الأوامر: {e}")
 
@@ -284,6 +284,10 @@ async def main():
                 log.info(f"📦 تم تحميل: {ext}")
             except Exception:
                 log.exception(f"❌ فشل تحميل {ext}")
+        if bot.tree.get_command(admin_group.name) is None:
+            bot.tree.add_command(admin_group)
+        if bot.tree.get_command(shop_group.name) is None:
+            bot.tree.add_command(shop_group)
         apply_english_command_descriptions()
         await bot.start(TOKEN)
 
