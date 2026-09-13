@@ -755,18 +755,17 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="اضافة_ملاحظة", description="🔒 إضافة ملاحظة (آيدي السيرفر اختياري)")
-    @app_commands.describe(note_text="نص الملاحظة", server_id="آيدي السيرفر (اختياري؛ يستخدم سيرفر الأمر تلقائياً)")
-    async def add_note_cmd(self, interaction: discord.Interaction, note_text: str, server_id: str = None):
+    @app_commands.command(name="اضافة_ملاحظة", description="🔒 إضافة ملاحظة بعنوان (عامة للبوت أو خاصة بسيرفر)")
+    @app_commands.describe(
+        title="عنوان الملاحظة الرئيسي",
+        note_text="نص وتفاصيل الملاحظة",
+        server_id="آيدي السيرفر (اختياري - اتركه فارغاً لملاحظة عامة عن البوت)"
+    )
+    async def add_note_cmd(self, interaction: discord.Interaction, title: str, note_text: str, server_id: str = None):
         if await deny_if_not_owner(interaction):
             return
 
-        target_server_id = (server_id or "").strip()
-        if not target_server_id:
-            if interaction.guild_id is None:
-                await interaction.response.send_message("❌ يجب تحديد آيدي السيرفر عند استخدام الأمر في الخاص.", ephemeral=True)
-                return
-            target_server_id = str(interaction.guild_id)
+        target_server_id = (server_id or "").strip() or "عام / General" 
 
         add_note_to_db(target_server_id, note_text)
         await interaction.response.send_message(
