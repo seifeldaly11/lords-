@@ -4,11 +4,11 @@
 كل الأوامر هنا عامة (الكل في التشانيل يشوف الرد) وثنائية اللغة بالكامل حسب
 اختيار العضو (/language me) أو لغة السيرفر (/language server).
 
-- 🛍️ /shop      : عرض كل الحسابات المتاحة في المتجر.
-- 🏷️ /sell      : إدراج حساب للبيع.
-- 🔍 /view      : تفاصيل حساب معيّن برقم المعرف (ID).
-- 🚨 /report    : بلاغ عن مشكلة شراء / حساب مخالف / تواصل مع الدعم.
-- 🛡️ /middleman : طلب وسيط معتمد لتأمين عملية التبادل.
+- 🛍️ /shop browse : عرض كل الحسابات المتاحة في المتجر.
+- 🏷️ /shop sell : إدراج حساب للبيع.
+- 🔍 /shop view : تفاصيل حساب معيّن برقم المعرف (ID).
+- 🚨 /shop report : بلاغ عن مشكلة شراء / حساب مخالف / تواصل مع الدعم.
+- 🛡️ /shop middleman : طلب وسيط معتمد لتأمين عملية التبادل.
 """
 import logging
 from datetime import datetime, timezone
@@ -21,6 +21,7 @@ from discord.ext import commands
 from utils.storage import load, save, get_leadership_role_id
 from utils.ui import styled_embed, GOLD, CRIMSON, ROYAL_BLUE
 from utils.i18n import get_lang, t
+from utils.command_groups import admin_channel_group, shop_group
 
 log = logging.getLogger("lordsbot.shop")
 
@@ -103,8 +104,8 @@ class ShopCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    # ---------------------------------------------------------------- /shop
-    @app_commands.command(name="shop", description="🛍️ Browse all accounts currently listed in the shop")
+    # ---------------------------------------------------------------- /shop browse
+    @shop_group.command(name="browse", description="🛍️ Browse all accounts currently listed in the shop")
     async def shop(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         _, entries = _guild_entries(SHOP_FILE, interaction.guild_id)
@@ -129,8 +130,8 @@ class ShopCog(commands.Cog):
         embed.set_footer(text=t("shop_footer", lang, count=len(open_entries)))
         await interaction.response.send_message(embed=embed)
 
-    # ---------------------------------------------------------------- /sell
-    @app_commands.command(name="sell", description="🏷️ List your account for sale in the shop | عرض حسابك للبيع في المتجر")
+    # ---------------------------------------------------------------- /shop sell
+    @shop_group.command(name="sell", description="🏷️ List your account for sale in the shop | عرض حسابك للبيع في المتجر")
     @app_commands.describe(
         title="Short account title / عنوان مختصر للحساب",
         price="Asking price / السعر المطلوب",
@@ -191,9 +192,9 @@ class ShopCog(commands.Cog):
         embed.description = t("sell_added_desc", lang, id=entry["id"])
         await interaction.response.send_message(embed=embed)
 
-    # ---------------------------------------------------------------- /view
-    @app_commands.command(name="view", description="🔍 View full details of a listing by its ID")
-    @app_commands.describe(listing_id="Listing ID from /shop / رقم معرف العرض")
+    # ---------------------------------------------------------------- /shop view
+    @shop_group.command(name="view", description="🔍 View full details of a listing by its ID")
+    @app_commands.describe(listing_id="Listing ID from /shop browse / رقم معرف العرض")
     async def view(self, interaction: discord.Interaction, listing_id: str):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         _, entries = _guild_entries(SHOP_FILE, interaction.guild_id)
@@ -234,8 +235,8 @@ class ShopCog(commands.Cog):
         embed.add_field(name="\u200b", value=t("sell_safety_note", lang), inline=False)
         return embed
 
-    # -------------------------------------------------------------- /report
-    @app_commands.command(name="report", description="🚨 Report a purchase issue, a bad account, or contact support")
+    # -------------------------------------------------------------- /shop report
+    @shop_group.command(name="report", description="🚨 Report a purchase issue, a bad account, or contact support")
     @app_commands.describe(
         details="What happened / اشرح المشكلة بالتفصيل",
         member="Member involved / العضو الطرف التاني",
@@ -294,8 +295,8 @@ class ShopCog(commands.Cog):
         mention = _leadership_mention(interaction.guild)
         await interaction.response.send_message(content=mention or None, embed=embed)
 
-    # ----------------------------------------------------------- /middleman
-    @app_commands.command(name="middleman", description="🛡️ Request a trusted middleman to secure a trade")
+    # ----------------------------------------------------------- /shop middleman
+    @shop_group.command(name="middleman", description="🛡️ Request a trusted middleman to secure a trade")
     @app_commands.describe(
         deal="Deal details / تفاصيل العملية",
         partner="The other party / الطرف التاني",
@@ -346,7 +347,7 @@ class ShopCog(commands.Cog):
 
 
     # -------------------------------------------------- Admin Channels Setup
-    @app_commands.command(name="set_shop_channel", description="⚙️ [Admin / إدارة] Set account shop channel | تحديد روم متجر بيع وشراء الحسابات")
+    @admin_channel_group.command(name="shop", description="⚙️ [Admin / إدارة] Set account shop channel | تحديد روم متجر بيع وشراء الحسابات")
     @app_commands.describe(channel="الروم المخصص لإعلانات بيع الحسابات")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_shop_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
@@ -355,7 +356,7 @@ class ShopCog(commands.Cog):
         save(SHOP_CHANNEL_KEY, data)
         await interaction.response.send_message(f"✅ تم تعيين {channel.mention} كروم رسمي لمتجر الحسابات.", ephemeral=False)
 
-    @app_commands.command(name="set_middleman_channel", description="⚙️ [إدارة] تحديد روم طلبات الوساطة والتواصل")
+    @admin_channel_group.command(name="middleman", description="⚙️ [إدارة] تحديد روم طلبات الوساطة والتواصل")
     @app_commands.describe(channel="الروم المخصص لطلبات الوساطة بين البائع والمشتري")
     @app_commands.checks.has_permissions(manage_guild=True)
     async def set_middleman_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
