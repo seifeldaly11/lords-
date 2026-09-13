@@ -9,6 +9,7 @@ import aiohttp
 import discord
 from discord import app_commands
 from discord.ext import commands
+from utils.command_groups import admin_welcome_group
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -269,7 +270,7 @@ class WelcomeCog(commands.Cog):
         content = f"👋 {member.mention}\n\n{welcome_text}\n\n🎖️ *عضو رقم {guild.member_count} في {guild.name} • Member #{guild.member_count}*"
         await welcome_channel.send(content=content, file=file)
 
-    @app_commands.command(name="تحديد-روم-الترحيب", description="Set the channel for bilingual welcome messages")
+    @admin_welcome_group.command(name="channel", description="Set the channel for bilingual welcome messages")
     @app_commands.describe(channel="Welcome message channel")
     @app_commands.checks.has_permissions(administrator=True)
     async def set_welcome_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
@@ -278,7 +279,7 @@ class WelcomeCog(commands.Cog):
             f"✅ Welcome channel set to {channel.mention} • تم تحديد روم الترحيب."
         )
 
-    @app_commands.command(name="تحديد-صورة-الترحيب", description="Set the welcome background and name color")
+    @admin_welcome_group.command(name="image", description="Set the welcome background and name color")
     @app_commands.describe(
         image="Background image for the welcome card",
         name_color="Color of the member name inside the image (optional)"
@@ -299,7 +300,7 @@ class WelcomeCog(commands.Cog):
             f"✅ Welcome background saved. Name color: **{chosen}** • تم حفظ الخلفية ولون الاسم."
         )
 
-    @app_commands.command(name="تحديد-لون-اسم-الترحيب", description="Choose the name color inside the welcome image")
+    @admin_welcome_group.command(name="color", description="Choose the name color inside the welcome image")
     @app_commands.describe(name_color="Color of the member name inside the welcome image")
     @app_commands.choices(name_color=WELCOME_COLOR_CHOICES)
     @app_commands.checks.has_permissions(administrator=True)
@@ -309,7 +310,7 @@ class WelcomeCog(commands.Cog):
             f"✅ Name color set to **{name_color.name}** • تم تحديد لون اسم العضو."
         )
 
-    @app_commands.command(name="تحديد-رسالة-الترحيب", description="Set the Arabic and English welcome messages")
+    @admin_welcome_group.command(name="message", description="Set the Arabic and English welcome messages")
     @app_commands.describe(
         message_ar="Arabic welcome message. Use {member}, {name}, {count}, or {inviter}",
         message_en="English welcome message (optional). Use {member}, {name}, {count}, or {inviter}"
@@ -326,7 +327,7 @@ class WelcomeCog(commands.Cog):
             
         )
 
-    @app_commands.command(name="استعادة-رسالة-الترحيب", description="Restore the default bilingual welcome message")
+    @admin_welcome_group.command(name="reset", description="Restore the default bilingual welcome message")
     @app_commands.checks.has_permissions(administrator=True)
     async def reset_welcome_message(self, interaction: discord.Interaction):
         set_setting(interaction.guild.id, "welcome_message", None)
