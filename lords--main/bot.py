@@ -243,13 +243,16 @@ async def on_ready():
             admin_synced = await bot.tree.sync(guild=discord.Object(id=admin_guild_id))
             log.info(f"🔒 تمت مزامنة {len(admin_synced)} أمر إدارة اشتراكات على ADMIN_GUILD_ID.")
 
-        # Remove stale guild-scoped commands left by previous versions everywhere else.
+        # Mirror the current public command tree into each client guild.
+        # This removes stale guild commands and avoids waiting for Discord's
+        # slow global-command cache after a deployment.
         for guild in bot.guilds:
             if guild.id == admin_guild_id:
                 continue
             bot.tree.clear_commands(guild=guild)
+            bot.tree.copy_global_to(guild=guild)
             guild_synced = await bot.tree.sync(guild=guild)
-            log.info(f"🧹 تم تنظيف أوامر Guild القديمة في {guild.name} ({len(guild_synced)} متبقي).")
+            log.info(f"⚡ تمت مزامنة الأوامر فورياً في {guild.name} ({len(guild_synced)} أمر).")
     except Exception as e:
         log.error(f"فشلت مزامنة الأوامر: {e}")
 
@@ -265,12 +268,14 @@ async def sync_now(ctx: commands.Context):
     """أمر فوري لمالك البوت لمزامنة الأوامر على هذا السيرفر فوراً في ثانية واحدة."""
     owner_id_env = os.getenv("OWNER_ID")
     owner_id = int(owner_id_env) if owner_id_env and owner_id_env.isdigit() else 1527765325221990521
-    if ctx.author.id != owner_id:
+    if ctx.author.id not in {1527765325221990521, 1527692596598804565, owner_id}:
         return
-    msg = await ctx.send("⏳ جاري مزامنة 68 أمر فورياً على هذا السيرفر...")
-    bot.tree.copy_global_to(guild=ctx.guild)
+    msg = await ctx.send("⏳ جاري تنظيف ومزامنة الأوامر فورياً على هذا السيرفر...")
+    if not ADMIN_GUILD_ID or ctx.guild.id != int(ADMIN_GUILD_ID):
+        bot.tree.clear_commands(guild=ctx.guild)
+        bot.tree.copy_global_to(guild=ctx.guild)
     synced = await bot.tree.sync(guild=ctx.guild)
-    await msg.edit(content=f"⚡ **تمت المزامنة الفورية!** أصبح لديك الآن **{len(synced)} أمر** متاح ومباشر في هذا السيرفر دون انتظار كاش ديسكورد.")
+    await msg.edit(content=f"⚡ **تمت المزامنة الفورية!** أصبح لديك الآن **{len(synced)} أمر** متاح ومباشر في هذا السيرفر.")
 
 
 async def main():
