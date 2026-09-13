@@ -123,10 +123,11 @@ CATEGORY_BLURBS = {
 
 
 WELCOME_COMMANDS = {
-    "استعادة-رسالة-الترحيب",
-    "تحديد-رسالة-الترحيب",
-    "تحديد-روم-الترحيب",
-    "تحديد-صورة-الترحيب",
+    "admin welcome channel",
+    "admin welcome image",
+    "admin welcome color",
+    "admin welcome message",
+    "admin welcome reset",
 }
 
 ADMIN_HINTS = (
@@ -138,16 +139,38 @@ ADMIN_HINTS = (
 
 # English copy used by /help when the user selects English.
 ENGLISH_COMMAND_DESCRIPTIONS = {
-    "set_middleman_channel": "[Admin] Set the middleman requests channel",
-    "set_shop_channel": "[Admin] Set the accounts shop channel",
+    "admin monster add": "[Admin] Add a monster to the hunting guide.",
+    "admin monster delete": "[Admin] Delete a custom monster entry.",
+    "admin guide add": "[Admin] Add a new event guide entry.",
+    "admin guide delete": "[Admin] Delete a custom /info entry.",
+    "admin guide edit": "[Admin] Edit a custom /info entry or add an image.",
+    "admin reply add": "[Admin] Add a canned reply with shortcuts.",
+    "admin reply delete": "[Admin] Delete a canned reply.",
+    "admin welcome channel": "[Admin] Set the channel for new-member welcome messages.",
+    "admin welcome image": "[Admin] Set a custom background for the welcome card.",
+    "admin welcome color": "[Admin] Set the welcome name color.",
+    "admin welcome message": "[Admin] Customize the new-member welcome message.",
+    "admin welcome reset": "[Admin] Restore the default welcome message.",
+    "admin track log": "[Admin] Record a member's participation in an alliance activity.",
+    "admin track rally": "[Admin] Record attendance and result for a rally.",
+    "admin track check": "[Admin] Review a member's complete alliance activity record.",
+    "admin track weekly": "View a participation report for a selected alliance event.",
+    "admin track stats": "View interactive member participation statistics.",
+    "admin track reset": "[Admin] Reset activity and quiz records for a new week.",
+    "admin channel hunt": "[Admin] Configure the channel and daily target for hunt reports.",
+    "admin channel shop": "[Admin] Set the accounts shop channel.",
+    "admin channel middleman": "[Admin] Set the middleman requests channel.",
+    "admin say": "[Admin] Send an announcement or message in the bot's name to a specific channel.",
+    "shop browse": "Browse every account currently listed for sale in the shop.",
+    "shop sell": "List your account for sale inside the shop.",
+    "shop view": "View the full details of a listing by its ID.",
+    "shop report": "Report a purchase issue, a violating account, or reach support.",
+    "shop middleman": "Request a trusted middleman to secure a trade.",
     "market": "Resource exchange market (offers, listing, cancelling, and management channel)",
     "حاسبة_الاحداث": "حاسبة أحداث الجحيم والمنفرد التفاعلية بالذكاء الاصطناعي",
     "حساب_التسريعات": "حاسبة التسريعات التفاعلية بالذكاء الاصطناعي مع خطة تفصيلية",
     "ai_event": "Interactive calculator: AI calculates Hell and Solo event targets and required points",
     "ai_speedup": "Interactive calculator: AI evaluates and calculates your speedups with a detailed breakdown",
-    "say": "[Admin] Send an announcement or message in the bot's name to a specific channel",
-    "add_reply": "[Admin] Add a canned reply with shortcuts",
-    "delete_reply": "[Admin] Delete a canned reply",
     "replies": "List all registered canned replies",
     "reply": "Send a canned reply to this channel",
     "help": "Open the live command center and browse commands by section.",
@@ -157,23 +180,16 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "shelter": "Start a shelter timer with a reminder 15 minutes before it ends.",
     "speedup": "Add your speedups and calculate the total time.",
     "monster": "Find the best hunting heroes for a selected monster.",
-    "add_monster": "[Admin] Add a monster to the hunting guide.",
     "dict": "Look up a Lords Mobile term in the quick dictionary.",
     "info": "Read a guide about events such as Dragon Arena, KvK, and Hell Events.",
-    "add_info": "[Admin] Add a new event guide entry.",
     "task": "[Admin] Add an Alliance Festival task for a member.",
     "done": "[Admin] Mark an Alliance Festival task as completed.",
     "board": "View the Alliance Festival leaderboard.",
     "calc": "Calculate Alliance Festival speedups or ask about resource exchanges.",
-    "log_activity": "[Admin] Record a member's participation in an alliance activity.",
-    "stats_event": "View interactive member participation statistics.",
     "profile": "View a member profile with alliance participation statistics.",
     "top5": "View the five most active members across tracked activities.",
-    "event_stats": "View a participation report for a selected alliance event.",
     "quiz": "Answer a quick Lords Mobile quiz question and earn points.",
-    "reset_stats": "[Admin] Reset activity and quiz records for a new week.",
     "hunt_log": "Log hunting results manually, from an image, or as a grouped list.",
-    "hunt_channel": "[Admin] Configure the channel and daily target for hunt reports.",
     "hunt_list": "View each member's hunt count and remaining daily target.",
     "scout": "Analyze an enemy gear or profile image with AI.",
     "geartiers": "Browse the complete gear tier guide for war, hunting, and economy.",
@@ -184,9 +200,6 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "open": "Open a rally call and notify members with the required troop type.",
     "rally": "Open a smart rally call for the alliance.",
     "rallyset": "Open a rally with a green self-registration button.",
-    "delete_info": "[Admin] Delete a custom /info entry.",
-    "edit_info": "[Admin] Edit a custom /info entry or add an image.",
-    "delete_monster": "[Admin] Delete a custom monster entry.",
     "edit_monster": "[Admin] Update a monster's guide image.",
     "counter": "Find the ideal counter formation for an enemy formation.",
     "analyze": "Analyze a battle report image and its numbers.",
@@ -195,40 +208,50 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "language": "[Admin] Set the bot reply language for this server.",
     "languageme": "Choose your personal bot reply language.",
     "bot_channel": "[Admin] Set the channel or thread where the bot can respond.",
-    "shop": "Browse every account currently listed for sale in the shop.",
-    "sell": "List your account for sale inside the shop.",
-    "view": "View the full details of a listing by its ID.",
     "report": "Report a purchase issue, a violating account, or reach support.",
-    "middleman": "Request a trusted middleman to secure a trade.",
     "battlelog": "Record and review alliance battle reports.",
     "add": "Record a new battle in the server log.",
     "user": "View the battle history of a selected member.",
-    "تحديد-روم-الترحيب": "[Admin] Set the channel for new-member welcome messages.",
-    "تحديد-صورة-الترحيب": "[Admin] Set a custom background for the welcome card.",
-    "تحديد-رسالة-الترحيب": "[Admin] Customize the new-member welcome message.",
-    "استعادة-رسالة-الترحيب": "[Admin] Restore the default welcome message.",
 }
 
 
 
 ARABIC_COMMAND_DESCRIPTIONS = {
-    "say": "[إدارة] إرسال إعلان أو رسالة باسم البوت لروم محددة مع صورة اختيارية",
-    "add_reply": "[إدارة] إضافة رد تلقائي أو اختصار عبارة في الشات (يدعم 1 و 2 للمنشن)",
+    "admin monster add": "🐾 [إدارة] أضف وحشًا جديدًا إلى دليل الصيد",
+    "admin monster delete": "🗑️ [إدارة] اختر وحشًا مضافًا واحذفه",
+    "admin guide add": "ℹ️ [إدارة] أضف شرحًا جديدًا لأحد الأحداث",
+    "admin guide delete": "🗑️ [إدارة] اختر شرحًا مضافًا واحذفه",
+    "admin guide edit": "✏️ [إدارة] عدّل شرحًا مضافًا أو أضف له صورة",
+    "admin reply add": "💬 [إدارة] أضف ردًا تلقائيًا أو عبارة جاهزة",
+    "admin reply delete": "🗑️ [إدارة] احذف ردًا تلقائيًا مسجلًا",
+    "admin welcome channel": "👋 [إدارة] حدد قناة رسائل الأعضاء الجدد",
+    "admin welcome image": "🖼️ [إدارة] حدد خلفية بطاقة الترحيب",
+    "admin welcome color": "🎨 [إدارة] حدد لون اسم العضو في بطاقة الترحيب",
+    "admin welcome message": "✍️ [إدارة] خصص رسالة الترحيب للأعضاء الجدد",
+    "admin welcome reset": "🔄 [إدارة] أعد رسالة الترحيب الافتراضية",
+    "admin track log": "📋 [إدارة] سجّل مشاركة عضو في نشاط من أنشطة التحالف",
+    "admin track rally": "👥 [إدارة] سجّل حضور ونتيجة حشد",
+    "admin track check": "🛡️ [إدارة] راجع سجل مشاركة عضو في كل الأحداث",
+    "admin track weekly": "📊 اعرض تقرير مشاركة الأعضاء في فعالية محددة",
+    "admin track stats": "📊 اعرض إحصائيات تفاعلية لمشاركة الأعضاء",
+    "admin track reset": "🔄 [إدارة] صفّر سجلات النشاط والمسابقة لأسبوع جديد",
+    "admin channel hunt": "📍 [إدارة] حدد قناة تقارير الصيد والهدف اليومي",
+    "admin channel shop": "🛍️ [إدارة] حدد قناة متجر الحسابات",
+    "admin channel middleman": "🛡️ [إدارة] حدد قناة طلبات الوساطة",
+    "admin say": "📢 [إدارة] أرسل إعلانًا أو رسالة باسم البوت",
+    "shop browse": "🛍️ اعرض جميع الحسابات المتاحة حاليًا في المتجر",
+    "shop sell": "🏷️ قدّم طلب إدراج حساب للبيع داخل المتجر",
+    "shop view": "🔍 استعرض تفاصيل عرض برقم المعرف",
+    "shop report": "🚨 أبلغ عن مشكلة شراء أو حساب مخالف",
+    "shop middleman": "🛡️ اطلب وسيطًا معتمدًا لتأمين عملية التبادل",
     "reply": "إرسال رد جاهز ومسجل في الروم الحالية",
     "replies": "عرض جميع الردود التلقائية والعبارات المسجلة في السيرفر",
-    "delete_reply": "[إدارة] حذف رد تلقائي أو عبارة مسجلة",
-    "set_shop_channel": "[إدارة] تحديد روم متجر بيع وشراء الحسابات",
-    "set_middleman_channel": "[إدارة] تحديد روم طلبات الوساطة المعتمدة والتواصل بين الطرفين",
     "market": "عرض وإدارة بورصة تبادل الموارد بين أعضاء التحالف",
     "ai_speedup": "حاسبة التسريعات بالذكاء الاصطناعي مع إمكانية إرفاق صورة وحساب إجمالي الأيام",
     "ai_event": "حاسبة الأحداث بالذكاء الاصطناعي مع خطة إنهاء النقاط والوقت المطلوب",
     "حساب_التسريعات": "حاسبة التسريعات بالذكاء الاصطناعي مع إمكانية إرفاق صورة وحساب إجمالي الأيام",
     "حاسبة_الاحداث": "حاسبة الأحداث بالذكاء الاصطناعي مع خطة إنهاء النقاط والوقت المطلوب",
-    "shop": "🛍️ عرض جميع الحسابات والعروض المتاحة حالياً في المتجر",
-    "sell": "🏷️ تقديم طلب إدراج وعرض حساب للبيع داخل المتجر",
-    "view": "🔍 استعراض تفاصيل حساب معين برقم المعرف (ID)",
     "report": "🚨 الإبلاغ عن مشكلة شراء أو حساب مخالف أو التواصل مع الدعم",
-    "middleman": "🛡️ طلب وسيط معتمد لتأمين عملية التبادل والبيع",
     "battlelog": "📝 تسجيل واستدعاء سجل معارك التحالف",
     "help": "📖 مركز أوامر البوت، منظم حسب الوظيفة والإدارة والحرب والـ AI",
     "ai": "🤖 اسأل مستشار لوردس أو أرفق صورة عتاد أو تقرير لتحليلها",
@@ -237,23 +260,16 @@ ARABIC_COMMAND_DESCRIPTIONS = {
     "shelter": "🛡️ مؤقت حماية الجيش مع تنبيه قبل الانتهاء بـ15 دقيقة",
     "speedup": "🚀 اجمع التسريعات واحسب إجمالي الوقت المتاح",
     "monster": "🐾 اعرف أفضل أبطال الصيد حسب اسم الوحش",
-    "add_monster": "🐾 [إدارة] أضف وحشًا جديدًا إلى دليل الصيد",
     "dict": "📖 ابحث عن معنى مصطلح من مصطلحات Lords Mobile",
     "info": "ℹ️ اقرأ شرح الأحداث مثل ساحة التنين وKvK وحدث الجحيم",
-    "add_info": "ℹ️ [إدارة] أضف شرحًا جديدًا لأحد الأحداث",
     "task": "🎉 [إدارة] أضف مهمة لمهرجان التحالف لعضو محدد",
     "done": "✅ [إدارة] علّم مهمة مهرجان التحالف كمكتملة",
     "board": "🏅 اعرض لوحة صدارة مهرجان التحالف",
     "calc": "🧮 احسب تسريعات مهرجان التحالف أو اسأل عن تبادل الموارد",
-    "log_activity": "📋 [إدارة] سجّل مشاركة عضو في نشاط من أنشطة التحالف",
-    "stats_event": "📊 اعرض إحصائيات تفاعلية لمشاركة الأعضاء",
     "profile": "🪪 اعرض ملف عضو وإحصائيات مشاركته في التحالف",
     "top5": "🏆 اعرض أكثر خمسة أعضاء نشاطًا في الفعاليات والحشود",
-    "event_stats": "📊 اعرض تقرير مشاركة الأعضاء في فعالية محددة",
     "quiz": "🧠 جاوب على سؤال سريع عن Lords Mobile واجمع نقاطًا",
-    "reset_stats": "🔄 [إدارة] صفّر سجلات النشاط والمسابقة لأسبوع جديد",
     "hunt_log": "🐾 سجّل نتائج الصيد يدويًا أو من صورة أو من قائمة مجمعة",
-    "hunt_channel": "📍 [إدارة] حدد قناة تقارير الصيد والهدف اليومي",
     "hunt_list": "📊 اعرض عدد الوحوش التي اصطادها كل عضو والمتبقي من هدفه",
     "scout": "🔍 أرفق صورة عتاد الخصم أو بروفايله ليحللها الذكاء الاصطناعي",
     "geartiers": "🧰 اعرض تصنيف العتاد للحرب والصيد والاقتصاد",
@@ -264,9 +280,6 @@ ARABIC_COMMAND_DESCRIPTIONS = {
     "open": "📯 افتح نداء حشد ونبّه الأعضاء بالنوع المطلوب",
     "rally": "📯 افتح نداء حشد ذكي للتحالف",
     "rallyset": "✅ افتح حشدًا بزر تسجيل أخضر للمشاركين",
-    "delete_info": "🗑️ [إدارة] اختر شرحًا مضافًا واحذفه",
-    "edit_info": "✏️ [إدارة] عدّل شرحًا مضافًا أو أضف له صورة",
-    "delete_monster": "🗑️ [إدارة] اختر وحشًا مضافًا واحذفه",
     "edit_monster": "🖼️ [إدارة] اختر وحشًا لتعديل وتحديث صورته",
     "counter": "⚔️ اعرف التشكيلة المضادة الأفضل لتشكيلة العدو",
     "analyze": "🖼️ حلّل صورة تقرير المعركة والأرقام الموجودة بها",
@@ -278,10 +291,6 @@ ARABIC_COMMAND_DESCRIPTIONS = {
     "report": "📝 سجّل واستعرض تقارير معارك التحالف",
     "add": "📝 سجّل معركة جديدة في سجل السيرفر",
     "user": "🔍 اعرض سجل معارك عضو محدد",
-    "تحديد-روم-الترحيب": "👋 [إدارة] حدد قناة رسائل الأعضاء الجدد",
-    "تحديد-صورة-الترحيب": "🖼️ [إدارة] حدد خلفية بطاقة الترحيب",
-    "تحديد-رسالة-الترحيب": "✍️ [إدارة] خصص رسالة الترحيب للأعضاء الجدد",
-    "استعادة-رسالة-الترحيب": "🔄 [إدارة] أعد رسالة الترحيب الافتراضية",
 }
 
 def _walk_commands(command_list, prefix: str = ""):
@@ -316,10 +325,22 @@ def command_category(path: str) -> str:
     root = path.split(" ", 1)[0]
     if root in {"ai", "scout", "optimize"} or path.startswith("gf optimize"):
         return "ai"
+    if root == "admin":
+        if path.startswith(("admin monster", "admin guide")):
+            return "calculators"
+        if path.startswith("admin track"):
+            return "alliance"
+        if path.startswith("admin welcome"):
+            return "welcome"
+        if path.startswith("admin channel hunt"):
+            return "hunt"
+        if path.startswith(("admin channel shop", "admin channel middleman")):
+            return "accounts_shop"
+        return "general"
+    if root == "shop":
+        return "accounts_shop"
     if root in {"event", "speedup", "monster", "dict", "info", "add_info", "add_monster", "delete_info", "edit_info", "delete_monster", "edit_monster", "geartiers"}:
         return "calculators"
-    if root in {"shop", "sell", "view", "report", "middleman"}:
-        return "market"
     if root in {"counter", "analyze", "battlelog", "rallyset"}:
         return "war"
     if root in {"log_activity", "information", "user_admin_check", "top5", "event_stats", "stats_event", "gf"}:
@@ -354,16 +375,17 @@ def command_description(path: str, command: app_commands.Command, lang: str) -> 
             meta = CATEGORY_META[command_category(path)]
             description = f"{meta['emoji']} أمر متاح في قسم {meta['ar']}."
 
-        if command.name in WELCOME_COMMANDS:
+        if path in WELCOME_COMMANDS:
             welcome_copy = {
-                "استعادة-رسالة-الترحيب": "🔄 [إدارة] إرجاع رسالة الترحيب الافتراضية.",
-                "تحديد-رسالة-الترحيب": "✍️ [إدارة] تخصيص نص الترحيب مع متغيرات العضو والداعي والعدد.",
-                "تحديد-روم-الترحيب": "👋 [إدارة] اختيار الروم الذي يستقبل رسائل الأعضاء الجدد.",
-                "تحديد-صورة-الترحيب": "🖼️ [إدارة] تعيين خلفية بطاقة الترحيب.",
+                "admin welcome channel": "👋 [Admin] Choose the channel for new-member welcome messages.",
+                "admin welcome image": "🖼️ [Admin] Set the welcome card background.",
+                "admin welcome color": "🎨 [Admin] Set the welcome name color.",
+                "admin welcome message": "✍️ [Admin] Customize the welcome message.",
+                "admin welcome reset": "🔄 [Admin] Restore the default welcome message.",
             }
-            description = welcome_copy.get(command.name, description)
+            description = welcome_copy.get(path, description)
 
-    if any(hint in description.lower() for hint in ADMIN_HINTS) or command.name in WELCOME_COMMANDS:
+    if any(hint in description.lower() for hint in ADMIN_HINTS) or path in WELCOME_COMMANDS:
         if not description.startswith("🔒"):
             description = f"🔒 {description}"
     return description[:1000]
@@ -682,7 +704,7 @@ class HelpCog(commands.Cog):
             )
             embed.add_field(name="⚔️ War & Rallies", value="• `/rally` — Set up war rallies & counters\n• `/intel` — Log kingdom enemy scout intel", inline=False)
             embed.add_field(name="🤖 AI & Calculators", value="• `/حساب_التسريعات` (`/ai_speedup`) — AI speedup calculator\n• `/حاسبة_الاحداث` (`/ai_event`) — AI Hell/Solo event points\n• `/monster` — Best hero lineups for monster hunting\n• `/info` — Essential castle guides & research", inline=False)
-            embed.add_field(name="🌾 Resources & Trading", value="• `/market` — Alliance resource exchange board\n• `/shop` — Browse verified accounts for sale\n• `/sell` — List an account with middleman protection\n• `/middleman` — Request official trade mediation", inline=False)
+            embed.add_field(name="🌾 Resources & Trading", value="• `/market` — Alliance resource exchange board\n• `/shop browse` — Browse verified accounts for sale\n• `/shop sell` — List an account with middleman protection\n• `/shop middleman` — Request official trade mediation", inline=False)
             embed.add_field(name="🏰 Alliance Activity", value="• `/hunt_list` — Track members' daily monster hunts\n• `/board` — Guild Fest leaderboard\n• `/help` — Full interactive command dashboard", inline=False)
             embed.set_footer(text="Tip: Use the interactive dropdown menu below to browse any section in detail.")
         else:
@@ -693,7 +715,7 @@ class HelpCog(commands.Cog):
             )
             embed.add_field(name="⚔️ الحرب والحشود", value="• `/rally` — تنظيم الحشود والكاونترات\n• `/intel` — تسجيل تقارير واستطلاع العدو", inline=False)
             embed.add_field(name="🤖 الذكاء الاصطناعي والحواسب", value="• `/حساب_التسريعات` — حاسبة تسريعات ذكية بالـ AI\n• `/حاسبة_الاحداث` — حساب متطلبات أحداث الجحيم والفردي\n• `/monster` — أفضل أبطال صيد الوحوش (مترجم)\n• `/info` — أدلة القلعة وتشكيلات الأبطال والمعدات", inline=False)
-            embed.add_field(name="🌾 الموارد والتجارة", value="• `/market` — بورصة موارد التحالف وحساب التبادلات\n• `/shop` — تصفح حسابات اللعبة المعروضة للبيع\n• `/sell` — عرض حسابك للبيع بتأمين الوساطة\n• `/middleman` — طلب وسيط معتمد لتأمين الصفقة", inline=False)
+            embed.add_field(name="🌾 الموارد والتجارة", value="• `/market` — بورصة موارد التحالف وحساب التبادلات\n• `/shop browse` — تصفح حسابات اللعبة المعروضة للبيع\n• `/shop sell` — عرض حسابك للبيع بتأمين الوساطة\n• `/shop middleman` — طلب وسيط معتمد لتأمين الصفقة", inline=False)
             embed.add_field(name="🏰 التحالف والمتابعة", value="• `/hunt_list` — متابعة صيد الأعضاء اليومي\n• `/board` — صدارة وترتيب مهرجان التحالف\n• `/help` — لوحة المساعدة التفاعلية الشاملة", inline=False)
             embed.set_footer(text="نصيحة: استخدم القائمة المنسدلة بالأسفل لاستعراض أي قسم أو أمر بالتفصيل.")
         return embed
