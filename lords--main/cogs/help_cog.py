@@ -101,7 +101,6 @@ CATEGORY_ORDER = [
     "market",
     "accounts_shop",
     "hunt",
-    "shield",
     "settings",
     "welcome",
     "games",
@@ -139,6 +138,14 @@ ADMIN_HINTS = (
 
 # English copy used by /help when the user selects English.
 ENGLISH_COMMAND_DESCRIPTIONS = {
+    "set_middleman_channel": "[Admin] Set the middleman requests channel",
+    "set_shop_channel": "[Admin] Set the accounts shop channel",
+    "market": "Resource exchange market (offers, listing, cancelling, and management channel)",
+    "حاسبة_الاحداث": "حاسبة أحداث الجحيم والمنفرد التفاعلية بالذكاء الاصطناعي",
+    "حساب_التسريعات": "حاسبة التسريعات التفاعلية بالذكاء الاصطناعي مع خطة تفصيلية",
+    "ai_event": "Interactive calculator: AI calculates Hell and Solo event targets and required points",
+    "ai_speedup": "Interactive calculator: AI evaluates and calculates your speedups with a detailed breakdown",
+    "say": "[Admin] Send an announcement or message in the bot's name to a specific channel",
     "add_reply": "[Admin] Add a canned reply with shortcuts",
     "delete_reply": "[Admin] Delete a canned reply",
     "replies": "List all registered canned replies",
@@ -661,7 +668,7 @@ class HelpCog(commands.Cog):
                 description="The most essential commands for your alliance leaders and members:",
                 color=discord.Color.gold()
             )
-            embed.add_field(name="⚔️ War & Rallies", value="• `/rally` — Set up war rallies & counters\n• `/shield` — Set shield expiration timer & alarm\n• `/intel` — Log kingdom enemy scout intel", inline=False)
+            embed.add_field(name="⚔️ War & Rallies", value="• `/rally` — Set up war rallies & counters\n• `/intel` — Log kingdom enemy scout intel", inline=False)
             embed.add_field(name="🤖 AI & Calculators", value="• `/حساب_التسريعات` (`/ai_speedup`) — AI speedup calculator\n• `/حاسبة_الاحداث` (`/ai_event`) — AI Hell/Solo event points\n• `/monster` — Best hero lineups for monster hunting\n• `/info` — Essential castle guides & research", inline=False)
             embed.add_field(name="🌾 Resources & Trading", value="• `/market` — Alliance resource exchange board\n• `/shop` — Browse verified accounts for sale\n• `/sell` — List an account with middleman protection\n• `/middleman` — Request official trade mediation", inline=False)
             embed.add_field(name="🏰 Alliance Activity", value="• `/hunt_list` — Track members' daily monster hunts\n• `/board` — Guild Fest leaderboard\n• `/help` — Full interactive command dashboard", inline=False)
@@ -672,7 +679,7 @@ class HelpCog(commands.Cog):
                 description="أهم الأوامر اليومية التي يحتاجها كل قائد وعضو في التحالف:",
                 color=discord.Color.gold()
             )
-            embed.add_field(name="⚔️ الحرب والحشود", value="• `/rally` — تنظيم الحشود والكاونترات\n• `/shield` — ضبط منبه ومؤقت الدرع قبل سقوطه\n• `/intel` — تسجيل تقارير واستطلاع العدو", inline=False)
+            embed.add_field(name="⚔️ الحرب والحشود", value="• `/rally` — تنظيم الحشود والكاونترات\n• `/intel` — تسجيل تقارير واستطلاع العدو", inline=False)
             embed.add_field(name="🤖 الذكاء الاصطناعي والحواسب", value="• `/حساب_التسريعات` — حاسبة تسريعات ذكية بالـ AI\n• `/حاسبة_الاحداث` — حساب متطلبات أحداث الجحيم والفردي\n• `/monster` — أفضل أبطال صيد الوحوش (مترجم)\n• `/info` — أدلة القلعة وتشكيلات الأبطال والمعدات", inline=False)
             embed.add_field(name="🌾 الموارد والتجارة", value="• `/market` — بورصة موارد التحالف وحساب التبادلات\n• `/shop` — تصفح حسابات اللعبة المعروضة للبيع\n• `/sell` — عرض حسابك للبيع بتأمين الوساطة\n• `/middleman` — طلب وسيط معتمد لتأمين الصفقة", inline=False)
             embed.add_field(name="🏰 التحالف والمتابعة", value="• `/hunt_list` — متابعة صيد الأعضاء اليومي\n• `/board` — صدارة وترتيب مهرجان التحالف\n• `/help` — لوحة المساعدة التفاعلية الشاملة", inline=False)
