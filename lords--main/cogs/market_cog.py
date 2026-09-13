@@ -156,8 +156,8 @@ async def setup(bot: commands.Bot):
 
 MARKET_CHANNEL_KEY = "market_channel"
 
-@market_group.command(name="set_channel", description="⚙️ [إدارة] تحديد روم بورصة تبادل الموارد")
-@app_commands.describe(channel="الروم المخصص لنشر عروض تبادل الموارد")
+@market_group.command(name="set_channel", description="⚙️ [Admin / إدارة] Set resource market channel | تحديد روم بورصة تبادل الموارد")
+@app_commands.describe(channel="روم بورصة الموارد | Resource market channel")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def set_market_channel_cmd(interaction: discord.Interaction, channel: discord.TextChannel):
     data = load(MARKET_CHANNEL_KEY)
