@@ -109,7 +109,6 @@ class SettingsCog(commands.Cog):
 async def setup(bot: commands.Bot):
     bot.tree.add_command(language_group)
     bot.tree.add_command(languageme)
-    bot.tree.add_command(bot_channel)
     await bot.add_cog(SettingsCog(bot))
 
 
