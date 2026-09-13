@@ -84,6 +84,7 @@ def init_db():
         )
     """)
 
+    clean_invalid_subscriptions()
     conn.commit()
     conn.close()
 
@@ -153,6 +154,24 @@ def renew_subscription(server_id: str, days: int):
     conn.commit()
     conn.close()
     return expires_at
+
+
+def is_valid_server_id(value) -> bool:
+    """يتأكد أن آيدي السيرفر رقم صحيح / Ensure server id is numeric."""
+    return str(value).strip().isdigit()
+
+
+def clean_invalid_subscriptions():
+    """يحذف أي سجلات اشتراك أو ملاحظات آيدي السيرفر فيها نص غير رقمي."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT server_id FROM subscriptions")
+    bad = [r[0] for r in cur.fetchall() if not str(r[0]).strip().isdigit()]
+    for sid in bad:
+        cur.execute("DELETE FROM subscriptions WHERE server_id = ?", (sid,))
+    conn.commit()
+    conn.close()
+    return bad
 
 
 def delete_subscription(server_id: str):
@@ -486,6 +505,10 @@ class SubscriptionCog(commands.Cog):
         now = datetime.datetime.utcnow()
 
         for server_id, expires_at, warned_1h, expired_notified in rows:
+            if not is_valid_server_id(server_id):
+                # سجل تالف (آيدي غير رقمي) - حذفه بدل ايقاف البوت
+                delete_subscription(server_id)
+                continue
             expiry_date = datetime.datetime.fromisoformat(expires_at)
             guild = self.bot.get_guild(int(server_id))
 
@@ -630,7 +653,7 @@ class SubscriptionCog(commands.Cog):
         for server_id, expires_at in rows:
             expiry_date = datetime.datetime.fromisoformat(expires_at)
             remaining_days = (expiry_date - now).days
-            guild = self.bot.get_guild(int(server_id))
+            guild = self.bot.get_guild(int(server_id)) if is_valid_server_id(server_id) else None
             guild_name = guild.name if guild else "غير معروف (البوت ليس فيه حالياً)"
 
             if expiry_date > now:
@@ -663,6 +686,11 @@ class SubscriptionCog(commands.Cog):
             await interaction.response.send_message("❌ عدد الأيام يجب أن يكون أكبر من صفر.", ephemeral=True)
             return
 
+        server_id = str(server_id).strip()
+        if not is_valid_server_id(server_id):
+            await interaction.response.send_message("❌ آيدي السيرفر غير صحيح. يجب أن يكون رقماً فقط مثل: `123456789012345678`", ephemeral=True)
+            return
+
         expires_at = set_subscription(server_id, days)
         expiry_date = datetime.datetime.fromisoformat(expires_at)
         await interaction.response.send_message(
@@ -680,6 +708,11 @@ class SubscriptionCog(commands.Cog):
             await interaction.response.send_message("❌ عدد الأيام يجب أن يكون أكبر من صفر.", ephemeral=True)
             return
 
+        server_id = str(server_id).strip()
+        if not is_valid_server_id(server_id):
+            await interaction.response.send_message("❌ آيدي السيرفر غير صحيح. يجب أن يكون رقماً فقط مثل: `123456789012345678`", ephemeral=True)
+            return
+
         expires_at = renew_subscription(server_id, days)
         expiry_date = datetime.datetime.fromisoformat(expires_at)
         await interaction.response.send_message(
@@ -693,8 +726,11 @@ class SubscriptionCog(commands.Cog):
         if await deny_if_not_owner(interaction):
             return
 
-        guild = self.bot.get_guild(int(server_id))
-        delete_subscription(server_id)
+        if not is_valid_server_id(server_id):
+            await interaction.response.send_message("❌ آيدي السيرفر غير صحيح. يجب أن يكون رقماً فقط مثل: `123456789012345678`", ephemeral=True)
+            return
+        guild = self.bot.get_guild(int(server_id.strip()))
+        delete_subscription(server_id.strip())
 
         if guild:
             await interaction.response.send_message(
