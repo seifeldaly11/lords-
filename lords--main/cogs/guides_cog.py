@@ -939,11 +939,33 @@ class GuidesCog(commands.Cog):
         return deduped
 
     def _get_info(self, guild_id: int) -> dict:
-        """يرجع الأقسام الجاهزة وأقسام الإدارة بصيغة ثنائية اللغة."""
+        """يرجع أقسام الإدارة فقط بعد حذف الأقسام الافتراضية القديمة بناءً على طلب الإدارة."""
         data = load(CUSTOM_INFO_FILE)
         custom = _prepare_custom_info(data.get(str(guild_id), {}))
+        
+        # قائمة الأقسام المحذوفة نهائياً
+        ignored_keys = {"castle_basics", "hero_formations", "monsters_scrolls", "gear_tactics", "events"}
+        ignored_titles = {
+            "أساسيات القلعة والأبحاث", "تشكيلات الأبطال والقوات", "الوحوش واللفائف",
+            "المعدات والتكتيكات", "الأحداث", "castle basics", "hero formations",
+            "monsters and pacts", "gear and tactics", "events"
+        }
+        
+        filtered_categories = []
+        all_raw = list(self.static_info_data.get("categories", [])) + list(custom.values())
+        for cat in all_raw:
+            k = str(cat.get("key", "")).lower()
+            t_ar = str(cat.get("title", {}).get("ar", "")).strip().lower()
+            t_en = str(cat.get("title", {}).get("en", "")).strip().lower()
+            
+            if k in ignored_keys:
+                continue
+            if any(ign.lower() in t_ar or ign.lower() in t_en for ign in ignored_titles):
+                continue
+            filtered_categories.append(cat)
+
         return {
-            "categories": list(self.static_info_data.get("categories", [])) + list(custom.values()),
+            "categories": filtered_categories,
             "custom": custom,
         }
 
