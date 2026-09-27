@@ -10,7 +10,7 @@ from discord.ext import commands
 from utils.knowledge import get_system_prompt
 from utils.i18n import get_lang, t
 from utils.ui import styled_embed, loading_embed, ROYAL_BLUE
-from cogs.guild_cog import gf_group
+from utils.command_groups import ai_group
 
 MAX_INPUT_CHARS = 1500  # حماية ضد الإدخال الطويل جداً
 log = logging.getLogger("lordsbot.ai")
@@ -256,19 +256,13 @@ class AICog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @app_commands.command(
-        name="speedup",
-        description="⏱️ Bilingual AI speedup calculator"
-    )
+    @ai_group.command(name="speedup", description="⏱️ Bilingual AI speedup calculator")
     @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
     async def speedup(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
         await interaction.response.send_modal(SpeedupCalcModal(lang))
 
-    @app_commands.command(
-        name="event",
-        description="🏆 Bilingual AI event calculator"
-    )
+    @ai_group.command(name="event", description="🏆 Bilingual AI event calculator")
     @app_commands.checks.cooldown(1, 10.0, key=lambda i: i.user.id)
     async def event(self, interaction: discord.Interaction):
         lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -325,7 +319,7 @@ class GfOptimizeModal(discord.ui.Modal, title="🎉 مستشار مهرجان ا
             await interaction.followup.send(embed=embed)
 
 
-@gf_group.command(name="optimize", description="🤖 مستشار AI يقترح أفضل طريقة لتنفيذ مهمة مهرجان النقابة بمواردك")
+@ai_group.command(name="optimize", description="🤖 مستشار AI يقترح أفضل طريقة لتنفيذ مهمة مهرجان النقابة بمواردك")
 @app_commands.checks.cooldown(1, 15.0, key=lambda i: i.user.id)
 async def gf_optimize(interaction: discord.Interaction):
     await interaction.response.send_modal(GfOptimizeModal())
