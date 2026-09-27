@@ -41,6 +41,11 @@ ai_group = app_commands.Group(
     description="🤖 أدوات الذكاء الاصطناعي والحاسبات | AI tools and calculators"
 )
 
+subscription_group = app_commands.Group(
+    name="subscription",
+    description="💳 إدارة اشتراكات السيرفرات | Subscription management"
+)
+
 shop_group = app_commands.Group(
     name="shop",
     description="🛍️ متجر الحسابات | Accounts shop"
