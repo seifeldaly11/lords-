@@ -86,6 +86,13 @@ async def on_message(message: discord.Message):
     if message.author.bot:
         return
 
+    if message.guild is None:
+        subscription_cog = bot.get_cog("SubscriptionCog")
+        if subscription_cog is not None and await subscription_cog.handle_admin_dm(message):
+            return
+        await bot.process_commands(message)
+        return
+
     if message.content.strip() == "!test":
         components_cog = bot.get_cog("ComponentsCog")
         if components_cog is not None:
