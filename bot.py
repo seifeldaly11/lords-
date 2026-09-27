@@ -69,6 +69,13 @@ INITIAL_EXTENSIONS = [
     "cogs.welcome_cog",
     "cogs.subscription_cog",
     "cogs.replies_cog",
+    # منقولة من بوت الإدارة (bot-updated / JavaScript):
+    "cogs.moderation_cog",
+    "cogs.security_cog",
+    "cogs.tickets_cog",
+    "cogs.economy_cog",
+    "cogs.community_cog",
+    "cogs.menu_cog",
 ]
 
 

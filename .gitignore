@@ -1,5 +1,7 @@
 __pycache__/
 *.py[cod]
+.env
 guild_settings.json
+storage/*.db
 storage/*.db-shm
 storage/*.db-wal

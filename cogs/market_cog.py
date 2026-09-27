@@ -9,6 +9,25 @@ from utils.i18n import get_lang, t, RESOURCE_LABELS_I18N
 from utils.command_groups import admin_channel_group
 
 MARKET_FILE = "market"
+MARKET_CHANNEL_KEY = "market_channel"
+
+
+async def _require_market_channel(interaction: discord.Interaction) -> bool:
+    """لو الأدمن حدد روم رسمي للبورصة (/admin channel market)، الأمر ده مايشتغلش
+    غير جوه الروم ده بس. لو محدش حدد روم لسه، الأمر يشتغل في أي روم زي الأول."""
+    data = load(MARKET_CHANNEL_KEY)
+    channel_id = data.get(str(interaction.guild_id))
+    if channel_id and interaction.channel_id != channel_id:
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        msg = (
+            f"❌ استخدم أوامر البورصة داخل <#{channel_id}> فقط."
+            if lang == "ar"
+            else f"❌ Please use market commands only in <#{channel_id}>."
+        )
+        await interaction.response.send_message(msg, ephemeral=True)
+        return False
+    return True
+
 
 # ⚠️ أسماء الموارد هنا (Choice.name) هي Metadata بتتسجل مع ديسكورد وقت تشغيل
 # البوت - زي أسماء ووصف الأوامر بالظبط - فمش بتتغيّر ديناميكياً مع /language.
@@ -40,6 +59,8 @@ async def market_offer(
     want_resource: app_commands.Choice[str],
     want_amount: app_commands.Range[float, 1, None]
 ):
+    if not await _require_market_channel(interaction):
+        return
     lang = get_lang(interaction.guild_id, interaction.user.id)
 
     if give_resource.value == want_resource.value:
@@ -106,6 +127,8 @@ async def market_offer(
 
 @market_group.command(name="list", description="📋 عرض كل عروض التبادل النشطة في السيرفر")
 async def market_list(interaction: discord.Interaction):
+    if not await _require_market_channel(interaction):
+        return
     lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(MARKET_FILE)
     offers = [o for o in data.get(str(interaction.guild_id), []) if o["active"]]
@@ -131,6 +154,8 @@ async def market_list(interaction: discord.Interaction):
 
 @market_group.command(name="cancel", description="🗑️ ألغِ آخر عرض تبادل قمت بإضافته")
 async def market_cancel(interaction: discord.Interaction):
+    if not await _require_market_channel(interaction):
+        return
     lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(MARKET_FILE)
     gid = str(interaction.guild_id)
@@ -155,7 +180,6 @@ async def setup(bot: commands.Bot):
     bot.tree.add_command(market_group)
     await bot.add_cog(MarketCog(bot))
 
-MARKET_CHANNEL_KEY = "market_channel"
 
 @admin_channel_group.command(name="market", description="⚙️ [Admin / إدارة] Set resource market channel | تحديد روم بورصة تبادل الموارد")
 @app_commands.describe(channel="روم بورصة الموارد | Resource market channel")

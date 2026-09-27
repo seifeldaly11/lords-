@@ -57,6 +57,23 @@ def _leadership_mention(guild: Optional[discord.Guild]) -> str:
     return role.mention if role else ""
 
 
+async def _require_configured_channel(interaction: discord.Interaction, key: str, ar_label: str, en_label: str) -> bool:
+    """لو الأدمن حدد روم رسمي (/admin channel ...)، الأمر ده مايشتغلش غير جوّاه.
+    لو محدش حدد روم لسه، الأمر يفضل شغال في أي روم زي الأول."""
+    data = load(key)
+    channel_id = data.get(str(interaction.guild_id))
+    if channel_id and interaction.channel_id != channel_id:
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        msg = (
+            f"❌ استخدم {ar_label} داخل <#{channel_id}> فقط."
+            if lang == "ar"
+            else f"❌ Please use {en_label} only in <#{channel_id}>."
+        )
+        await interaction.response.send_message(msg, ephemeral=True)
+        return False
+    return True
+
+
 # ---------------------------------------------------------------------------
 # 🛡️ زرار استلام الوسيط
 # ---------------------------------------------------------------------------
@@ -80,11 +97,23 @@ class MiddlemanView(discord.ui.View):
             return
 
         data, entries = _guild_entries(MIDDLEMAN_FILE, interaction.guild_id)
+        thread_id = None
         for entry in entries:
             if entry["id"] == self.request_id:
                 entry["middleman_id"] = member.id
                 entry["status"] = "taken"
+                thread_id = entry.get("thread_id")
         save(MIDDLEMAN_FILE, data)
+
+        # ضم الوسيط لروم/ثريد التعامل الخاص (لو اتعمل واحد وقت إنشاء الطلب)
+        if thread_id:
+            thread = interaction.guild.get_channel_or_thread(thread_id) if interaction.guild else None
+            if thread:
+                try:
+                    await thread.add_user(member)
+                    await thread.send(t("middleman_taken", lang, user=member.mention))
+                except Exception:
+                    pass
 
         button.disabled = True
         try:
@@ -107,6 +136,8 @@ class ShopCog(commands.Cog):
     # ---------------------------------------------------------------- /shop browse
     @shop_group.command(name="browse", description="🛍️ Browse all accounts currently listed in the shop")
     async def shop(self, interaction: discord.Interaction):
+        if not await _require_configured_channel(interaction, SHOP_CHANNEL_KEY, "متجر الحسابات", "the accounts shop"):
+            return
         lang = get_lang(interaction.guild_id, interaction.user.id)
         _, entries = _guild_entries(SHOP_FILE, interaction.guild_id)
         open_entries = [e for e in entries if e.get("status") == "open"]
@@ -158,6 +189,8 @@ class ShopCog(commands.Cog):
         image5: Optional[discord.Attachment] = None,
         more_images_urls: Optional[str] = None,
     ):
+        if not await _require_configured_channel(interaction, SHOP_CHANNEL_KEY, "متجر الحسابات", "the accounts shop"):
+            return
         lang = get_lang(interaction.guild_id, interaction.user.id)
 
         attachments = [img for img in [image1, image2, image3, image4, image5] if img is not None]
@@ -196,6 +229,8 @@ class ShopCog(commands.Cog):
     @shop_group.command(name="view", description="🔍 View full details of a listing by its ID")
     @app_commands.describe(listing_id="Listing ID from /shop browse / رقم معرف العرض")
     async def view(self, interaction: discord.Interaction, listing_id: str):
+        if not await _require_configured_channel(interaction, SHOP_CHANNEL_KEY, "متجر الحسابات", "the accounts shop"):
+            return
         lang = get_lang(interaction.guild_id, interaction.user.id)
         _, entries = _guild_entries(SHOP_FILE, interaction.guild_id)
         wanted = listing_id.strip().upper()
@@ -309,6 +344,8 @@ class ShopCog(commands.Cog):
         partner: Optional[discord.Member] = None,
         listing_id: Optional[str] = None,
     ):
+        if not await _require_configured_channel(interaction, MIDDLEMAN_CHANNEL_KEY, "طلبات الوساطة", "middleman requests"):
+            return
         lang = get_lang(interaction.guild_id, interaction.user.id)
         data, entries = _guild_entries(MIDDLEMAN_FILE, interaction.guild_id)
         entry = {
@@ -319,6 +356,7 @@ class ShopCog(commands.Cog):
             "deal": deal,
             "status": "open",
             "middleman_id": None,
+            "thread_id": None,
             "timestamp": _now_iso(),
         }
         entries.append(entry)
@@ -338,11 +376,40 @@ class ShopCog(commands.Cog):
         embed.add_field(name=t("middleman_field_deal", lang), value=deal[:1000], inline=False)
 
         mention = _leadership_mention(interaction.guild)
-        await interaction.response.send_message(
-            content=mention or None,
-            embed=embed,
-            view=MiddlemanView(lang, entry["id"]),
-        )
+
+        # 🔒 محاولة فتح ثريد خاص (بريڤت) جوه نفس روم الوساطة عشان الكلام بين
+        # الطرفين (والوسيط بعد كده) يبقى في مكان مخصص لهم مش في الروم العام.
+        thread = None
+        try:
+            thread = await interaction.channel.create_thread(
+                name=f"وسيط-{entry['id']}",
+                type=discord.ChannelType.private_thread,
+                invitable=False,
+                reason=f"طلب وسيط #{entry['id']} بواسطة {interaction.user}",
+            )
+            await thread.add_user(interaction.user)
+            if partner:
+                await thread.add_user(partner)
+            entry["thread_id"] = thread.id
+            save(MIDDLEMAN_FILE, data)
+        except Exception:
+            thread = None
+
+        if thread:
+            await thread.send(content=mention or None, embed=embed, view=MiddlemanView(lang, entry["id"]))
+            confirm = (
+                f"✅ تم فتح روم خاص لطلبك: {thread.mention}"
+                if lang == "ar"
+                else f"✅ A private room was opened for your request: {thread.mention}"
+            )
+            await interaction.response.send_message(confirm, ephemeral=True)
+        else:
+            # فشل إنشاء الثريد (صلاحيات/نوع روم غير مدعوم) -> نرجع لنفس السلوك القديم
+            await interaction.response.send_message(
+                content=mention or None,
+                embed=embed,
+                view=MiddlemanView(lang, entry["id"]),
+            )
 
 
 

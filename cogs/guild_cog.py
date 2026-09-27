@@ -8,8 +8,13 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.storage import load, save, load_json_data
-from utils.i18n import get_lang, t, ACTIVITY_TYPE_LABELS_I18N
-from cogs.rally_cog import RALLY_LOG_FILE, rally_type_label, rally_result_label
+from utils.i18n import (
+    get_lang,
+    t,
+    ACTIVITY_TYPE_LABELS_I18N,
+    RALLY_TYPE_LABELS_I18N,
+    RALLY_RESULT_LABELS_I18N,
+)
 from cogs.war_cog import REPORTS_FILE
 from utils.command_groups import admin_track_group
 from utils.ui import styled_embed, ROYAL_BLUE
@@ -17,6 +22,7 @@ from utils.ui import styled_embed, ROYAL_BLUE
 ACTIVITY_FILE = "activity"
 QUIZ_FILE = "quiz_scores"
 GF_FILE = "guild_fest"
+RALLY_LOG_FILE = "rally_log"
 
 ACTIVITY_TYPE_KEYS = ["rally", "guild_fest", "dragon_arena", "kvk"]
 
@@ -26,6 +32,14 @@ RANKS = [
     (50, "rank_field_leader"),
     (100, "rank_lords_expert"),
 ]
+
+
+def rally_type_label(value: str, lang: str) -> str:
+    return RALLY_TYPE_LABELS_I18N.get(value, {}).get(lang, value)
+
+
+def rally_result_label(value: str, lang: str) -> str:
+    return RALLY_RESULT_LABELS_I18N.get(value, {}).get(lang, value)
 
 
 def get_rank(points: int, lang: str = "ar") -> str:

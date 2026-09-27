@@ -148,6 +148,59 @@ python bot.py
 - `/shop middleman` — طلب وسيط معتمد لتأمين الصفقة.
 - `/market set_channel [channel]` *(إدارة)* — تحديد الروم المخصصة لبورصة تبادل الموارد.
 
+## 💳 تقسيم اشتراكات أوامر Thailand
+
+هذا التقسيم للتوثيق وتجهيز نظام الاشتراكات لاحقاً فقط. حالياً الأوامر تعمل حسب
+الصلاحيات الموجودة في كل أمر، ولم يتم ربطها بالدفع أو الاشتراكات بعد.
+
+### 1) اشتراك البوت الأساسي
+
+يشمل أوامر البوت العامة والإدارة اليومية والتذاكر والاقتصاد:
+
+- **معلومات البوت والسيرفر:** `/util ping`, `/util uptime`, `/util avatar`,
+  `/util banner`, `/util userinfo`, `/util serverinfo`, `/util membercount`,
+  `/util roles`, `/util emojis`, `/util botinfo`, `/util invite`.
+- **الاقتصاد وXP:** `/economy coins`, `/economy daily`, `/economy top show`.
+  أوامر الإدارة الخاصة بالاقتصاد مثل `addcoins`, `restartcoins`, `addxp`
+  و`top restart` تظل مقفولة على المطورين.
+- **الإدارة اليومية:** `/mod ban`, `/mod unban`, `/mod kick`, `/mod warn`,
+  `/mod warnings`, `/mod clear-warnings`, `/mod clear`, `/mod mute`,
+  `/mod unmute`, `/mod timeout`, `/mod untimeout`, `/mod vmute`,
+  `/mod vunmute`, `/mod lock`, `/mod unlock`, `/mod hide`, `/mod unhide`,
+  `/mod slowmode`, `/mod role`, `/mod nuke`.
+- **التذاكر:** `/ticket setup`, `/ticket category`, `/ticket come`،
+  مع أزرار فتح التذكرة واستلامها وإغلاقها.
+- **المجتمع والتفاعل:** `/community announce`, `/community review`,
+  `/community setreviewchannel`, `/community autoresponse add`,
+  `/community autoresponse remove`, `/community autoresponse list`,
+  `/community autoresponse clear`.
+
+### 2) إضافة حماية السيرفر — اشتراك إضافي
+
+هذه الإضافة مخصصة لأنظمة Anti-Nuke والحماية المتقدمة:
+
+- **الحماية:** `/security protection status`,
+  `/security protection toggle`, `/security togglepro`.
+- **الوايت ليست:** `/security whitelist grant-user`,
+  `/security whitelist grant-role`, `/security whitelist revoke-user`,
+  `/security whitelist view`.
+- **النسخ الاحتياطية:** `/security backup create`,
+  `/security backup restore-roles`, `/security backup restore-channels`,
+  `/security backup info`.
+- **الحدود والإجراءات:** `/security limit-settings`.
+- **الحماية التلقائية:** Anti-Bot، Anti-Spam، Anti-Raid، حماية منح الرتب،
+  حماية الرتب، وحماية القنوات، مع تسجيل المخالفات وإشعار المالك حسب الإعدادات.
+
+### ملاحظات الدمج
+
+- تم توثيق أوامر Thailand هنا بصيغة المجموعات المستخدمة في مشروع Lords لتجنب
+  تسجيل `bot.py` ثانٍ أو تكرار أوامر Discord.
+- نسخة Thailand المستقلة كانت تحتوي على أوامر بادئة مثل `+coins` و`+mute`،
+  لكن نسخة Lords الحالية تستخدم Slash Commands والمجموعات؛ لذلك لم يتم نسخ
+  بوت ثانٍ فوق البوت الرئيسي.
+- بيانات Lords تستخدم SQLite داخل `storage/`، لذلك لا يتم خلط ملفات JSON
+  الخاصة بنسخة Thailand معها حتى لا يحدث تعارض في التخزين.
+
 ## 🔒 ملاحظات أمان تم مراعاتها
 - كل أمر بيأثر على بيانات **عضو تاني** (`/admin track log`, `/gf task`, `/gf done`) مقفول على صلاحية `Manage Server` فقط.
 - `/admin track reset` يحتاج صلاحية `Administrator` + رسالة تأكيد بزرار قبل التنفيذ الفعلي (مفيش تنفيذ مباشر بضغطة واحدة).
@@ -174,3 +227,90 @@ python bot.py
 3. **تسريحات فعلية للأدوار (Roles)** — رتبة ديسكورد تلقائية للاعب لما يوصل رتبة 🧠 خبير لوردس في الكويز.
 4. **تقرير أسبوعي تلقائي** يتبعت في تشانيل معيّن (بدل `/admin track stats` اليدوي) قبل `/admin track reset` بيوم.
 5. **ذاكرة محادثة لـ `/ai`** بحيث يفتكر آخر سؤالين/ثلاثة من نفس اليوزر بدل ما يبدأ من الصفر كل مرة.
+
+## 🔀 دمج ميزات بوت الإدارة (moderation/tickets/economy)
+
+تمت إضافة الميزات دي من بوت جافاسكريبت منفصل (moderation + security/anti-nuke +
+tickets + economy/XP + أدوات عامة) كـ cogs بايثون جديدة داخل هذا المشروع:
+
+- `cogs/moderation_cog.py` — ban, unban, kick, mute/unmute, timeout/untimeout,
+  vmute/vunmute, warn/warnings/clear-warnings, clear, lock/unlock, hide/unhide,
+  slowmode, role, nuke.
+- `cogs/security_cog.py` — نظام حماية (anti-spam تلقائي، anti-bot عند دخول بوتات،
+  حماية حذف الرولات/القنوات مع عقوبات)، `/protection`, `/whitelist`, `/backup`,
+  `/limit-settings`, `/togglepro`.
+- `cogs/tickets_cog.py` — `/ticket-setup`, `/ticket-category`, `/come`، بالإضافة
+  لأزرار فتح/مطالبة/إغلاق التذاكر.
+- `cogs/economy_cog.py` — `/coins`, `/daily`, `/addcoins`, `/restartcoins`,
+  `/addxp`, `/top show`, `/top restart` (XP يتزاد تلقائياً مع كل رسالة).
+- `cogs/community_cog.py` — `/announce`, `/autoresponse`, `/review`,
+  `/setreviewchannel`, بالإضافة لـ `/avatar`, `/banner`, `/botinfo`, `/emojis`,
+  `/invite`, `/membercount`, `/ping`, `/roles`, `/serverinfo`, `/uptime`,
+  `/userinfo`.
+
+### قبل التشغيل
+1. افتح `cogs/security_cog.py` وحط أرقام أيدي المطورين المسؤولين عن أوامر
+   الحماية جوه `DEVELOPER_IDS` (حالياً فاضية، فمالك السيرفر بس هو اللي يقدر
+   يستخدمها افتراضياً).
+2. نفس القائمة تتحكم في `/addcoins`, `/restartcoins`, `/addxp`, `/top restart`
+   (عن طريق `is_developer` من `security_cog.py`).
+
+### 🔢 تجميع الأوامر تحت مجموعات (عشان حد الـ100 أمر في ديسكورد)
+ديسكورد بيسمح بـ 100 "أمر رئيسي" بس لكل تطبيق (الأوامر الفرعية جوه أي مجموعة
+مبتتحسبش ضمن الحد ده). عشان كده الأوامر الجديدة اتلمّت تحت 6 مجموعات رئيسية
+بدل ما تكون كل واحدة أمر مستقل:
+
+| المجموعة | بتحتوي على |
+|---|---|
+| `/mod` | ban, kick, mute, timeout, warn, clear, lock, role, nuke... (20 أمر فرعي) |
+| `/security` | protection, whitelist, backup, limit-settings, togglepro (12 أمر فرعي) |
+| `/ticket` | setup, category, come (3 أوامر فرعية) |
+| `/economy` | coins, daily, addcoins, addxp, top show/restart (7 أوامر فرعية) |
+| `/community` | announce, review, setreviewchannel, autoresponse (7 أوامر فرعية) |
+| `/util` | avatar, banner, botinfo, serverinfo, userinfo... (11 أمر فرعي) |
+
+كمان اتضاف أمر **`/menu`** — قائمة تفاعلية (قائمة منسدلة) بتعرض كل المجموعات
+دي بوصفها قبل ما تحتاج تكتب أي أمر بنفسك.
+
+**النتيجة**: البوت كله (لعبة + إدارة) بقى عنده **51 أمر رئيسي** بس مسجل مع
+ديسكورد (بدل ما كل أمر فرعي كان بيتحسب لوحده)، يعني فيه مساحة كبيرة قبل ما
+توصل لحد الـ100.
+
+### حاجات اتبسّطت أو اتشالت عمداً (كانت في نسخة الجافاسكريبت الأصلية)
+- **صورة الاقتراحات (canvas)**: بدل ما يتولد صورة PNG مخصصة للاقتراح
+  (`utils/renderSuggestion.js` + خط Cairo)، دلوقتي في الأصل مفيش endpoint موازي —
+  ممكن تتضاف لاحقاً كـ cog مستقل لو حبيت.
+- **الترحيب (welcome) وسجل الدخول/الخروج**: النسخة دي من lords-main عندها
+  بالفعل نظام ترحيب متكامل (`cogs/welcome_cog.py`)، فماتمش تكرار نظام ترحيب تاني
+  من بوت الإدارة عشان محدش يستقبل رسالتين ترحيب.
+- **الانضمام التلقائي لروم صوتي دائم**: ميزة كانت في `index.js` الأصلي
+  (auto-join لقناة صوتية معينة) ماتمش نقلها لأنها مش متعلقة بالإدارة/المجتمع.
+- **أوامر البادئة القديمة زي `+ban`, `+mute`...**: البوت هنا شغال بـ Slash
+  Commands بس للميزات الجديدة (زي باقي أوامر لordsMobile). لو محتاج نفس اختصارات
+  البادئة القديمة (`+c`, `+top`...) قولي أضيفها.
+
+### تخزين البيانات
+البيانات الجديدة (تحذيرات، إعدادات التذاكر، الردود التلقائية، قناة التقييمات،
+بيانات الحماية، العملات، الـXP) بتتخزن في نفس قاعدة `storage/lordsbot.db`
+(SQLite) اللي بيستخدمها باقي البوت، مش ملفات JSON منفصلة زي الأصل الجافاسكريبت.
+
+## 🔒 تفعيل قيود القنوات على البورصة/المتجر/الوسيط
+
+الأوامر دي كانت موجودة أصلاً بس بتخزن الإعداد من غير ما "تفرضه" فعلياً — دلوقتي
+بقت شغالة فعلياً:
+
+- **`/admin channel market`** — يحدد الروم الرسمي لبورصة تبادل الموارد. بعد
+  التحديد، `/market offer|list|cancel` مش هتشتغل غير جوه الروم ده (وهترد
+  برسالة توضح الروم الصح لو حد جرب في مكان تاني).
+- **`/admin channel shop`** — يحدد روم متجر بيع/شراء الحسابات. `/shop
+  browse|sell|view` هتتقفل على الروم ده بنفس الطريقة.
+- **`/admin channel middleman`** — يحدد روم طلبات الوساطة. `/shop middleman`
+  هيتقفل عليه، وكمان دلوقتي بيحاول يفتح **ثريد خاص (Private Thread)** جوه
+  الروم ده لكل طلب وساطة، ويضيف فيه الطالب + الطرف التاني تلقائياً، عشان
+  الكلام والتفاصيل الحساسة (السعر، بيانات التواصل) تبقى في مكان خاص مش في
+  الروم العام. لما عضو من القيادة/الإدارة يضغط زرار "استلام" ✅، بينضاف
+  للثريد نفسه تلقائياً. لو فتح الثريد فشل لأي سبب (صلاحيات، نوع الروم)،
+  البوت بيرجع لنفس السلوك القديم (رسالة عادية في الروم).
+
+**ملاحظة**: لو الأدمن لسه ماحددش روم لأي مننا التلاتة، الأمر المرتبط بيه
+يفضل شغال في أي روم زي ما كان بالظبط — القيد بيتفعّل بس بعد ما تحدده.
