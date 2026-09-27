@@ -17,6 +17,10 @@ def _normalize_trigger(text: str) -> str:
     s = s.replace('ة', 'ه').replace('ى', 'ي')
     return ' '.join(s.split())
 
+
+def _uses_everyone_shortcut(text: str) -> bool:
+    return bool(re.search(r"(?i)(?<!\S)(?:1|@everyone|\{1\}|\{everyone\})(?!\S)", text or ""))
+
 def expand_shortcuts(text: str, user: discord.User = None, guild: discord.Guild = None) -> str:
     """Replaces '1' or '{everyone}' with @everyone, and handles member/server variables."""
     if not text:
@@ -66,9 +70,15 @@ class RepliesCog(commands.Cog):
 
     # -- Core Add Logic --
     async def _handle_add(self, interaction: discord.Interaction, trigger: str, response: str):
+        if interaction.guild is None:
+            await interaction.response.send_message(
+                "❌ الردود المخصصة تعمل داخل السيرفرات فقط.",
+                ephemeral=False,
+            )
+            return
         lang = get_lang(interaction.guild_id, interaction.user.id)
-        trig = trigger.strip()
-        resp = response.strip()
+        trig = trigger.strip()[:100]
+        resp = response.strip()[:1900]
 
         if not trig or not resp:
             msg = "❌ يجب إدخال الكلمة والرد المطلوب." if lang == "ar" else "❌ Both trigger and response are required."
@@ -163,7 +173,7 @@ class RepliesCog(commands.Cog):
             await interaction.response.send_message(msg, ephemeral=False)
             return
 
-        if "@everyone" in target_text or "1" in target_text:
+        if _uses_everyone_shortcut(target_text):
             perms = interaction.user.guild_permissions
             if not (perms.mention_everyone or perms.manage_messages or perms.administrator):
                 msg = "❌ ليس لديك صلاحية إرسال منشن الكل (@everyone)." if lang == "ar" else "❌ You do not have permission to mention everyone."
@@ -231,7 +241,7 @@ class RepliesCog(commands.Cog):
                 break
 
         if matched_reply:
-            if "@everyone" in matched_reply or "1" in matched_reply:
+            if _uses_everyone_shortcut(matched_reply):
                 perms = message.author.guild_permissions
                 if not (perms.mention_everyone or perms.manage_messages or perms.administrator):
                     return
