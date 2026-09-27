@@ -17,7 +17,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from utils.command_groups import admin_group, ai_group, shop_group
+from utils.command_groups import admin_group, ai_group, shop_group, subscription_group
 
 load_dotenv()
 
@@ -302,6 +302,8 @@ async def main():
             bot.tree.add_command(ai_group)
         if bot.tree.get_command(shop_group.name) is None:
             bot.tree.add_command(shop_group)
+        if bot.tree.get_command(subscription_group.name) is None:
+            bot.tree.add_command(subscription_group)
         apply_english_command_descriptions()
         await bot.start(TOKEN)
 
