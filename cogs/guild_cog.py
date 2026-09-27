@@ -350,8 +350,7 @@ async def gf_board(interaction: discord.Interaction):
 async def gf_calc(interaction: discord.Interaction, query: str):
     lang = get_lang(interaction.guild_id, interaction.user.id)
 
-    # نستورد هنا (مش فوق الملف) عشان نتفادى Circular Import: ai_cog.py بيستورد
-    # gf_group من الملف ده، فلو استوردنا ai_cog فوق هيحصل تعارض دائري وقت التحميل.
+    # الاستيراد هنا يفضل خفيفًا ويعزل أدوات تحليل السرعة عن تحميل الكوج.
     from cogs.events_cog import parse_speedup_text, fmt_minutes
 
     total_minutes, breakdown, errors = parse_speedup_text(query, lang)
