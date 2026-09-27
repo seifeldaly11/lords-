@@ -19,6 +19,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.storage import load, save
+from cogs.subscription_cog import is_plan_active
 
 SECURITY_FILE = "security_data"
 
@@ -422,6 +423,8 @@ class SecurityCog(commands.Cog):
     async def on_message(self, message: discord.Message):
         if message.author.bot or message.guild is None:
             return
+        if not is_plan_active(message.guild.id, "protection"):
+            return
         guild_data = init_guild_data(message.guild.id)
         if not guild_data["protection"].get("antiSpam"):
             return
@@ -450,6 +453,8 @@ class SecurityCog(commands.Cog):
     async def on_member_join(self, member: discord.Member):
         if not member.bot:
             return
+        if not is_plan_active(member.guild.id, "protection"):
+            return
         guild_data = init_guild_data(member.guild.id)
         if not guild_data["protection"].get("antiBot"):
             return
@@ -473,6 +478,8 @@ class SecurityCog(commands.Cog):
             pass
 
     async def _handle_dangerous_delete(self, guild: discord.Guild, action_key: str, protection_key: str, audit_action, target_id: int, target_name: str):
+        if not is_plan_active(guild.id, "protection"):
+            return
         guild_data = init_guild_data(guild.id)
         if not guild_data["protection"].get(protection_key):
             return
