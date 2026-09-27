@@ -16,7 +16,7 @@ from utils.i18n import (
     RALLY_RESULT_LABELS_I18N,
 )
 from cogs.war_cog import REPORTS_FILE
-from utils.command_groups import admin_track_group
+from utils.command_groups import admin_track_group, ai_group
 from utils.ui import styled_embed, ROYAL_BLUE
 
 ACTIVITY_FILE = "activity"
@@ -225,8 +225,6 @@ class StatsEventView(discord.ui.View):
 # /gf (مهرجان التحالف)
 # ---------------------------------------------------------------------------
 
-gf_group = app_commands.Group(name="gf", description="🎉 إدارة مهام مهرجان التحالف")
-
 
 class GfTaskModal(discord.ui.Modal):
     task_name = discord.ui.TextInput(label="📌 اسم المهمة", placeholder="مثال: أنفق 500 جوهرة")
@@ -283,7 +281,7 @@ class GfTaskModal(discord.ui.Modal):
             asyncio.create_task(self.cog.gf_reminder(remind_10, channel, self.member, self.task_name.value, 10))
 
 
-@gf_group.command(name="task", description="🎉 [إدارة] أضف مهمة مهرجان تحالف لعضو مع تذكير قبل الانتهاء")
+@ai_group.command(name="task", description="🎉 [إدارة] أضف مهمة مهرجان تحالف لعضو مع تذكير قبل الانتهاء")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def gf_task(interaction: discord.Interaction, member: discord.Member):
     lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -300,7 +298,7 @@ async def gf_task_error(interaction: discord.Interaction, error: app_commands.Ap
         await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
 
-@gf_group.command(name="done", description="✅ [إدارة] علّم مهمة مهرجان تحالف كمكتملة")
+@ai_group.command(name="done", description="✅ [إدارة] علّم مهمة مهرجان تحالف كمكتملة")
 @app_commands.checks.has_permissions(manage_guild=True)
 async def gf_done(interaction: discord.Interaction, member: discord.Member):
     lang = get_lang(interaction.guild_id, interaction.user.id)
@@ -328,7 +326,7 @@ async def gf_done_error(interaction: discord.Interaction, error: app_commands.Ap
         await interaction.response.send_message(t("unexpected_error", lang), ephemeral=False)
 
 
-@gf_group.command(name="board", description="🏅 لوحة صدارة مهرجان التحالف")
+@ai_group.command(name="board", description="🏅 لوحة صدارة مهرجان التحالف")
 async def gf_board(interaction: discord.Interaction):
     lang = get_lang(interaction.guild_id, interaction.user.id)
     data = load(GF_FILE)
@@ -344,7 +342,7 @@ async def gf_board(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
-@gf_group.command(
+@ai_group.command(
     name="calc",
     description="🧮 حاسبة مهرجان التحالف: احسب إجمالي تسريعات (4h,6h,1d×3) أو اسأل عن استبدال موارد"
 )
@@ -796,5 +794,4 @@ class ResetConfirmView(discord.ui.View):
 
 
 async def setup(bot: commands.Bot):
-    bot.tree.add_command(gf_group)
     await bot.add_cog(GuildCog(bot))
