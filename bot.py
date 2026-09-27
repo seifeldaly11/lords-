@@ -17,7 +17,7 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from utils.command_groups import admin_group, shop_group
+from utils.command_groups import admin_group, ai_group, shop_group
 
 load_dotenv()
 
@@ -298,6 +298,8 @@ async def main():
                 log.exception(f"❌ فشل تحميل {ext}")
         if bot.tree.get_command(admin_group.name) is None:
             bot.tree.add_command(admin_group)
+        if bot.tree.get_command(ai_group.name) is None:
+            bot.tree.add_command(ai_group)
         if bot.tree.get_command(shop_group.name) is None:
             bot.tree.add_command(shop_group)
         apply_english_command_descriptions()
