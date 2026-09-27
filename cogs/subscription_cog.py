@@ -19,6 +19,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 
+from utils.command_groups import subscription_group
+
 def _parse_int(val, default: int) -> int:
     if val is None:
         return default
@@ -825,11 +827,11 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True,
         )
 
-    @app_commands.command(name="balance", description="💰 عرض رصيد المحفظة / View wallet balance")
+    @subscription_group.command(name="balance", description="💰 عرض رصيد المحفظة / View wallet balance")
     async def balance(self, interaction: discord.Interaction):
         await self._send_balance(interaction)
 
-    @app_commands.command(name="الرصيد", description="💰 عرض رصيد المحفظة / View wallet balance")
+    @subscription_group.command(name="الرصيد", description="💰 عرض رصيد المحفظة / View wallet balance")
     async def balance_ar(self, interaction: discord.Interaction):
         await self._send_balance(interaction)
 
@@ -885,7 +887,7 @@ class SubscriptionCog(commands.Cog):
                 "⚠️ خطة الاشتراك غير متاحة حالياً.\n⚠️ This subscription plan is currently unavailable.", ephemeral=True
             )
 
-    @app_commands.command(name="pay", description="💳 ادفع من المحفظة / Pay from wallet")
+    @subscription_group.command(name="pay", description="💳 ادفع من المحفظة / Pay from wallet")
     @app_commands.describe(plan="الخطة / Plan")
     @app_commands.choices(plan=[
         app_commands.Choice(name="اشتراك البوت / Regular bot", value=PLAN_BOT),
@@ -894,7 +896,7 @@ class SubscriptionCog(commands.Cog):
     async def pay(self, interaction: discord.Interaction, plan: app_commands.Choice[str]):
         await self._pay(interaction, plan)
 
-    @app_commands.command(name="دفع", description="💳 ادفع من المحفظة / Pay from wallet")
+    @subscription_group.command(name="دفع", description="💳 ادفع من المحفظة / Pay from wallet")
     @app_commands.describe(plan="الخطة / Plan")
     @app_commands.choices(plan=[
         app_commands.Choice(name="اشتراك البوت / Regular bot", value=PLAN_BOT),
@@ -912,13 +914,13 @@ class SubscriptionCog(commands.Cog):
             f"الرصيد الجديد / New balance: **{balance:,} {SUBSCRIPTION_CURRENCY}**", ephemeral=True
         )
 
-    @app_commands.command(name="addbalance", description="💰 إضافة رصيد لمستخدم / Credit a wallet")
+    @subscription_group.command(name="addbalance", description="💰 إضافة رصيد لمستخدم / Credit a wallet")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(user="المستخدم / User", amount="المبلغ / Amount")
     async def addbalance(self, interaction: discord.Interaction, user: discord.User, amount: app_commands.Range[int, 1, 100000000]):
         await self._add_balance(interaction, user, amount)
 
-    @app_commands.command(name="إضافة_رصيد", description="💰 إضافة رصيد لمستخدم / Credit a wallet")
+    @subscription_group.command(name="إضافة_رصيد", description="💰 إضافة رصيد لمستخدم / Credit a wallet")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(user="المستخدم / User", amount="المبلغ / Amount")
     async def addbalance_ar(self, interaction: discord.Interaction, user: discord.User, amount: app_commands.Range[int, 1, 100000000]):
@@ -958,7 +960,7 @@ class SubscriptionCog(commands.Cog):
             f"✅ Price updated to **{amount:,} {SUBSCRIPTION_CURRENCY}** for {DEFAULT_PLAN_DAYS} days.", ephemeral=True
         )
 
-    @app_commands.command(name="setprice", description="⚙️ ضبط سعر الاشتراك / Set subscription price")
+    @subscription_group.command(name="setprice", description="⚙️ ضبط سعر الاشتراك / Set subscription price")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(plan="الخطة / Plan", amount="السعر / Price")
     @app_commands.choices(plan=[
@@ -968,7 +970,7 @@ class SubscriptionCog(commands.Cog):
     async def setprice(self, interaction: discord.Interaction, plan: app_commands.Choice[str], amount: app_commands.Range[int, 0, 100000000]):
         await self._set_price(interaction, plan, amount)
 
-    @app_commands.command(name="تحديد_سعر", description="⚙️ ضبط سعر الاشتراك / Set subscription price")
+    @subscription_group.command(name="تحديد_سعر", description="⚙️ ضبط سعر الاشتراك / Set subscription price")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(plan="الخطة / Plan", amount="السعر / Price")
     @app_commands.choices(plan=[
@@ -979,7 +981,7 @@ class SubscriptionCog(commands.Cog):
         await self._set_price(interaction, plan, amount)
 
 
-    @app_commands.command(name="قائمة_السيرفرات", description="🔒 تقرير منظم عن كل السيرفرات وحالة الاشتراك")
+    @subscription_group.command(name="قائمة_السيرفرات", description="🔒 تقرير منظم عن كل السيرفرات وحالة الاشتراك")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     async def servers_list(self, interaction: discord.Interaction):
         if await deny_if_not_owner(interaction):
@@ -1068,7 +1070,7 @@ class SubscriptionCog(commands.Cog):
             await interaction.followup.send(embeds=chunk, ephemeral=True)
 
 
-    @app_commands.command(name="حالة_الاشتراكات", description="🔒 عرض حالة اشتراكات جميع السيرفرات المخزنة")
+    @subscription_group.command(name="حالة_الاشتراكات", description="🔒 عرض حالة اشتراكات جميع السيرفرات المخزنة")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     async def subscriptions_status(self, interaction: discord.Interaction):
         if await deny_if_not_owner(interaction):
@@ -1112,7 +1114,7 @@ class SubscriptionCog(commands.Cog):
         for chunk in chunks[1:]:
             await interaction.followup.send(chunk, ephemeral=True)
 
-    @app_commands.command(name="تحديد_اشتراك", description="🔒 تحديد اشتراك جديد لسيرفر معين")
+    @subscription_group.command(name="تحديد_اشتراك", description="🔒 تحديد اشتراك جديد لسيرفر معين")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(server_id="آيدي السيرفر", days="عدد الأيام")
     async def set_subscription_cmd(self, interaction: discord.Interaction, server_id: str, days: int):
@@ -1135,7 +1137,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="تجديد_اشتراك", description="🔒 تجديد (إضافة أيام) على اشتراك سيرفر معين")
+    @subscription_group.command(name="تجديد_اشتراك", description="🔒 تجديد (إضافة أيام) على اشتراك سيرفر معين")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(server_id="آيدي السيرفر", days="عدد الأيام المضافة")
     async def renew_subscription_cmd(self, interaction: discord.Interaction, server_id: str, days: int):
@@ -1158,7 +1160,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="ايقاف_اشتراك", description="🔒 إيقاف اشتراك سيرفر ومغادرته فوراً")
+    @subscription_group.command(name="ايقاف_اشتراك", description="🔒 إيقاف اشتراك سيرفر ومغادرته فوراً")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(server_id="آيدي السيرفر")
     async def stop_subscription_cmd(self, interaction: discord.Interaction, server_id: str):
@@ -1183,7 +1185,7 @@ class SubscriptionCog(commands.Cog):
                 ephemeral=True
             )
 
-    @app_commands.command(name="انشاء_كود", description="🔒 توليد كود اشتراك جديد بعدد أيام محدد")
+    @subscription_group.command(name="انشاء_كود", description="🔒 توليد كود اشتراك جديد بعدد أيام محدد")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(days="عدد الأيام التي يمنحها الكود")
     async def create_code_cmd(self, interaction: discord.Interaction, days: int):
@@ -1231,7 +1233,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="اضافة_ملاحظة", description="🔒 إضافة ملاحظة بعنوان (عامة للبوت أو خاصة بسيرفر)")
+    @subscription_group.command(name="اضافة_ملاحظة", description="🔒 إضافة ملاحظة بعنوان (عامة للبوت أو خاصة بسيرفر)")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(
         title="عنوان الملاحظة الرئيسي",
@@ -1250,7 +1252,7 @@ class SubscriptionCog(commands.Cog):
         )
 
 
-    @app_commands.command(name="عرض_الملاحظات", description="🔒 عرض قائمة بالملاحظات المسجلة واختيار إحداها")
+    @subscription_group.command(name="عرض_الملاحظات", description="🔒 عرض قائمة بالملاحظات المسجلة واختيار إحداها")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(server_id="آيدي السيرفر (اختياري - اتركه فارغاً لعرض كل الملاحظات)")
     async def view_notes_cmd(self, interaction: discord.Interaction, server_id: str = None):
@@ -1272,7 +1274,7 @@ class SubscriptionCog(commands.Cog):
             ephemeral=True
         )
 
-    @app_commands.command(name="مسح_ملاحظة", description="🔒 مسح ملاحظة مسجلة باختيارها من القائمة")
+    @subscription_group.command(name="مسح_ملاحظة", description="🔒 مسح ملاحظة مسجلة باختيارها من القائمة")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(server_id="آيدي السيرفر (اختياري لتصفية الملاحظات)")
     async def delete_note_cmd(self, interaction: discord.Interaction, server_id: str = None):
@@ -1308,7 +1310,7 @@ class SubscriptionCog(commands.Cog):
         await guild.leave()
         await interaction.followup.send(f"✅ غادر البوت السيرفر {guild.name} (ID: {guild_id}) بدون حذف بيانات الاشتراك.", ephemeral=True)
 
-    @app_commands.command(name="مغادرة_اجبارية", description="🔒 إخراج البوت من سيرفر محدد بدون حذف اشتراكه")
+    @subscription_group.command(name="مغادرة_اجبارية", description="🔒 إخراج البوت من سيرفر محدد بدون حذف اشتراكه")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(server_id="آيدي السيرفر الذي سيغادره البوت")
     async def force_leave_cmd(self, interaction: discord.Interaction, server_id: str):
@@ -1316,7 +1318,7 @@ class SubscriptionCog(commands.Cog):
             return
         await self._leave_guild_by_id(interaction, server_id)
 
-    @app_commands.command(name="طرد_البوت", description="🔒 إخراج البوت من سيرفر محدد بدون حذف اشتراكه")
+    @subscription_group.command(name="طرد_البوت", description="🔒 إخراج البوت من سيرفر محدد بدون حذف اشتراكه")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
     @app_commands.describe(server_id="آيدي السيرفر الذي سيغادره البوت")
     async def kick_bot_cmd(self, interaction: discord.Interaction, server_id: str):
