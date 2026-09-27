@@ -15,6 +15,7 @@ import random
 import string
 import datetime
 import logging
+import uuid
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
@@ -61,6 +62,10 @@ DEFAULT_PLAN_DAYS = 30
 DEFAULT_PLAN_PRICES = {
     PLAN_BOT: _parse_int(os.getenv("BASE_SUBSCRIPTION_PRICE"), 100),
     PLAN_PROTECTION: _parse_int(os.getenv("PROTECTION_SUBSCRIPTION_PRICE"), 50),
+}
+DEFAULT_PLAN_DETAILS = {
+    PLAN_BOT: "يشمل تشغيل أوامر البوت العامة في السيرفر.",
+    PLAN_PROTECTION: "إضافة اختيارية لتفعيل أوامر الحماية.",
 }
 PROTECTION_COMMAND_ROOTS = frozenset({"security", "shield", "voice_rescue", "shelter", "shelter_done"})
 BILLING_COMMAND_NAMES = frozenset({
@@ -156,10 +161,37 @@ def init_db():
             enabled INTEGER NOT NULL DEFAULT 1
         )
     """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS pricing_catalog (
+            plan_key TEXT PRIMARY KEY,
+            display_name TEXT NOT NULL,
+            price INTEGER NOT NULL CHECK (price >= 0),
+            days INTEGER NOT NULL CHECK (days > 0),
+            details TEXT NOT NULL DEFAULT '',
+            enabled INTEGER NOT NULL DEFAULT 1,
+            is_custom INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL
+        )
+    """)
     for plan_key, price in DEFAULT_PLAN_PRICES.items():
         cur.execute(
             "INSERT OR IGNORE INTO plans (plan_key, price, days, enabled) VALUES (?, ?, ?, 1)",
             (plan_key, max(0, price), DEFAULT_PLAN_DAYS),
+        )
+        cur.execute(
+            """
+            INSERT OR IGNORE INTO pricing_catalog
+                (plan_key, display_name, price, days, details, enabled, is_custom, created_at)
+            VALUES (?, ?, ?, ?, ?, 1, 0, ?)
+            """,
+            (
+                plan_key,
+                PLAN_LABELS[plan_key].split(" / ")[0],
+                max(0, price),
+                DEFAULT_PLAN_DAYS,
+                DEFAULT_PLAN_DETAILS[plan_key],
+                datetime.datetime.utcnow().isoformat(),
+            ),
         )
 
     clean_invalid_subscriptions()
@@ -266,8 +298,59 @@ def set_plan_price(plan_key: str, price: int) -> None:
         "ON CONFLICT(plan_key) DO UPDATE SET price = excluded.price, enabled = 1",
         (plan_key, price, DEFAULT_PLAN_DAYS),
     )
+    conn.execute(
+        "UPDATE pricing_catalog SET price = ?, enabled = 1 WHERE plan_key = ?",
+        (price, plan_key),
+    )
     conn.commit()
     conn.close()
+
+
+def get_pricing_catalog() -> list[tuple]:
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT plan_key, display_name, price, days, details
+        FROM pricing_catalog
+        WHERE enabled = 1
+        ORDER BY is_custom ASC, rowid ASC
+        """
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def add_pricing_catalog_item(name: str, price: int, days: int, details: str) -> str:
+    name = " ".join(name.strip().split())[:100]
+    details = details.strip()[:900]
+    if not name or not details or price < 0 or days <= 0:
+        raise ValueError("Invalid pricing item")
+
+    plan_key = f"custom_{uuid.uuid4().hex[:12]}"
+    conn = get_connection()
+    conn.execute(
+        """
+        INSERT INTO pricing_catalog
+            (plan_key, display_name, price, days, details, enabled, is_custom, created_at)
+        VALUES (?, ?, ?, ?, ?, 1, 1, ?)
+        """,
+        (plan_key, name, price, days, details, datetime.datetime.utcnow().isoformat()),
+    )
+    conn.commit()
+    conn.close()
+    return plan_key
+
+
+def delete_pricing_catalog_item(plan_key: str) -> bool:
+    conn = get_connection()
+    cur = conn.execute(
+        "DELETE FROM pricing_catalog WHERE plan_key = ? AND is_custom = 1",
+        (plan_key.strip(),),
+    )
+    deleted = cur.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
 
 
 def get_plan_expiry(server_id: str, plan_key: str = PLAN_BOT):
@@ -367,6 +450,29 @@ def payment_options_text() -> str:
     for option_id, name_ar, name_en, details in rows:
         lines.append(f"**{option_id}. {name_ar} / {name_en}**\n{details}")
     return "\n\n".join(lines)
+
+
+def pricing_embed() -> discord.Embed:
+    rows = get_pricing_catalog()
+    embed = discord.Embed(
+        title="💳 تسعيرة اشتراكات البوت",
+        description="الأسعار الحالية ومدة كل خطة. استخدم `/subscription pay` للدفع من رصيد المحفظة.",
+        color=discord.Color.gold(),
+    )
+    if not rows:
+        embed.description = "لا توجد تسعيرات مفعلة حالياً. تواصل مع مدير الاشتراكات."
+        return embed
+
+    for plan_key, display_name, price, days, details in rows[:25]:
+        embed.add_field(
+            name=f"📦 {display_name}",
+            value=f"**السعر:** {price:,} {SUBSCRIPTION_CURRENCY}\n"
+                  f"**المدة:** {days} يوم\n"
+                  f"{details}",
+            inline=False,
+        )
+    embed.set_footer(text="الأسعار قابلة للتغيير بواسطة مديري الاشتراكات.")
+    return embed
 
 
 def get_subscription(server_id: str):
@@ -836,7 +942,11 @@ class SubscriptionCog(commands.Cog):
         await self._send_balance(interaction)
 
     async def _send_payment_options(self, interaction: discord.Interaction):
-        await interaction.response.send_message(payment_options_text(), ephemeral=True)
+        await interaction.response.send_message(
+            payment_options_text(),
+            ephemeral=False,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
 
     @app_commands.command(name="payment-options", description="📲 عرض وسائل الدفع / View payment methods")
     async def payment_options(self, interaction: discord.Interaction):
@@ -845,6 +955,266 @@ class SubscriptionCog(commands.Cog):
     @app_commands.command(name="خيارات_الدفع", description="📲 عرض وسائل الدفع / View payment methods")
     async def payment_options_ar(self, interaction: discord.Interaction):
         await self._send_payment_options(interaction)
+
+    async def _send_pricing(self, interaction: discord.Interaction):
+        await interaction.response.send_message(
+            embed=pricing_embed(),
+            ephemeral=False,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
+    @subscription_group.command(name="pricing", description="💳 عرض تسعيرة الاشتراكات الحالية")
+    async def pricing(self, interaction: discord.Interaction):
+        await self._send_pricing(interaction)
+
+    @subscription_group.command(name="التسعيرة", description="💳 عرض تسعيرة الاشتراكات الحالية")
+    async def pricing_ar(self, interaction: discord.Interaction):
+        await self._send_pricing(interaction)
+
+    async def _add_pricing(
+        self,
+        interaction: discord.Interaction,
+        plan_name: str,
+        price: int,
+        days: int,
+        details: str,
+    ):
+        if await deny_if_not_owner(interaction):
+            return
+        try:
+            plan_key = add_pricing_catalog_item(plan_name, price, days, details)
+        except ValueError:
+            await interaction.response.send_message(
+                "❌ اكتب اسم التسعيرة والمبلغ والمدة والمعلومة بشكل صحيح.",
+                ephemeral=False,
+            )
+            return
+        await interaction.response.send_message(
+            f"✅ تمت إضافة التسعيرة **{plan_name.strip()[:100]}** بسعر "
+            f"**{price:,} {SUBSCRIPTION_CURRENCY}** لمدة **{days} يوم**.\n"
+            f"المعرف الإداري: `{plan_key}`",
+            ephemeral=False,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
+    @subscription_group.command(name="addpricing", description="➕ إضافة تسعيرة مخصصة للكتالوج")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(
+        plan_name="اسم التسعيرة",
+        price="السعر",
+        days="عدد الأيام",
+        details="المعلومة التي ستظهر للناس",
+    )
+    async def add_pricing(
+        self,
+        interaction: discord.Interaction,
+        plan_name: str,
+        price: app_commands.Range[int, 0, 100000000],
+        days: app_commands.Range[int, 1, 3650],
+        details: str,
+    ):
+        await self._add_pricing(interaction, plan_name, price, days, details)
+
+    @subscription_group.command(name="إضافة_تسعيرة", description="➕ إضافة تسعيرة مخصصة للكتالوج")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(
+        plan_name="اسم التسعيرة",
+        price="السعر",
+        days="عدد الأيام",
+        details="المعلومة التي ستظهر للناس",
+    )
+    async def add_pricing_ar(
+        self,
+        interaction: discord.Interaction,
+        plan_name: str,
+        price: app_commands.Range[int, 0, 100000000],
+        days: app_commands.Range[int, 1, 3650],
+        details: str,
+    ):
+        await self._add_pricing(interaction, plan_name, price, days, details)
+
+    async def _delete_pricing(self, interaction: discord.Interaction, plan_key: str):
+        if await deny_if_not_owner(interaction):
+            return
+        if delete_pricing_catalog_item(plan_key):
+            msg = f"✅ تم حذف التسعيرة المخصصة `{plan_key.strip()}`."
+        else:
+            msg = "❌ لم يتم العثور على تسعيرة مخصصة بهذا المعرف؛ لا يمكن حذف الخطط الأساسية."
+        await interaction.response.send_message(msg, ephemeral=False)
+
+    @subscription_group.command(name="deletepricing", description="🗑️ حذف تسعيرة مخصصة")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(plan_key="المعرف الإداري الظاهر في أمر إضافة التسعيرة")
+    async def delete_pricing(self, interaction: discord.Interaction, plan_key: str):
+        await self._delete_pricing(interaction, plan_key)
+
+    @subscription_group.command(name="حذف_تسعيرة", description="🗑️ حذف تسعيرة مخصصة")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(plan_key="المعرف الإداري الظاهر في أمر إضافة التسعيرة")
+    async def delete_pricing_ar(self, interaction: discord.Interaction, plan_key: str):
+        await self._delete_pricing(interaction, plan_key)
+
+    async def handle_admin_dm(self, message: discord.Message) -> bool:
+        """Handle a small, explicit command set for subscription managers in DMs."""
+        if message.guild is not None or not is_owner(message.author.id):
+            return False
+
+        raw = message.content.strip()
+        text = raw.lstrip("!").strip()
+        if not text:
+            return True
+
+        parts = text.split(maxsplit=3)
+        command = parts[0].lower()
+        aliases = {
+            "التسعيرة": "pricing",
+            "تسعيره": "pricing",
+            "الاسعار": "pricing",
+            "الأسعار": "pricing",
+            "pricing": "pricing",
+            "help": "help",
+            "مساعدة": "help",
+            "السيرفرات": "servers",
+            "سيرفرات": "servers",
+            "servers": "servers",
+            "الرصيد": "balance",
+            "balance": "balance",
+            "اضافة_رصيد": "addbalance",
+            "إضافة_رصيد": "addbalance",
+            "addbalance": "addbalance",
+            "تحديد_سعر": "setprice",
+            "setprice": "setprice",
+            "إضافة_تسعيرة": "addpricing",
+            "اضافة_تسعيرة": "addpricing",
+            "addpricing": "addpricing",
+            "حذف_تسعيرة": "deletepricing",
+            "حذف_تسعيره": "deletepricing",
+            "deletepricing": "deletepricing",
+        }
+        command = aliases.get(command, command)
+
+        if command == "pricing":
+            await message.channel.send(embed=pricing_embed(), allowed_mentions=discord.AllowedMentions.none())
+            return True
+
+        if command == "help":
+            await message.channel.send(
+                "🛠️ أوامر مدير الاشتراكات في الخاص:\n"
+                "`التسعيرة` — عرض الأسعار\n"
+                "`السيرفرات` — حالة السيرفرات والاشتراكات\n"
+                "`الرصيد USER_ID` — رصيد مستخدم\n"
+                "`اضافة_رصيد USER_ID AMOUNT` — إضافة رصيد\n"
+                "`تحديد_سعر bot AMOUNT` — تعديل سعر البوت\n"
+                "`إضافة_تسعيرة الاسم | السعر | الأيام | المعلومة` — إضافة تسعيرة\n"
+                "`حذف_تسعيرة CUSTOM_KEY` — حذف تسعيرة مخصصة\n"
+                "يمكن كتابة `!` قبل الأمر أيضاً."
+            )
+            return True
+
+        if command == "servers":
+            now = datetime.datetime.utcnow()
+            lines = []
+            for guild in sorted(self.bot.guilds, key=lambda item: item.name.lower()):
+                expires_at = get_subscription(str(guild.id))
+                status = "❌ بدون اشتراك"
+                if expires_at:
+                    try:
+                        expiry = datetime.datetime.fromisoformat(expires_at)
+                        status = (
+                            f"✅ حتى {expiry.strftime('%Y-%m-%d %H:%M UTC')}"
+                            if expiry > now
+                            else f"⚠️ منتهي {expiry.strftime('%Y-%m-%d %H:%M UTC')}"
+                        )
+                    except (TypeError, ValueError):
+                        status = "⚠️ تاريخ اشتراك غير صالح"
+                lines.append(f"• **{guild.name[:80]}** (`{guild.id}`): {status}")
+            if not lines:
+                lines.append("لا يوجد أي سيرفر متصل حالياً.")
+            await message.channel.send("\n".join(lines)[:1900])
+            return True
+
+        if command == "balance":
+            if len(parts) != 2 or not parts[1].isdigit():
+                await message.channel.send("❌ الاستخدام: `الرصيد USER_ID`")
+            else:
+                balance = get_wallet_balance(int(parts[1]))
+                await message.channel.send(
+                    f"💰 رصيد `{parts[1]}` هو **{balance:,} {SUBSCRIPTION_CURRENCY}**."
+                )
+            return True
+
+        if command == "addbalance":
+            if len(parts) != 3 or not parts[1].isdigit() or not parts[2].isdigit():
+                await message.channel.send("❌ الاستخدام: `اضافة_رصيد USER_ID AMOUNT`")
+            else:
+                amount = int(parts[2])
+                if amount <= 0 or amount > 100000000:
+                    await message.channel.send("❌ المبلغ يجب أن يكون بين 1 و100,000,000.")
+                else:
+                    balance = credit_wallet(int(parts[1]), amount, message.author.id)
+                    await message.channel.send(
+                        f"✅ تمت إضافة **{amount:,} {SUBSCRIPTION_CURRENCY}** إلى `{parts[1]}`.\n"
+                        f"الرصيد الجديد: **{balance:,} {SUBSCRIPTION_CURRENCY}**"
+                    )
+            return True
+
+        if command == "setprice":
+            if len(parts) != 3 or not parts[2].isdigit():
+                await message.channel.send("❌ الاستخدام: `تحديد_سعر bot AMOUNT`")
+            else:
+                plan_key = parts[1].lower()
+                if plan_key not in (PLAN_BOT, PLAN_PROTECTION):
+                    await message.channel.send("❌ الخطة يجب أن تكون `bot` أو `protection`.")
+                else:
+                    amount = int(parts[2])
+                    if amount > 100000000:
+                        await message.channel.send("❌ السعر أكبر من الحد المسموح.")
+                    else:
+                        set_plan_price(plan_key, amount)
+                        await message.channel.send(
+                            f"✅ تم ضبط سعر {PLAN_LABELS[plan_key]} إلى "
+                            f"**{amount:,} {SUBSCRIPTION_CURRENCY}**."
+                        )
+            return True
+
+        if command == "addpricing":
+            payload = text.split(maxsplit=1)[1] if " " in text else ""
+            fields = [field.strip() for field in payload.split("|", 3)]
+            if (
+                len(fields) != 4
+                or not fields[1].isdigit()
+                or not fields[2].isdigit()
+                or int(fields[1]) > 100000000
+                or int(fields[2]) > 3650
+            ):
+                await message.channel.send(
+                    "❌ الاستخدام: `إضافة_تسعيرة الاسم | السعر | الأيام | المعلومة`"
+                )
+            else:
+                try:
+                    plan_key = add_pricing_catalog_item(
+                        fields[0], int(fields[1]), int(fields[2]), fields[3]
+                    )
+                except ValueError:
+                    await message.channel.send("❌ تحقق من الاسم والمبلغ والمدة والمعلومة.")
+                else:
+                    await message.channel.send(
+                        f"✅ تمت إضافة التسعيرة **{fields[0][:100]}**.\n"
+                        f"المعرف الإداري: `{plan_key}`"
+                    )
+            return True
+
+        if command == "deletepricing":
+            if len(parts) != 2:
+                await message.channel.send("❌ الاستخدام: `حذف_تسعيرة CUSTOM_KEY`")
+            elif delete_pricing_catalog_item(parts[1]):
+                await message.channel.send(f"✅ تم حذف التسعيرة المخصصة `{parts[1]}`.")
+            else:
+                await message.channel.send("❌ المعرف غير موجود أو يخص خطة أساسية.")
+            return True
+
+        await message.channel.send("❓ لم أفهم الطلب. اكتب `مساعدة` لعرض أوامر مدير الاشتراكات.")
+        return True
 
     async def _pay(self, interaction: discord.Interaction, plan: app_commands.Choice[str]):
         if interaction.guild is None:
