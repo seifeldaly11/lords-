@@ -60,6 +60,10 @@ def set_user_lang(user_id: int, lang: str) -> None:
 
 
 TRANSLATIONS = {
+    "delete_info_confirm": {
+        "ar": "🗑️ تأكيد حذف المعلومات",
+        "en": "🗑️ Confirm deleting this information",
+    },
     "lang_set_ar": {
         "ar": "✅ تم تغيير لغة البوت في السيرفر ده إلى **العربية**.",
         "en": "✅ تم تغيير لغة البوت في السيرفر ده إلى **العربية**.",
