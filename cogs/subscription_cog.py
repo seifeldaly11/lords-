@@ -47,6 +47,26 @@ CONTACT_LINE = f"للتجديد يرجى التواصل مع: **{CONTACT_USERNAM
 GRACE_PERIOD_DAYS = _parse_int(os.getenv("GRACE_PERIOD_DAYS"), 3)
 SUBSCRIPTION_PLAN_NAME = "VIP"
 
+# Paid plans and wallet defaults. Prices can be changed with /setprice or environment variables.
+PLAN_BOT = "bot"
+PLAN_PROTECTION = "protection"
+PLAN_LABELS = {
+    PLAN_BOT: "اشتراك البوت العادي / Regular bot subscription",
+    PLAN_PROTECTION: "اشتراك الحماية الإضافي / Extra protection subscription",
+}
+SUBSCRIPTION_CURRENCY = (os.getenv("SUBSCRIPTION_CURRENCY") or "EGP").strip()
+DEFAULT_PLAN_DAYS = 30
+DEFAULT_PLAN_PRICES = {
+    PLAN_BOT: _parse_int(os.getenv("BASE_SUBSCRIPTION_PRICE"), 100),
+    PLAN_PROTECTION: _parse_int(os.getenv("PROTECTION_SUBSCRIPTION_PRICE"), 50),
+}
+PROTECTION_COMMAND_ROOTS = frozenset({"security", "shield", "voice_rescue", "shelter", "shelter_done"})
+BILLING_COMMAND_NAMES = frozenset({
+    "redeem", "balance", "الرصيد", "pay", "دفع",
+    "payment-options", "خيارات_الدفع",
+})
+
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "storage", "subscriptions.db")
 
@@ -68,11 +88,16 @@ def init_db():
             server_id TEXT PRIMARY KEY,
             expires_at TEXT NOT NULL,
             warned_1h INTEGER NOT NULL DEFAULT 0,
-            expired_notified INTEGER NOT NULL DEFAULT 0
+            expired_notified INTEGER NOT NULL DEFAULT 0,
+            protection_expires_at TEXT
         )
     """)
 
-    for column_def in ("warned_1h INTEGER NOT NULL DEFAULT 0", "expired_notified INTEGER NOT NULL DEFAULT 0"):
+    for column_def in (
+        "warned_1h INTEGER NOT NULL DEFAULT 0",
+        "expired_notified INTEGER NOT NULL DEFAULT 0",
+        "protection_expires_at TEXT",
+    ):
         try:
             cur.execute(f"ALTER TABLE subscriptions ADD COLUMN {column_def}")
         except sqlite3.OperationalError:
@@ -93,6 +118,47 @@ def init_db():
             created_at TEXT NOT NULL
         )
     """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS wallets (
+            user_id TEXT PRIMARY KEY,
+            balance INTEGER NOT NULL DEFAULT 0 CHECK (balance >= 0)
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS wallet_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            amount INTEGER NOT NULL,
+            balance_after INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            actor_id TEXT,
+            created_at TEXT NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS payment_options (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name_ar TEXT NOT NULL,
+            name_en TEXT NOT NULL,
+            details TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS plans (
+            plan_key TEXT PRIMARY KEY,
+            price INTEGER NOT NULL CHECK (price >= 0),
+            days INTEGER NOT NULL CHECK (days > 0),
+            enabled INTEGER NOT NULL DEFAULT 1
+        )
+    """)
+    for plan_key, price in DEFAULT_PLAN_PRICES.items():
+        cur.execute(
+            "INSERT OR IGNORE INTO plans (plan_key, price, days, enabled) VALUES (?, ?, ?, 1)",
+            (plan_key, max(0, price), DEFAULT_PLAN_DAYS),
+        )
 
     clean_invalid_subscriptions()
     conn.commit()
@@ -119,6 +185,186 @@ async def deny_if_not_owner(interaction: discord.Interaction) -> bool:
         )
         return True
     return False
+
+
+
+
+def get_plan_config(plan_key: str) -> dict:
+    if plan_key not in (PLAN_BOT, PLAN_PROTECTION):
+        raise ValueError("Unknown subscription plan")
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT price, days, enabled FROM plans WHERE plan_key = ?", (plan_key,)
+    ).fetchone()
+    conn.close()
+    if not row:
+        return {"price": DEFAULT_PLAN_PRICES[plan_key], "days": DEFAULT_PLAN_DAYS, "enabled": True}
+    return {"price": int(row[0]), "days": int(row[1]), "enabled": bool(row[2])}
+
+
+def get_wallet_balance(user_id: int) -> int:
+    conn = get_connection()
+    conn.execute("INSERT OR IGNORE INTO wallets (user_id, balance) VALUES (?, 0)", (str(user_id),))
+    row = conn.execute("SELECT balance FROM wallets WHERE user_id = ?", (str(user_id),)).fetchone()
+    conn.commit()
+    conn.close()
+    return int(row[0]) if row else 0
+
+
+def credit_wallet(user_id: int, amount: int, actor_id: int) -> int:
+    if amount <= 0:
+        raise ValueError("Wallet credit must be positive")
+    conn = get_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        uid = str(user_id)
+        conn.execute("INSERT OR IGNORE INTO wallets (user_id, balance) VALUES (?, 0)", (uid,))
+        conn.execute("UPDATE wallets SET balance = balance + ? WHERE user_id = ?", (amount, uid))
+        balance = int(conn.execute("SELECT balance FROM wallets WHERE user_id = ?", (uid,)).fetchone()[0])
+        conn.execute(
+            "INSERT INTO wallet_transactions (user_id, amount, balance_after, kind, actor_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (uid, amount, balance, "admin_credit", str(actor_id), datetime.datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+        return balance
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def get_payment_options() -> list[tuple]:
+    conn = get_connection()
+    rows = conn.execute(
+        "SELECT id, name_ar, name_en, details FROM payment_options WHERE enabled = 1 ORDER BY id ASC"
+    ).fetchall()
+    conn.close()
+    return rows
+
+
+def add_payment_option(name_ar: str, name_en: str, details: str) -> int:
+    conn = get_connection()
+    cur = conn.execute(
+        "INSERT INTO payment_options (name_ar, name_en, details, created_at) VALUES (?, ?, ?, ?)",
+        (name_ar.strip(), name_en.strip(), details.strip(), datetime.datetime.utcnow().isoformat()),
+    )
+    option_id = int(cur.lastrowid)
+    conn.commit()
+    conn.close()
+    return option_id
+
+
+def set_plan_price(plan_key: str, price: int) -> None:
+    if plan_key not in (PLAN_BOT, PLAN_PROTECTION) or price < 0:
+        raise ValueError("Invalid plan or price")
+    conn = get_connection()
+    conn.execute(
+        "INSERT INTO plans (plan_key, price, days, enabled) VALUES (?, ?, ?, 1) "
+        "ON CONFLICT(plan_key) DO UPDATE SET price = excluded.price, enabled = 1",
+        (plan_key, price, DEFAULT_PLAN_DAYS),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_plan_expiry(server_id: str, plan_key: str = PLAN_BOT):
+    column = "expires_at" if plan_key == PLAN_BOT else "protection_expires_at"
+    conn = get_connection()
+    row = conn.execute(f"SELECT {column} FROM subscriptions WHERE server_id = ?", (str(server_id),)).fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def is_plan_active(server_id: int | str, plan_key: str = PLAN_BOT) -> bool:
+    expires_at = get_plan_expiry(str(server_id), plan_key)
+    if not expires_at:
+        return False
+    try:
+        return datetime.datetime.fromisoformat(expires_at) > datetime.datetime.utcnow()
+    except (TypeError, ValueError):
+        return False
+
+
+def purchase_plan(user_id: int, server_id: int, plan_key: str) -> dict:
+    if plan_key not in (PLAN_BOT, PLAN_PROTECTION):
+        return {"success": False, "reason": "invalid_plan"}
+    config = get_plan_config(plan_key)
+    if not config["enabled"]:
+        return {"success": False, "reason": "disabled", "config": config}
+
+    now = datetime.datetime.utcnow()
+    conn = get_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        uid, sid = str(user_id), str(server_id)
+        conn.execute("INSERT OR IGNORE INTO wallets (user_id, balance) VALUES (?, 0)", (uid,))
+        balance = int(conn.execute("SELECT balance FROM wallets WHERE user_id = ?", (uid,)).fetchone()[0])
+        price, days = config["price"], config["days"]
+        if balance < price:
+            conn.rollback()
+            return {"success": False, "reason": "insufficient", "balance": balance, "price": price, "missing": price - balance, "config": config}
+
+        row = conn.execute(
+            "SELECT expires_at, protection_expires_at FROM subscriptions WHERE server_id = ?", (sid,)
+        ).fetchone()
+        base_expiry, protection_expiry = (row if row else (None, None))
+        if plan_key == PLAN_PROTECTION and not base_expiry:
+            conn.rollback()
+            return {"success": False, "reason": "base_required", "balance": balance, "price": price, "config": config}
+        if plan_key == PLAN_PROTECTION:
+            try:
+                if datetime.datetime.fromisoformat(base_expiry) <= now:
+                    conn.rollback()
+                    return {"success": False, "reason": "base_required", "balance": balance, "price": price, "config": config}
+            except (TypeError, ValueError):
+                conn.rollback()
+                return {"success": False, "reason": "base_required", "balance": balance, "price": price, "config": config}
+
+        old_expiry = base_expiry if plan_key == PLAN_BOT else protection_expiry
+        try:
+            base_date = max(datetime.datetime.fromisoformat(old_expiry), now) if old_expiry else now
+        except (TypeError, ValueError):
+            base_date = now
+        new_expiry = (base_date + datetime.timedelta(days=days)).isoformat()
+        if plan_key == PLAN_BOT:
+            base_expiry = new_expiry
+        else:
+            protection_expiry = new_expiry
+
+        conn.execute(
+            "INSERT INTO subscriptions (server_id, expires_at, protection_expires_at, warned_1h, expired_notified) VALUES (?, ?, ?, 0, 0) "
+            "ON CONFLICT(server_id) DO UPDATE SET expires_at = excluded.expires_at, protection_expires_at = excluded.protection_expires_at, warned_1h = 0, expired_notified = 0",
+            (sid, base_expiry or now.isoformat(), protection_expiry),
+        )
+        changed = conn.execute(
+            "UPDATE wallets SET balance = balance - ? WHERE user_id = ? AND balance >= ?", (price, uid, price)
+        ).rowcount
+        if changed != 1:
+            conn.rollback()
+            return {"success": False, "reason": "insufficient", "balance": balance, "price": price, "missing": price - balance, "config": config}
+        new_balance = balance - price
+        conn.execute(
+            "INSERT INTO wallet_transactions (user_id, amount, balance_after, kind, actor_id, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (uid, -price, new_balance, f"purchase_{plan_key}", uid, now.isoformat()),
+        )
+        conn.commit()
+        return {"success": True, "balance": new_balance, "price": price, "days": days, "expires_at": new_expiry, "config": config}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def payment_options_text() -> str:
+    rows = get_payment_options()
+    if not rows:
+        return "لا توجد وسائل دفع مضافة حالياً. تواصل مع مدير الاشتراكات.\nNo payment methods are configured yet. Contact a subscription manager."
+    lines = ["📲 وسائل الدفع / Payment methods:"]
+    for option_id, name_ar, name_en, details in rows:
+        lines.append(f"**{option_id}. {name_ar} / {name_en}**\n{details}")
+    return "\n\n".join(lines)
 
 
 def get_subscription(server_id: str):
@@ -371,20 +617,34 @@ async def global_subscription_check(interaction: discord.Interaction) -> bool:
     if is_owner(interaction.user.id):
         return True
 
-    if interaction.command is not None and interaction.command.name == "redeem":
-        return True
+    command = interaction.command
+    command_name = getattr(command, "name", "")
+    root = command
+    while getattr(root, "parent", None) is not None:
+        root = root.parent
+    root_name = getattr(root, "name", command_name)
 
+    # Billing and redemption must remain available when a guild has no active plan.
+    if command_name in BILLING_COMMAND_NAMES or root_name in BILLING_COMMAND_NAMES:
+        return True
     if interaction.guild is None:
         return True
 
-    expires_at = get_subscription(str(interaction.guild.id))
-    is_active = expires_at is not None and datetime.datetime.fromisoformat(expires_at) > datetime.datetime.utcnow()
-
-    if not is_active:
+    if not is_plan_active(interaction.guild.id, PLAN_BOT):
         if not interaction.response.is_done():
             await interaction.response.send_message(
-                f"🔒 البوت مغلق حتى تفعيل اشتراك {SUBSCRIPTION_PLAN_NAME}.\n{CONTACT_LINE}",
-                ephemeral=True
+                "🔒 اشتراك البوت العادي غير مفعل لهذا السيرفر. استخدم /pay لاختيار الاشتراك.\n"
+                "🔒 The regular bot subscription is not active here. Use /pay to subscribe.",
+                ephemeral=True,
+            )
+        return False
+
+    if root_name in PROTECTION_COMMAND_ROOTS and not is_plan_active(interaction.guild.id, PLAN_PROTECTION):
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                "🛡️ اشتراك الحماية الإضافي غير مفعل. استخدم /pay واختر Protection.\n"
+                "🛡️ The extra protection subscription is not active. Use /pay and choose Protection.",
+                ephemeral=True,
             )
         return False
 
@@ -554,6 +814,170 @@ class SubscriptionCog(commands.Cog):
     @check_subscriptions.before_loop
     async def before_check_subscriptions(self):
         await self.bot.wait_until_ready()
+
+
+
+    async def _send_balance(self, interaction: discord.Interaction):
+        balance = get_wallet_balance(interaction.user.id)
+        await interaction.response.send_message(
+            f"💰 رصيد محفظتك: **{balance:,} {SUBSCRIPTION_CURRENCY}**\n"
+            f"💰 Wallet balance: **{balance:,} {SUBSCRIPTION_CURRENCY}**",
+            ephemeral=True,
+        )
+
+    @app_commands.command(name="balance", description="💰 عرض رصيد المحفظة / View wallet balance")
+    async def balance(self, interaction: discord.Interaction):
+        await self._send_balance(interaction)
+
+    @app_commands.command(name="الرصيد", description="💰 عرض رصيد المحفظة / View wallet balance")
+    async def balance_ar(self, interaction: discord.Interaction):
+        await self._send_balance(interaction)
+
+    async def _send_payment_options(self, interaction: discord.Interaction):
+        await interaction.response.send_message(payment_options_text(), ephemeral=True)
+
+    @app_commands.command(name="payment-options", description="📲 عرض وسائل الدفع / View payment methods")
+    async def payment_options(self, interaction: discord.Interaction):
+        await self._send_payment_options(interaction)
+
+    @app_commands.command(name="خيارات_الدفع", description="📲 عرض وسائل الدفع / View payment methods")
+    async def payment_options_ar(self, interaction: discord.Interaction):
+        await self._send_payment_options(interaction)
+
+    async def _pay(self, interaction: discord.Interaction, plan: app_commands.Choice[str]):
+        if interaction.guild is None:
+            return await interaction.response.send_message(
+                "❌ الاشتراك يتم من داخل السيرفر.\n❌ Subscriptions must be purchased inside a server.", ephemeral=True
+            )
+        plan_key = plan.value
+        result = purchase_plan(interaction.user.id, interaction.guild.id, plan_key)
+        if result["success"]:
+            label = PLAN_LABELS[plan_key]
+            await interaction.response.send_message(
+                f"✅ تم تفعيل {label} لمدة **{result['days']} يوم**.\n"
+                f"ينتهي في: {result['expires_at']}\n"
+                f"تم الخصم: **{result['price']:,} {SUBSCRIPTION_CURRENCY}** | الرصيد المتبقي: **{result['balance']:,} {SUBSCRIPTION_CURRENCY}**\n"
+                f"✅ {label} activated for **{result['days']} days**.\n"
+                f"Expires: {result['expires_at']}\n"
+                f"Charged: **{result['price']:,} {SUBSCRIPTION_CURRENCY}** | Remaining: **{result['balance']:,} {SUBSCRIPTION_CURRENCY}**",
+                ephemeral=True,
+            )
+            return
+
+        if result["reason"] == "insufficient":
+            await interaction.response.send_message(
+                f"❌ رصيدك غير كافٍ لاشتراك {PLAN_LABELS.get(plan_key, plan_key)}.\n"
+                f"الرصيد الحالي: **{result['balance']:,} {SUBSCRIPTION_CURRENCY}**\n"
+                f"السعر: **{result['price']:,} {SUBSCRIPTION_CURRENCY}**\n"
+                f"الناقص: **{result['missing']:,} {SUBSCRIPTION_CURRENCY}**\n\n"
+                f"❌ Your wallet is not enough.\n"
+                f"Current: **{result['balance']:,} {SUBSCRIPTION_CURRENCY}** | Price: **{result['price']:,} {SUBSCRIPTION_CURRENCY}**\n"
+                f"Missing: **{result['missing']:,} {SUBSCRIPTION_CURRENCY}**\n\n{payment_options_text()}",
+                ephemeral=True,
+            )
+        elif result["reason"] == "base_required":
+            await interaction.response.send_message(
+                "⚠️ فعّل اشتراك البوت العادي أولاً ثم اشترِ اشتراك الحماية.\n"
+                "⚠️ Activate the regular bot subscription before buying protection.", ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                "⚠️ خطة الاشتراك غير متاحة حالياً.\n⚠️ This subscription plan is currently unavailable.", ephemeral=True
+            )
+
+    @app_commands.command(name="pay", description="💳 ادفع من المحفظة / Pay from wallet")
+    @app_commands.describe(plan="الخطة / Plan")
+    @app_commands.choices(plan=[
+        app_commands.Choice(name="اشتراك البوت / Regular bot", value=PLAN_BOT),
+        app_commands.Choice(name="اشتراك الحماية / Extra protection", value=PLAN_PROTECTION),
+    ])
+    async def pay(self, interaction: discord.Interaction, plan: app_commands.Choice[str]):
+        await self._pay(interaction, plan)
+
+    @app_commands.command(name="دفع", description="💳 ادفع من المحفظة / Pay from wallet")
+    @app_commands.describe(plan="الخطة / Plan")
+    @app_commands.choices(plan=[
+        app_commands.Choice(name="اشتراك البوت / Regular bot", value=PLAN_BOT),
+        app_commands.Choice(name="اشتراك الحماية / Extra protection", value=PLAN_PROTECTION),
+    ])
+    async def pay_ar(self, interaction: discord.Interaction, plan: app_commands.Choice[str]):
+        await self._pay(interaction, plan)
+
+    async def _add_balance(self, interaction: discord.Interaction, user: discord.User, amount: int):
+        if await deny_if_not_owner(interaction):
+            return
+        balance = credit_wallet(user.id, amount, interaction.user.id)
+        await interaction.response.send_message(
+            f"✅ تمت إضافة **{amount:,} {SUBSCRIPTION_CURRENCY}** إلى محفظة {user.mention}.\n"
+            f"الرصيد الجديد / New balance: **{balance:,} {SUBSCRIPTION_CURRENCY}**", ephemeral=True
+        )
+
+    @app_commands.command(name="addbalance", description="💰 إضافة رصيد لمستخدم / Credit a wallet")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(user="المستخدم / User", amount="المبلغ / Amount")
+    async def addbalance(self, interaction: discord.Interaction, user: discord.User, amount: app_commands.Range[int, 1, 100000000]):
+        await self._add_balance(interaction, user, amount)
+
+    @app_commands.command(name="إضافة_رصيد", description="💰 إضافة رصيد لمستخدم / Credit a wallet")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(user="المستخدم / User", amount="المبلغ / Amount")
+    async def addbalance_ar(self, interaction: discord.Interaction, user: discord.User, amount: app_commands.Range[int, 1, 100000000]):
+        await self._add_balance(interaction, user, amount)
+
+    async def _add_pay(self, interaction: discord.Interaction, name_ar: str, name_en: str, details: str):
+        if await deny_if_not_owner(interaction):
+            return
+        if not name_ar.strip() or not name_en.strip() or not details.strip():
+            return await interaction.response.send_message(
+                "❌ اكتب اسم وسيلة الدفع بالعربي والإنجليزي والتفاصيل.\n❌ Provide Arabic name, English name, and payment details.", ephemeral=True
+            )
+        option_id = add_payment_option(name_ar[:100], name_en[:100], details[:1000])
+        await interaction.response.send_message(
+            f"✅ تمت إضافة وسيلة الدفع رقم **{option_id}**: {name_ar} / {name_en}\n"
+            f"✅ Payment method **{option_id}** added: {name_ar} / {name_en}", ephemeral=True
+        )
+
+    @app_commands.command(name="addpay", description="📲 إضافة وسيلة دفع / Add a payment method")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(name_ar="اسم الطريقة بالعربي", name_en="Payment method name", details="رقم التحويل أو التفاصيل / Transfer details")
+    async def addpay(self, interaction: discord.Interaction, name_ar: str, name_en: str, details: str):
+        await self._add_pay(interaction, name_ar, name_en, details)
+
+    @app_commands.command(name="إضافة_طريقة_دفع", description="📲 إضافة وسيلة دفع / Add a payment method")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(name_ar="اسم الطريقة بالعربي", name_en="Payment method name", details="رقم التحويل أو التفاصيل / Transfer details")
+    async def addpay_ar(self, interaction: discord.Interaction, name_ar: str, name_en: str, details: str):
+        await self._add_pay(interaction, name_ar, name_en, details)
+
+    async def _set_price(self, interaction: discord.Interaction, plan: app_commands.Choice[str], amount: int):
+        if await deny_if_not_owner(interaction):
+            return
+        set_plan_price(plan.value, amount)
+        await interaction.response.send_message(
+            f"✅ تم ضبط سعر {PLAN_LABELS[plan.value]} إلى **{amount:,} {SUBSCRIPTION_CURRENCY}** لمدة {DEFAULT_PLAN_DAYS} يوم.\n"
+            f"✅ Price updated to **{amount:,} {SUBSCRIPTION_CURRENCY}** for {DEFAULT_PLAN_DAYS} days.", ephemeral=True
+        )
+
+    @app_commands.command(name="setprice", description="⚙️ ضبط سعر الاشتراك / Set subscription price")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(plan="الخطة / Plan", amount="السعر / Price")
+    @app_commands.choices(plan=[
+        app_commands.Choice(name="اشتراك البوت / Regular bot", value=PLAN_BOT),
+        app_commands.Choice(name="اشتراك الحماية / Extra protection", value=PLAN_PROTECTION),
+    ])
+    async def setprice(self, interaction: discord.Interaction, plan: app_commands.Choice[str], amount: app_commands.Range[int, 0, 100000000]):
+        await self._set_price(interaction, plan, amount)
+
+    @app_commands.command(name="تحديد_سعر", description="⚙️ ضبط سعر الاشتراك / Set subscription price")
+    @app_commands.guilds(ADMIN_GUILD_OBJECT)
+    @app_commands.describe(plan="الخطة / Plan", amount="السعر / Price")
+    @app_commands.choices(plan=[
+        app_commands.Choice(name="اشتراك البوت / Regular bot", value=PLAN_BOT),
+        app_commands.Choice(name="اشتراك الحماية / Extra protection", value=PLAN_PROTECTION),
+    ])
+    async def setprice_ar(self, interaction: discord.Interaction, plan: app_commands.Choice[str], amount: app_commands.Range[int, 0, 100000000]):
+        await self._set_price(interaction, plan, amount)
+
 
     @app_commands.command(name="قائمة_السيرفرات", description="🔒 تقرير منظم عن كل السيرفرات وحالة الاشتراك")
     @app_commands.guilds(ADMIN_GUILD_OBJECT)
