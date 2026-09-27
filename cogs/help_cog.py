@@ -14,6 +14,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.i18n import get_lang
+from utils.command_groups import admin_group
 
 
 log = logging.getLogger("lordsbot.help")
@@ -85,6 +86,18 @@ CATEGORY_META = {
         "en": "𝑮𝒂𝒎𝒆𝒔 & 𝑰𝒏𝒕𝒆𝒓𝒂𝒄𝒕𝒊𝒐𝒏",
         "color": discord.Color.blurple(),
     },
+    "economy": {
+        "emoji": "💰",
+        "ar": "الاقتصاد والعملات",
+        "en": "Economy & Coins",
+        "color": discord.Color.orange(),
+    },
+    "security": {
+        "emoji": "🛡️",
+        "ar": "الحماية والإشراف",
+        "en": "Security & Moderation",
+        "color": discord.Color.dark_red(),
+    },
     "general": {
         "emoji": "📚",
         "ar": "أوامر عامة",
@@ -95,6 +108,7 @@ CATEGORY_META = {
 
 CATEGORY_ORDER = [
     "ai",
+    "economy",
     "calculators",
     "war",
     "alliance",
@@ -104,6 +118,7 @@ CATEGORY_ORDER = [
     "settings",
     "welcome",
     "games",
+    "security",
     "general",
 ]
 
@@ -118,6 +133,8 @@ CATEGORY_BLURBS = {
         "settings": {"ar": "اضبط اللغة، الإعدادات، وروابط اللعبة.", "en": "Configure language, settings, and game links."},
     "welcome": {"ar": "خلّي دخول الأعضاء الجدد احترافي ومنظم.", "en": "Make every new member feel welcome."},
     "games": {"ar": "ألعاب خفيفة وتفاعل يخلّي التحالف حي.", "en": "Light games and interaction for an active alliance."},
+    "economy": {"ar": "عملات، هدايا يومية، XP ولوحات صدارة.", "en": "Coins, daily rewards, XP, and leaderboards."},
+    "security": {"ar": "حماية السيرفر، الإشراف، النسخ الاحتياطي والصلاحيات.", "en": "Server protection, moderation, backups, and permissions."},
     "general": {"ar": "أدوات يومية مفيدة لكل أعضاء التحالف.", "en": "Everyday utilities for every alliance member."},
 }
 
@@ -215,6 +232,59 @@ ENGLISH_COMMAND_DESCRIPTIONS = {
     "report": "Report a purchase issue, a violating account, or reach support.",
     "battlelog": "Record and review alliance battle reports.",
     "add": "Record a new battle in the server log.",
+    "admin panel": "[Admin] Open a private dashboard with every administration command.",
+    "ai speedup": "Open the AI speedup calculator.",
+    "ai event": "Calculate Hell and Solo event targets with AI.",
+    "ai task": "[Admin] Add a Guild Festival task for a member.",
+    "ai done": "[Admin] Mark a Guild Festival task as completed.",
+    "ai board": "View the Guild Festival leaderboard.",
+    "ai calc": "Calculate Guild Festival speedups or resource exchanges.",
+    "ai optimize": "Get an AI plan for completing a Guild Festival task.",
+    "economy coins": "View your current coin balance.",
+    "economy daily": "Claim your daily coin reward.",
+    "economy addcoins": "[Admin] Add coins to a user.",
+    "economy restartcoins": "[Admin] Reset a user's or everyone's coins.",
+    "economy addxp": "[Admin] Add XP to a user.",
+    "economy top show": "View the server XP leaderboard.",
+    "economy top restart": "[Admin] Reset the server XP leaderboard.",
+    "market offer": "Post a resource exchange offer.",
+    "market list": "View active resource exchange offers.",
+    "market cancel": "Cancel your latest resource exchange offer.",
+    "battlelog add": "Record a new alliance battle report.",
+    "battlelog list": "View recent alliance battle reports.",
+    "battlelog user": "View a member's battle history.",
+    "security limit-settings": "[Admin] Configure anti-nuke action limits and punishments.",
+    "security togglepro": "[Admin] Enable or disable all protections at once.",
+    "protection toggle": "[Admin] Enable or disable a protection type.",
+    "protection status": "[Admin] View the current protection status.",
+    "whitelist grant-user": "[Admin] Grant a user a protection bypass permission.",
+    "whitelist grant-role": "[Admin] Grant a role a protection bypass permission.",
+    "whitelist revoke-user": "[Admin] Revoke a user's protection bypass permission.",
+    "whitelist view": "[Admin] View current protection bypass permissions.",
+    "backup create": "[Admin] Back up server roles and channels.",
+    "backup restore-roles": "[Admin] Restore missing roles from the latest backup.",
+    "backup restore-channels": "[Admin] Restore missing channels from the latest backup.",
+    "backup info": "[Admin] View the latest backup information.",
+    "mod ban": "[Admin] Ban a member from the server.",
+    "mod unban": "[Admin] Remove a member ban.",
+    "mod kick": "[Admin] Kick a member from the server.",
+    "mod mute": "[Admin] Mute a member.",
+    "mod unmute": "[Admin] Remove a member mute.",
+    "mod timeout": "[Admin] Timeout a member for a chosen duration.",
+    "mod untimeout": "[Admin] Remove a member timeout.",
+    "mod vmute": "[Admin] Mute a member in voice chat.",
+    "mod vunmute": "[Admin] Remove a voice mute.",
+    "mod warn": "[Admin] Warn a member.",
+    "mod warnings": "[Admin] View a member's warnings.",
+    "mod clear-warnings": "[Admin] Clear a member's warnings.",
+    "mod clear": "[Admin] Delete messages from the current channel.",
+    "mod lock": "[Admin] Lock the current channel.",
+    "mod unlock": "[Admin] Unlock the current channel.",
+    "mod hide": "[Admin] Hide the current channel from members.",
+    "mod unhide": "[Admin] Show the current channel to members.",
+    "mod slowmode": "[Admin] Configure channel slowmode.",
+    "mod role": "[Admin] Add or remove a role from a member.",
+    "mod nuke": "[Admin] Recreate the channel and clear all messages.",
     "user": "View the battle history of a selected member.",
 }
 
@@ -298,6 +368,59 @@ ARABIC_COMMAND_DESCRIPTIONS = {
     "bot_channel": "📍 [إدارة] حدد القناة أو الثريد الذي يتحدث فيه البوت",
     "report": "📝 سجّل واستعرض تقارير معارك التحالف",
     "add": "📝 سجّل معركة جديدة في سجل السيرفر",
+    "admin panel": "📋 [إدارة] افتح لوحة خاصة بكل أوامر الإدارة.",
+    "ai speedup": "🚀 افتح حاسبة التسريعات بالذكاء الاصطناعي.",
+    "ai event": "🏆 احسب أهداف حدث الجحيم والحدث الفردي بالذكاء الاصطناعي.",
+    "ai task": "🎉 [إدارة] أضف مهمة مهرجان التحالف لعضو.",
+    "ai done": "✅ [إدارة] علّم مهمة مهرجان التحالف كمكتملة.",
+    "ai board": "🏅 اعرض لوحة صدارة مهرجان التحالف.",
+    "ai calc": "🧮 احسب تسريعات مهرجان التحالف أو تبادل الموارد.",
+    "ai optimize": "🤖 احصل على خطة AI لتنفيذ مهمة مهرجان التحالف.",
+    "economy coins": "💰 اعرض رصيدك الحالي من العملات.",
+    "economy daily": "🎁 استلم مكافأة العملات اليومية.",
+    "economy addcoins": "💰 [إدارة] أضف عملات لمستخدم.",
+    "economy restartcoins": "🔄 [إدارة] صفّر عملات مستخدم أو كل المستخدمين.",
+    "economy addxp": "⭐ [إدارة] أضف XP لمستخدم.",
+    "economy top show": "🏆 اعرض لوحة صدارة XP في السيرفر.",
+    "economy top restart": "🔄 [إدارة] صفّر لوحة صدارة XP.",
+    "market offer": "💱 أضف عرضًا لتبادل الموارد.",
+    "market list": "📋 اعرض عروض تبادل الموارد النشطة.",
+    "market cancel": "🗑️ ألغِ آخر عرض تبادل موارد لك.",
+    "battlelog add": "📝 سجّل تقرير معركة جديد للتحالف.",
+    "battlelog list": "📚 اعرض آخر تقارير معارك التحالف.",
+    "battlelog user": "🔍 اعرض سجل معارك عضو محدد.",
+    "security limit-settings": "🛡️ [إدارة] اضبط حدود الحماية والعقوبات.",
+    "security togglepro": "🛡️ [إدارة] فعّل أو عطّل كل الحمايات مرة واحدة.",
+    "protection toggle": "⚙️ [إدارة] فعّل أو عطّل نوعًا من الحماية.",
+    "protection status": "📊 [إدارة] اعرض حالة الحماية الحالية.",
+    "whitelist grant-user": "🔑 [إدارة] امنح مستخدمًا صلاحية تجاوز الحماية.",
+    "whitelist grant-role": "🔑 [إدارة] امنح رتبة صلاحية تجاوز الحماية.",
+    "whitelist revoke-user": "🔒 [إدارة] اسحب صلاحية تجاوز الحماية من مستخدم.",
+    "whitelist view": "📋 [إدارة] اعرض صلاحيات تجاوز الحماية الحالية.",
+    "backup create": "💾 [إدارة] أنشئ نسخة احتياطية للرولات والقنوات.",
+    "backup restore-roles": "♻️ [إدارة] استعد الرولات المفقودة من آخر نسخة.",
+    "backup restore-channels": "♻️ [إدارة] استعد القنوات المفقودة من آخر نسخة.",
+    "backup info": "ℹ️ [إدارة] اعرض معلومات آخر نسخة احتياطية.",
+    "mod ban": "🔨 [إدارة] احظر عضوًا من السيرفر.",
+    "mod unban": "🔓 [إدارة] ألغِ حظر عضو.",
+    "mod kick": "👢 [إدارة] اطرد عضوًا من السيرفر.",
+    "mod mute": "🔇 [إدارة] اكتم عضوًا.",
+    "mod unmute": "🔊 [إدارة] ألغِ كتم عضو.",
+    "mod timeout": "⏳ [إدارة] اكتم عضوًا لمدة محددة.",
+    "mod untimeout": "✅ [إدارة] ألغِ الإسكات المؤقت عن عضو.",
+    "mod vmute": "🎙️ [إدارة] اكتم عضوًا في الروم الصوتي.",
+    "mod vunmute": "🔊 [إدارة] ألغِ الكتم الصوتي عن عضو.",
+    "mod warn": "⚠️ [إدارة] حذّر عضوًا.",
+    "mod warnings": "📋 [إدارة] اعرض تحذيرات عضو.",
+    "mod clear-warnings": "🧹 [إدارة] امسح تحذيرات عضو.",
+    "mod clear": "🧹 [إدارة] احذف رسائل من القناة الحالية.",
+    "mod lock": "🔒 [إدارة] اقفل القناة الحالية.",
+    "mod unlock": "🔓 [إدارة] افتح القناة الحالية.",
+    "mod hide": "🙈 [إدارة] أخفِ القناة عن الأعضاء.",
+    "mod unhide": "👀 [إدارة] أظهر القناة للأعضاء.",
+    "mod slowmode": "🐢 [إدارة] اضبط الوضع البطيء للقناة.",
+    "mod role": "🎭 [إدارة] امنح أو اسحب رتبة من عضو.",
+    "mod nuke": "💥 [إدارة] أعد إنشاء القناة لمسح كل الرسائل.",
     "user": "🔍 اعرض سجل معارك عضو محدد",
 }
 
@@ -353,6 +476,10 @@ def command_category(path: str) -> str:
         return "war"
     if root in {"log_activity", "information", "user_admin_check", "top5", "event_stats", "stats_event", "gf"}:
         return "alliance"
+    if root in {"security", "protection", "whitelist", "backup", "mod"}:
+        return "security"
+    if root == "economy":
+        return "economy"
     if root == "market":
         return "market"
     if root in {"hunt_log", "hunt_channel", "hunt_list"}:
@@ -558,6 +685,56 @@ def build_category_embed(bot: commands.Bot, category: str, lang: str, page: int 
     return embed
 
 
+def build_admin_embed(bot: commands.Bot, lang: str) -> discord.Embed:
+    """Build a private, translated dashboard for every /admin command."""
+    admin_commands = [
+        (path, command)
+        for path, command in loaded_commands(bot)
+        if path == "admin" or path.startswith("admin ")
+    ]
+    if lang == "ar":
+        title = "🛡️ لوحة أوامر الإدارة"
+        description = "كل أوامر الإدارة مجمعة هنا. اختار الأمر المناسب من القائمة أو استخدم المسار الظاهر."
+        footer = "🔒 هذه اللوحة مرئية لك فقط."
+    else:
+        title = "🛡️ Administration Command Dashboard"
+        description = "Every administration command in one place. Choose a command from the menu or use the displayed path."
+        footer = "🔒 This dashboard is visible only to you."
+
+    embed = discord.Embed(title=title, description=description, color=discord.Color.dark_red())
+    sections = defaultdict(list)
+    for path, command in admin_commands:
+        parts = path.split()
+        section = parts[1] if len(parts) > 1 else "general"
+        sections[section].append((path, command))
+
+    for section, entries in sorted(sections.items()):
+        lines = [
+            f"**/{path}**\n{command_description(path, command, lang)}"
+            for path, command in entries
+        ]
+        chunks = []
+        current = []
+        size = 0
+        for line in lines:
+            if current and size + len(line) + 2 > 950:
+                chunks.append("\n\n".join(current))
+                current = []
+                size = 0
+            current.append(line)
+            size += len(line) + 2
+        if current:
+            chunks.append("\n\n".join(current))
+        for index, chunk in enumerate(chunks, start=1):
+            name = f"⚙️ {section}"
+            if len(chunks) > 1:
+                name += f" • {index}/{len(chunks)}"
+            embed.add_field(name=name, value=chunk[:1024], inline=False)
+
+    embed.set_footer(text=footer)
+    return embed
+
+
 class HelpCategorySelect(discord.ui.Select):
     def __init__(self, bot: commands.Bot, lang: str):
         self.bot = bot
@@ -703,6 +880,17 @@ class HelpCog(commands.Cog):
             await ctx.send(fallback)
 
     
+    @admin_group.command(
+        name="panel",
+        description="📋 [Admin] Open the administration command dashboard | افتح لوحة أوامر الإدارة"
+    )
+    async def admin_panel(self, interaction: discord.Interaction):
+        lang = get_lang(interaction.guild_id, interaction.user.id)
+        await interaction.response.send_message(
+            embed=build_admin_embed(self.bot, lang),
+            ephemeral=True,
+        )
+
     def build_shortcuts_embed(self, lang: str) -> discord.Embed:
         if lang == "en":
             embed = discord.Embed(
