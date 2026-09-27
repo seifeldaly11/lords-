@@ -36,6 +36,11 @@ admin_channel_group = app_commands.Group(
     parent=admin_group,
 )
 
+ai_group = app_commands.Group(
+    name="ai",
+    description="🤖 أدوات الذكاء الاصطناعي والحاسبات | AI tools and calculators"
+)
+
 shop_group = app_commands.Group(
     name="shop",
     description="🛍️ متجر الحسابات | Accounts shop"
