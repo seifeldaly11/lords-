@@ -236,24 +236,24 @@ class SecurityCog(commands.Cog):
         parent=security_group,
     )
 
-    @protection_group.command(name="toggle", description="تشغيل/إيقاف نوع حماية")
-    @app_commands.describe(type="نوع الحماية")
+    @protection_group.command(name="toggle", description="تشغيل/إيقاف نوع حماية | Toggle a protection")
+    @app_commands.describe(type="نوع الحماية | Protection type")
     @app_commands.choices(type=PROTECTION_CHOICES)
     @app_commands.guild_only()
     async def protection_toggle(self, interaction: discord.Interaction, type: app_commands.Choice[str]):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         guild_data["protection"][type.value] = not guild_data["protection"].get(type.value, False)
         save_guild_data(interaction.guild.id, guild_data)
         state = "مفعّلة ✅" if guild_data["protection"][type.value] else "متوقفة ❌"
-        await interaction.response.send_message(f"الحماية `{type.value}` أصبحت {state}.", ephemeral=True)
+        await interaction.response.send_message(f"الحماية `{type.value}` أصبحت {state}.\nProtection `{type.value}` is now {state}.", ephemeral=True)
 
-    @protection_group.command(name="status", description="عرض حالة الحماية الحالية")
+    @protection_group.command(name="status", description="عرض حالة الحماية الحالية | View current protection status")
     @app_commands.guild_only()
     async def protection_status(self, interaction: discord.Interaction):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         embed = discord.Embed(title="🛡️ حالة الحماية", color=discord.Color.from_rgb(255, 255, 255))
         for key, value in guild_data["protection"].items():
@@ -266,53 +266,53 @@ class SecurityCog(commands.Cog):
         parent=security_group,
     )
 
-    @whitelist_group.command(name="grant-user", description="منح صلاحية تجاوز لمستخدم")
+    @whitelist_group.command(name="grant-user", description="منح صلاحية تجاوز لمستخدم | Grant a bypass permission to a user")
     @app_commands.choices(permission=BYPASS_CHOICES)
     @app_commands.guild_only()
     async def whitelist_grant_user(self, interaction: discord.Interaction, user: discord.Member, permission: app_commands.Choice[str]):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         perms = guild_data["advancedWhitelist"]["users"].setdefault(str(user.id), [])
         if permission.value in perms:
-            return await interaction.response.send_message("ℹ️ هذه الصلاحية ممنوحة له بالفعل.", ephemeral=True)
+            return await interaction.response.send_message("ℹ️ هذه الصلاحية ممنوحة له بالفعل.\nℹ️ This permission is already granted.", ephemeral=True)
         perms.append(permission.value)
         save_guild_data(interaction.guild.id, guild_data)
-        await interaction.response.send_message(f"✅ تم منح `{permission.value}` لـ {user.mention}.", ephemeral=True)
+        await interaction.response.send_message(f"✅ تم منح `{permission.value}` لـ {user.mention}.\n✅ Granted `{permission.value}` to {user.mention}.", ephemeral=True)
 
-    @whitelist_group.command(name="grant-role", description="منح صلاحية تجاوز لرتبة")
+    @whitelist_group.command(name="grant-role", description="منح صلاحية تجاوز لرتبة | Grant a bypass permission to a role")
     @app_commands.choices(permission=BYPASS_CHOICES)
     @app_commands.guild_only()
     async def whitelist_grant_role(self, interaction: discord.Interaction, role: discord.Role, permission: app_commands.Choice[str]):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         perms = guild_data["advancedWhitelist"]["roles"].setdefault(str(role.id), [])
         if permission.value in perms:
             return await interaction.response.send_message("ℹ️ هذه الصلاحية ممنوحة بالفعل.", ephemeral=True)
         perms.append(permission.value)
         save_guild_data(interaction.guild.id, guild_data)
-        await interaction.response.send_message(f"✅ تم منح `{permission.value}` لرتبة {role.mention}.", ephemeral=True)
+        await interaction.response.send_message(f"✅ تم منح `{permission.value}` لرتبة {role.mention}.\n✅ Granted `{permission.value}` to role {role.mention}.", ephemeral=True)
 
-    @whitelist_group.command(name="revoke-user", description="سحب صلاحية تجاوز من مستخدم")
+    @whitelist_group.command(name="revoke-user", description="سحب صلاحية تجاوز من مستخدم | Revoke a user bypass permission")
     @app_commands.choices(permission=BYPASS_CHOICES)
     @app_commands.guild_only()
     async def whitelist_revoke_user(self, interaction: discord.Interaction, user: discord.Member, permission: app_commands.Choice[str]):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         perms = guild_data["advancedWhitelist"]["users"].get(str(user.id), [])
         if permission.value not in perms:
-            return await interaction.response.send_message("ℹ️ هذه الصلاحية غير ممنوحة أصلاً.", ephemeral=True)
+            return await interaction.response.send_message("ℹ️ هذه الصلاحية غير ممنوحة أصلاً.\nℹ️ This permission is not currently granted.", ephemeral=True)
         perms.remove(permission.value)
         save_guild_data(interaction.guild.id, guild_data)
         await interaction.response.send_message(f"✅ تم سحب `{permission.value}` من {user.mention}.", ephemeral=True)
 
-    @whitelist_group.command(name="view", description="عرض صلاحيات الوايت ليست الحالية")
+    @whitelist_group.command(name="view", description="عرض صلاحيات الوايت ليست الحالية | View current whitelist permissions")
     @app_commands.guild_only()
     async def whitelist_view(self, interaction: discord.Interaction):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         wl = guild_data["advancedWhitelist"]
         embed = discord.Embed(title="🔑 صلاحيات الوايت ليست", color=discord.Color.from_rgb(255, 255, 255))
@@ -328,40 +328,40 @@ class SecurityCog(commands.Cog):
         parent=security_group,
     )
 
-    @backup_group.command(name="create", description="إنشاء نسخة احتياطية للرولات والقنوات")
+    @backup_group.command(name="create", description="إنشاء نسخة احتياطية للرولات والقنوات | Back up roles and channels")
     @app_commands.guild_only()
     async def backup_create(self, interaction: discord.Interaction):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         await interaction.response.defer(ephemeral=True)
         create_backups(interaction.guild)
-        await interaction.followup.send("✅ تم إنشاء نسخة احتياطية.")
+        await interaction.followup.send("✅ تم إنشاء نسخة احتياطية.\n✅ Backup created.")
 
-    @backup_group.command(name="restore-roles", description="استعادة الرولات المفقودة من آخر نسخة")
+    @backup_group.command(name="restore-roles", description="استعادة الرولات المفقودة من آخر نسخة | Restore missing roles from the latest backup")
     @app_commands.guild_only()
     async def backup_restore_roles(self, interaction: discord.Interaction):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         await interaction.response.defer(ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         count = await restore_roles(interaction.guild, guild_data)
         await interaction.followup.send(f"✅ تم استعادة {count} رتبة.")
 
-    @backup_group.command(name="restore-channels", description="استعادة القنوات المفقودة من آخر نسخة")
+    @backup_group.command(name="restore-channels", description="استعادة القنوات المفقودة من آخر نسخة | Restore missing channels from the latest backup")
     @app_commands.guild_only()
     async def backup_restore_channels(self, interaction: discord.Interaction):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         await interaction.response.defer(ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         count = await restore_channels(interaction.guild, guild_data)
         await interaction.followup.send(f"✅ تم استعادة {count} قناة.")
 
-    @backup_group.command(name="info", description="معلومات عن آخر نسخة احتياطية")
+    @backup_group.command(name="info", description="معلومات عن آخر نسخة احتياطية | View the latest backup details")
     @app_commands.guild_only()
     async def backup_info(self, interaction: discord.Interaction):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         roles_count = len(guild_data["backups"]["roles"])
         channels_count = len(guild_data["backups"]["channels"])
@@ -374,8 +374,8 @@ class SecurityCog(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # ------------------------------------------------------ /limit-settings
-    @security_group.command(name="limit-settings", description="ضبط حدود العقوبة على حذف الرولات/القنوات")
-    @app_commands.describe(type="نوع الإجراء", limit="العدد المسموح خلال ساعة", action="العقوبة عند تجاوز الحد")
+    @security_group.command(name="limit-settings", description="ضبط حدود العقوبة على حذف الرولات/القنوات | Configure deletion limits and punishments")
+    @app_commands.describe(type="نوع الإجراء | Action type", limit="العدد المسموح خلال ساعة | Allowed count per hour", action="العقوبة عند تجاوز الحد | Punishment after the limit")
     @app_commands.choices(
         type=[
             app_commands.Choice(name="حذف القنوات", value="channelDelete"),
@@ -392,7 +392,7 @@ class SecurityCog(commands.Cog):
         action: app_commands.Choice[str],
     ):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         guild_data["limits"][type.value] = {"limit": limit, "action": action.value}
         save_guild_data(interaction.guild.id, guild_data)
@@ -401,12 +401,12 @@ class SecurityCog(commands.Cog):
         )
 
     # ---------------------------------------------------------- /togglepro
-    @security_group.command(name="togglepro", description="تفعيل/تعطيل كل الحمايات دفعة واحدة")
-    @app_commands.describe(enable="تفعيل أو تعطيل")
+    @security_group.command(name="togglepro", description="تفعيل/تعطيل كل الحمايات دفعة واحدة | Enable or disable all protections")
+    @app_commands.describe(enable="تفعيل أو تعطيل | Enable or disable")
     @app_commands.guild_only()
     async def togglepro(self, interaction: discord.Interaction, enable: bool):
         if not self._dev_only(interaction):
-            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.", ephemeral=True)
+            return await interaction.response.send_message("🔒 هذا الأمر للمطورين/مالك السيرفر فقط.\n🔒 Developer/server owner only.", ephemeral=True)
         guild_data = init_guild_data(interaction.guild.id)
         for key in guild_data["protection"]:
             guild_data["protection"][key] = enable
