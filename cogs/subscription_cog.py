@@ -45,6 +45,7 @@ SUBSCRIPTION_ADMIN_IDS = frozenset({
 CONTACT_USERNAME = (os.getenv("CONTACT_USERNAME") or "seifeldaly124").strip()
 CONTACT_LINE = f"للتجديد يرجى التواصل مع: **{CONTACT_USERNAME}**"
 GRACE_PERIOD_DAYS = _parse_int(os.getenv("GRACE_PERIOD_DAYS"), 3)
+SUBSCRIPTION_PLAN_NAME = "VIP"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "storage", "subscriptions.db")
@@ -382,7 +383,7 @@ async def global_subscription_check(interaction: discord.Interaction) -> bool:
     if not is_active:
         if not interaction.response.is_done():
             await interaction.response.send_message(
-                f"🔒 البوت مغلق حتى دفع الاشتراك الجديد.\n{CONTACT_LINE}",
+                f"🔒 البوت مغلق حتى تفعيل اشتراك {SUBSCRIPTION_PLAN_NAME}.\n{CONTACT_LINE}",
                 ephemeral=True
             )
         return False
@@ -601,7 +602,7 @@ class SubscriptionCog(commands.Cog):
             elif expiry_date > now:
                 active_count += 1
                 remaining_days = max((expiry_date - now).days, 0)
-                subscription_text = f"✅ فعال حتى {expiry_date.strftime('%Y-%m-%d %H:%M UTC')} ({remaining_days} يوم متبقٍ)"
+                subscription_text = f"✅ {SUBSCRIPTION_PLAN_NAME} فعال حتى {expiry_date.strftime('%Y-%m-%d %H:%M UTC')} ({remaining_days} يوم متبقٍ)"
                 color = discord.Color.green()
             else:
                 inactive_count += 1
@@ -706,7 +707,7 @@ class SubscriptionCog(commands.Cog):
         expires_at = set_subscription(server_id, days)
         expiry_date = datetime.datetime.fromisoformat(expires_at)
         await interaction.response.send_message(
-            f"✅ تم تحديد اشتراك جديد للسيرفر `{server_id}` لمدة {days} يوم.\nينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
+            f"✅ تم تحديد اشتراك {SUBSCRIPTION_PLAN_NAME} للسيرفر `{server_id}` لمدة {days} يوم.\nينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
             ephemeral=True
         )
 
@@ -729,7 +730,7 @@ class SubscriptionCog(commands.Cog):
         expires_at = renew_subscription(server_id, days)
         expiry_date = datetime.datetime.fromisoformat(expires_at)
         await interaction.response.send_message(
-            f"✅ تم تجديد اشتراك السيرفر `{server_id}` بإضافة {days} يوم.\nالاشتراك الآن ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
+            f"✅ تم تجديد اشتراك {SUBSCRIPTION_PLAN_NAME} للسيرفر `{server_id}` بإضافة {days} يوم.\nالاشتراك الآن ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
             ephemeral=True
         )
 
@@ -802,7 +803,7 @@ class SubscriptionCog(commands.Cog):
         expires_at = renew_subscription(str(guild.id), days)
         expiry_date = datetime.datetime.fromisoformat(expires_at)
         await interaction.response.send_message(
-            f"✅ تم تفعيل الكود بنجاح! تمت إضافة {days} يوم لاشتراك هذا السيرفر.\nالاشتراك الآن ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
+            f"✅ تم تفعيل كود {SUBSCRIPTION_PLAN_NAME} بنجاح! تمت إضافة {days} يوم لاشتراك هذا السيرفر.\nالاشتراك الآن ينتهي في: {expiry_date.strftime('%Y-%m-%d %H:%M UTC')}",
             ephemeral=True
         )
 
